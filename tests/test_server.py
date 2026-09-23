@@ -34,6 +34,7 @@ class HandlerTests(unittest.TestCase):
         (self.web / "index.html").write_text('<html lang="ru">Тестовый интерфейс</html>', encoding="utf-8")
         (self.web / "assets" / "app.js").write_text("export const value = 1;", encoding="utf-8")
         (self.web / "assets" / "app.css").write_text("body { color: black; }", encoding="utf-8")
+        (self.web / "assets" / "pdf.worker.min-test.mjs").write_text("export const worker = 1;", encoding="utf-8")
         for filename in SERVER.ARTIFACTS:
             (self.out / filename).write_text('{"gid":"9007199254740993"}' if filename.endswith("json") else "gid\n9007199254740993\n", encoding="utf-8")
         # Контрольная строка не является ключом: её отсутствие проверяет утечку файлов.
@@ -83,6 +84,14 @@ class HandlerTests(unittest.TestCase):
                 self.assertNotIn("Access-Control-Allow-Origin", headers)
                 self.assertIn("connect-src 'self'", headers["Content-Security-Policy"])
         self.assertIn(b'"9007199254740993"', self.request("/out/analysis.json")[2])
+
+    def test_F07_module_worker_mjs_served_as_javascript(self):
+        # Vite выпускает worker PDF.js как .mjs; без этого типа просмотр справки падал в запасной режим.
+        status, headers, body = self.request("/assets/pdf.worker.min-test.mjs")
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["Content-Type"], "text/javascript; charset=utf-8")
+        self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(body, b"export const worker = 1;")
 
     def test_F07_head_matches_get_without_body(self):
         status, headers, body = self.request("/out/analysis.json", method="HEAD")

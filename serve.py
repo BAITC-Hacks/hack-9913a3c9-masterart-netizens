@@ -19,6 +19,8 @@ from urllib.parse import unquote, urlsplit
 ARTIFACTS = frozenset({"analysis.json", "nodes_roles.csv", "clusters.csv", "top_nodes.csv"})
 ASSET_TYPES = {
     ".js": "text/javascript; charset=utf-8",
+    # Worker PDF.js сборка выпускает модулем .mjs; без этого типа просмотр справки не мог его загрузить.
+    ".mjs": "text/javascript; charset=utf-8",
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
     ".png": "image/png",
