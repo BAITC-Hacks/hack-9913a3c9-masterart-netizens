@@ -8,8 +8,21 @@ import sys
 import time
 
 from .analysis import TemporalIntegrationError, build_analysis
-from .exports import write_outputs, write_receipt
+from .exports import write_attempt, write_outputs, write_receipt
+from .fmt import plural_ru
 from .io import InputValidationError, load_dataset
+
+FAILED_NOTE = (
+    "Выгрузки в этом каталоге, если они есть, остались от предыдущего успешного запуска "
+    "(см. run_receipt.json) и этой попыткой не изменены."
+)
+
+
+def _failed(args, started_at: str, code: int, message: str) -> int:
+    print(message, file=sys.stderr)
+    write_attempt({"status": "failed", "started_at_utc": started_at, "exit_code": code, "error": message, "note": FAILED_NOTE}, args.out)
+    print(f"Прежние выгрузки в {args.out} не изменены; попытка отмечена в last_attempt.json.", file=sys.stderr)
+    return code
 
 
 def main(argv=None) -> int:
@@ -27,11 +40,9 @@ def main(argv=None) -> int:
         data = load_dataset(args.data)
         analysis = build_analysis(data)
     except InputValidationError as exc:
-        print(f"Ошибка входных данных: {exc}", file=sys.stderr)
-        return 2
+        return _failed(args, started_at, 2, f"Ошибка входных данных: {exc}")
     except TemporalIntegrationError as exc:
-        print(f"Ошибка интеграции: {exc}", file=sys.stderr)
-        return 3
+        return _failed(args, started_at, 3, f"Ошибка интеграции: {exc}")
     paths = write_outputs(analysis, args.out)
     duration = round(time.perf_counter() - started, 3)
     summary = analysis["summary"]
@@ -44,10 +55,15 @@ def main(argv=None) -> int:
         },
         args.out,
     )
-    print(
-        f"Готово за {duration} с: {summary['n_nodes']} счетов, {summary['n_edges']} рёбер, "
-        f"{summary['n_transactions']} транзакций, {summary['n_clusters']} кластеров."
+    write_attempt({"status": "ok", "started_at_utc": started_at, "pipeline_seconds": duration}, args.out)
+    counts = (
+        (summary["n_nodes"], "счёт", "счёта", "счетов"),
+        (summary["n_edges"], "ребро", "ребра", "рёбер"),
+        (summary["n_transactions"], "транзакция", "транзакции", "транзакций"),
+        (summary["n_clusters"], "кластер", "кластера", "кластеров"),
     )
+    listed = ", ".join(f"{n} {plural_ru(n, one, few, many)}" for n, one, few, many in counts)
+    print(f"Готово за {duration} с: {listed}.")
     for name in sorted(paths):
         print(f"  {paths[name]}")
     return 0

@@ -86,3 +86,16 @@ def write_receipt(receipt: dict, out_dir) -> Path:
     path = Path(out_dir) / "run_receipt.json"
     _atomic_write(path, json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
     return path
+
+
+def write_attempt(record: dict, out_dir) -> Path:
+    """Отметка последней попытки запуска, успешной или нет.
+
+    Неудачный запуск не трогает прежние выгрузки: они остаются результатом последнего
+    успешного прогона, а этот файл честно сообщает, что следующая попытка не удалась.
+    """
+    directory = Path(out_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "last_attempt.json"
+    _atomic_write(path, json.dumps(record, ensure_ascii=False, indent=2) + "\n")
+    return path
