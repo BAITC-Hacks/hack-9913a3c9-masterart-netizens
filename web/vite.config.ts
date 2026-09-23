@@ -41,6 +41,18 @@ export default defineConfig({
   plugins: [react(), workbenchData()],
   base: '/',
   build: {outDir: 'dist', emptyOutDir: true, target: 'es2022', sourcemap: false},
-  server: {host: '127.0.0.1', port: 5173},
+  // В режиме разработки вопросы помощнику уходят на локальный serve.py (WORKBENCH_API, по умолчанию :8765).
+  // serve.py принимает только собственный Host и Origin, поэтому прокси представляется им сам.
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: process.env.WORKBENCH_API ?? 'http://127.0.0.1:8765',
+        changeOrigin: true,
+        configure: proxy => { proxy.on('proxyReq', request => { request.removeHeader('origin'); }); },
+      },
+    },
+  },
   preview: {host: '127.0.0.1', port: 4173},
 });

@@ -10,6 +10,7 @@ import time
 from .analysis import TemporalIntegrationError, build_analysis
 from .exports import write_attempt, write_outputs, write_receipt
 from .fmt import plural_ru
+from .insights import compute_insights
 from .io import InputValidationError, load_dataset
 
 FAILED_NOTE = (
@@ -43,6 +44,12 @@ def main(argv=None) -> int:
         return _failed(args, started_at, 2, f"Ошибка входных данных: {exc}")
     except TemporalIntegrationError as exc:
         return _failed(args, started_at, 3, f"Ошибка интеграции: {exc}")
+    # Дополнительные наблюдения (временные шаблоны, циклы, устойчивость) не меняют три CSV;
+    # их сбой не должен лишать жюри обязательных выгрузок, поэтому он только сообщается.
+    try:
+        analysis["insights"] = compute_insights(analysis)
+    except Exception as exc:  # noqa: BLE001 — дополнительный слой, обязательная часть уже готова
+        print(f"Предупреждение: дополнительные наблюдения не построены ({type(exc).__name__}).", file=sys.stderr)
     paths = write_outputs(analysis, args.out)
     duration = round(time.perf_counter() - started, 3)
     summary = analysis["summary"]

@@ -22,3 +22,13 @@ dist/
 .venv/
 __pycache__/
 .DS_Store
+
+# Входные данные и воспроизводимые локальные выгрузки
+/data/
+/out/
+.pytest_cache/
+*.pyc
+*.tsbuildinfo
+
+# Локальная координация не относится к продукту
+/communication/

@@ -47,6 +47,8 @@ export function formatKztCompact(value: number): string {
 }
 export const formatInt = (value: number) => intFormat.format(value);
 export const formatScore = (value: number) => scoreFormat.format(value);
+/** Доля в процентах так же, как в тексте оснований конвейера: «12%». */
+export const formatPercent = (share: number) => `${Math.round(share * 100)}%`;
 
 /** Группы по три цифры слева направо — только для глаз; копируется всегда исходная строка. */
 export function gidGroups(gid: string): string[] {
