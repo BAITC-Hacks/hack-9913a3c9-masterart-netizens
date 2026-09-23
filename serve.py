@@ -28,12 +28,13 @@ ASSET_TYPES = {
     ".woff2": "font/woff2",
 }
 Assistant = Callable[[dict], dict]
-Report = Callable[[dict], bytes]
+# Отчёт возвращает {"status": 200, "pdf": bytes, "filename": str} или {"status": код, "error": текст}.
+Report = Callable[[dict], dict]
 MAX_BODY_BYTES = 16_384
 # Глубже 32 уровней запрос помощника или отчёта не бывает; глубокая вложенность — признак атаки.
 MAX_JSON_DEPTH = 32
 REPORT_MODES = frozenset({"structural", "strict", "same_day"})
-MAX_REPORT_GIDS = 50
+REPORT_ERROR_STATUSES = frozenset({400, 404, 413, 503})
 
 
 def _depth_ok(value, limit: int = MAX_JSON_DEPTH) -> bool:
@@ -118,9 +119,11 @@ def make_handler(
             # URL и текст запроса могут содержать сведения из расследования.
             return
 
-        def _reply(self, status: int, body: bytes, content_type: str) -> None:
+        def _reply(self, status: int, body: bytes, content_type: str, extra: Optional[dict] = None) -> None:
             self.send_response(status)
             self.send_header("Content-Type", content_type)
+            for name, value in (extra or {}).items():
+                self.send_header(name, value)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
@@ -141,30 +144,41 @@ def make_handler(
             self._reply(status, json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8"), "application/json; charset=utf-8")
 
         def _report(self, payload: dict) -> None:
-            """POST /api/report {gids: [строки цифр], mode} → PDF от reports.render_pdf."""
+            """POST /api/report {gids: [строки цифр], mode} → PDF-справка от reports.render_pdf.
+
+            Число счетов и неизвестные gid проверяет модуль отчётов (413 и 404 с русским текстом);
+            здесь — только форма запроса: идентификаторы строками, иначе int64 уже потерян.
+            """
             gids, mode = payload.get("gids"), payload.get("mode", "structural")
             valid = (
                 set(payload) <= {"gids", "mode"}
                 and isinstance(gids, list)
-                and 1 <= len(gids) <= MAX_REPORT_GIDS
+                and len(gids) >= 1
                 and all(isinstance(g, str) and g.isdigit() and len(g) <= 20 for g in gids)
                 and mode in REPORT_MODES
             )
             if not valid:
-                self.send_error(400)
+                self._json(400, {"error": "Нужен список gid строками цифр и режим structural, strict или same_day."})
                 return
             if report is None:
                 self._json(503, {"error": "Отчёт PDF пока недоступен: модуль отчётов не установлен."})
                 return
             try:
-                body = report({"gids": gids, "mode": mode})
-                if not isinstance(body, (bytes, bytearray)) or not bytes(body).startswith(b"%PDF"):
+                result = report({"gids": gids, "mode": mode})
+                status = result.get("status")
+                if status in REPORT_ERROR_STATUSES:
+                    self._json(status, {"error": str(result.get("error", "Отчёт не построен."))[:200]})
+                    return
+                pdf, filename = result.get("pdf"), str(result.get("filename", ""))
+                if status != 200 or not isinstance(pdf, (bytes, bytearray)) or not bytes(pdf).startswith(b"%PDF-"):
                     raise ValueError
             except Exception:
                 # Текст исключения может содержать сведения расследования.
                 self.send_error(500)
                 return
-            self._reply(200, bytes(body), "application/pdf")
+            if not filename or not all(c.isascii() and (c.isalnum() or c in "._-") for c in filename):
+                filename = "spravka.pdf"
+            self._reply(200, bytes(pdf), "application/pdf", {"Content-Disposition": f'attachment; filename="{filename}"'})
 
         def send_error(self, code: int, message=None, explain=None) -> None:
             self._json(code, {"error": {
@@ -327,8 +341,16 @@ def build_services(out_dir: Path, env_file: Path) -> tuple[Optional[Assistant], 
     except ImportError:
         pass
     else:
-        def report(payload: dict) -> bytes:
-            return reports.render_pdf(analysis, payload["gids"], mode=payload["mode"])
+        def report(payload: dict) -> dict:
+            try:
+                pdf = reports.render_pdf(analysis, payload["gids"], mode=payload["mode"])
+            except reports.ReportRequestError as exc:
+                status = exc.status if exc.status in REPORT_ERROR_STATUSES else 400
+                return {"status": status, "error": str(exc)}
+            except ImportError:
+                # ReportLab загружается лениво: без него проверка запроса работает, а вёрстка — нет.
+                return {"status": 503, "error": "Отчёт PDF недоступен: не установлена библиотека reportlab (см. requirements.txt)."}
+            return {"status": 200, "pdf": pdf, "filename": reports.report_filename(payload["gids"])}
 
     return assistant, report, mode
 
