@@ -26,6 +26,8 @@
   .wb-account__gid { font-size: 19px; }
   .wb-role__name { font-size: 26px; }
   .wb-flows { grid-template-columns: minmax(0, 1fr); }
+  .wb-compare__row { grid-template-columns: minmax(0, 1fr) minmax(60px, 1fr) 40px; }
+  .wb-compare__who { display: none; }
   .wb-modes { grid-template-columns: minmax(0, 1fr); }
   .wb-modes button { grid-template-columns: 48px 1fr; align-items: center; min-height: 48px; }
   .wb-table--members th:nth-child(n + 4), .wb-table--members td:nth-child(n + 4) { display: none; }

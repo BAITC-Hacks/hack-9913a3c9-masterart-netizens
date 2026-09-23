@@ -7,6 +7,7 @@ import {searchAccounts} from '../src/data/search';
 import {buildReviewBrief} from '../src/data/brief';
 import {layoutEgo} from '../src/map/egoLayout';
 import {layoutCluster} from '../src/map/clusterLayout';
+import {roleFacts} from '../src/data/roleFacts';
 import {incrementDecimal} from './helpers';
 
 // Проверка на настоящем out/analysis.json. Запуск: WORKBENCH_REAL=../out/analysis.json npm test
@@ -28,6 +29,8 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
       const layout = layoutEgo(hood);
       layoutMs = Math.max(layoutMs, performance.now() - t);
       expect(layout.cards.filter(card => card.kind !== 'note').length).toBeLessThanOrEqual(1 + 11 + 11 + 5);
+      const node = index.byGid.get(gid)!;
+      expect(roleFacts(node, result.data.policy.rules.find(rule => rule.role === node.role)).length).toBeGreaterThanOrEqual(2);
     }
     let falseHits = 0;
     for (const gid of index.gids.slice(0, 200)) { const next = incrementDecimal(gid); if (!index.byGid.has(next) && searchAccounts(index, next).kind === 'exact') falseHits++; }

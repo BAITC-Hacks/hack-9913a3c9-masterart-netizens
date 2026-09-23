@@ -3,6 +3,7 @@ import type {GraphIndex} from '../data/graph';
 import type {AccountNode, Mode, Witness} from '../data/schema';
 import type {Neighborhood} from '../data/neighborhood';
 import {buildReviewBrief, briefFileName} from '../data/brief';
+import {roleFacts} from '../data/roleFacts';
 import {MODE_HINT, MODE_LABEL, REACH_CAVEAT, ROLE_HINT, countLabel, formatDate, formatInt, formatKzt, formatScore, roleLabel} from '../data/format';
 import {Gid} from './Gid';
 import {RoleGlyph, RoleTag} from './RoleGlyph';
@@ -11,9 +12,10 @@ import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
 
 /**
- * Основания по выбранному счёту. Сначала — счёт, гипотеза роли, альтернатива и справка; затем
- * приоритет, потоки, границы наблюдения и пути по датам. Правило с порогами, все кандидаты,
- * состав приоритета и общие ограничения раскрываются по запросу. Всё — из файла анализа.
+ * Основания по выбранному счёту — от главного к подробностям: роль, два-три факта с порогами,
+ * сравнение с ближайшей альтернативой, потоки, датированный путь, пробелы и следующий запрос.
+ * Текст основания, правило с порогами, все кандидаты и состав приоритета — под раскрытием.
+ * Опора роли и приоритет показаны раздельно: это разные величины, и ни одна не вероятность.
  */
 const MODES: Mode[] = ['structural', 'strict', 'same_day'];
 const MODE_SHORT: Record<Mode, string> = {structural: 'Без дат', strict: 'Позже по датам', same_day: 'В тот же день'};
@@ -31,10 +33,11 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const alternatives = useMemo(() => [...node.role_alternatives].filter(a => a.role !== node.role).sort((a, b) => b.score - a.score), [node]);
   const alt = alternatives[0];
   const rule = policy.rules.find(r => r.role === node.role);
+  const facts = useMemo(() => roleFacts(node, rule), [node, rule]);
   const rank = index.topRank.get(node.gid);
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');
-  const [copied, setCopied] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const download = () => {
     const brief = buildReviewBrief(index, node.gid, mode, new Date().toLocaleString('ru-RU'));
@@ -44,7 +47,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
     a.href = url; a.download = briefFileName(node.gid);
     document.body.appendChild(a); a.click(); a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setCopied(`Справка сохранена: ${briefFileName(node.gid)}`);
+    setStatus(`Справка сохранена: ${briefFileName(node.gid)}`);
   };
 
   const counts: Record<Mode, number> = {structural: t.static_seed_count, strict: t.strict_seed_count, same_day: t.same_day_seed_count};
@@ -52,55 +55,53 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const limits = [...(node.observation.outgoing_censored ? ['Исходящие не наблюдаются из-за границы сбора. Это не доказывает, что деньги остались на счёте.'] : []), ...node.observation.warnings];
   const extra = m as unknown as Record<string, unknown>;
   const lastIn = typeof extra.last_in_date === 'string' ? extra.last_in_date : null;
-  const margin = typeof extra.observation_margin_days === 'number' ? extra.observation_margin_days : null;
 
   return <aside className="wb-inspector" aria-label="Основания по счёту">
     <header className="wb-account">
       <p className="wb-account__kind">{node.is_seed ? 'Исходный клиент' : 'Счёт'} · {countLabel(node.depth, 'шаг', 'шага', 'шагов')} от исходных</p>
       <h2 className="wb-account__gid"><Gid gid={node.gid} /></h2>
       <CopyGid gid={node.gid} />
+      <div className="wb-account__priority" title={policy.priority_description}>
+        <span className="wb-account__label">Приоритет проверки</span>
+        <strong>{formatScore(node.priority_score)}</strong>
+        <span className="wb-meter" role="img" aria-label={`Приоритет ${formatScore(node.priority_score)} из 1`}><i style={{transform: `scaleX(${clamp01(node.priority_score)})`}} /></span>
+        <span className="wb-account__rank">{rank ? `№ ${rank} в очереди` : 'вне очереди'}</span>
+      </div>
     </header>
 
     <section className={`wb-role wb-role--${node.role}`} aria-label="Гипотеза роли">
       <div className="wb-role__line">
         <RoleGlyph role={node.role} size={26} />
         <p className="wb-role__name">{roleLabel(node.role)}</p>
-        <p className="wb-role__score" title={policy.score_description}><strong>{formatScore(node.role_score)}</strong><span>опора</span></p>
       </div>
-      {ROLE_HINT[node.role] && <p className="wb-role__hint">Гипотеза: {ROLE_HINT[node.role]}</p>}
-      <p className="wb-evidence">{node.evidence}</p>
-      {alt && <p className="wb-alt"><span className="wb-alt__label">Альтернатива</span><RoleTag role={alt.role} score={formatScore(alt.score)} /><span className="wb-alt__reason">{alt.reason}</span></p>}
+      <ul className="wb-facts" aria-label="На чём держится гипотеза">
+        {facts.map(fact => <li key={fact.label} className={fact.met === false ? 'is-below' : undefined}>
+          <strong>{fact.value}</strong>
+          <span>{fact.label}</span>
+          {fact.threshold && <small>{fact.threshold}</small>}
+        </li>)}
+      </ul>
+      <div className="wb-compare" role="group" aria-label="Опора основной роли и ближайшей альтернативы">
+        <CompareRow role={node.role} score={node.role_score} primary />
+        {alt && <CompareRow role={alt.role} score={alt.score} reason={alt.reason} />}
+      </div>
+      <p className="wb-compare__note">Опора правила: эвристика от 0 до 1, не вероятность. Приоритет считается отдельно.</p>
       <button type="button" className="wb-button wb-button--primary wb-brief" onClick={download}><Icon name="download" size={15} />Справка для проверки</button>
-      <p className="wb-live" role="status" aria-live="polite">{copied}</p>
+      <p className="wb-live" role="status" aria-live="polite">{status}</p>
       <details className="wb-disclosure">
-        <summary>Правило и пороги</summary>
+        <summary>Основание и правило</summary>
+        <p className="wb-evidence">{node.evidence}</p>
+        {ROLE_HINT[node.role] && <p className="wb-role__hint">{roleLabel(node.role)}: {ROLE_HINT[node.role]}.</p>}
         {rule ? <div className="wb-rule">
           <p className="wb-rule__text">{rule.description}</p>
           <Thresholds value={rule.thresholds} />
         </div> : <p className="wb-muted">Правило для этой роли в файле не описано.</p>}
         <p className="wb-footnote">{policy.score_description}</p>
       </details>
-      {alternatives.length > 1 && <details className="wb-disclosure">
+      {alternatives.length > 0 && <details className="wb-disclosure">
         <summary>Все кандидаты роли · {alternatives.length + 1}</summary>
         <ul className="wb-candidates">{alternatives.map(c => <li key={c.role}><RoleTag role={c.role} score={formatScore(c.score)} /><span>{c.reason}</span></li>)}</ul>
       </details>}
-    </section>
-
-    <section className="wb-section" aria-labelledby="wb-priority-title">
-      <h3 id="wb-priority-title" className="wb-section__title">Приоритет проверки</h3>
-      <div className="wb-priority">
-        <p className="wb-priority__value">{formatScore(node.priority_score)}</p>
-        <div className="wb-meter" role="img" aria-label={`Приоритет ${formatScore(node.priority_score)} из 1`}><i style={{transform: `scaleX(${clamp01(node.priority_score)})`}} /></div>
-        <p className="wb-priority__rank">{rank ? `№ ${rank} в очереди проверки` : 'Вне списка очереди'}</p>
-      </div>
-      <details className="wb-disclosure">
-        <summary>Из чего складывается</summary>
-        {families.length > 0 && <dl className="wb-families">{families.map(([key, value]) => <div key={key}>
-          <dt>{FAMILY_LABEL[key] ?? key}</dt>
-          <dd><span className="wb-meter wb-meter--small"><i style={{transform: `scaleX(${clamp01(value)})`}} /></span><span className="wb-mono">{formatScore(value)}</span></dd>
-        </div>)}</dl>}
-        <p className="wb-footnote">{policy.priority_description}</p>
-      </details>
     </section>
 
     <section className="wb-section" aria-labelledby="wb-flow-title">
@@ -110,16 +111,11 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
         <div><dt><Icon name="arrow-up" size={13} />Исходящие</dt><dd><strong>{formatKzt(m.out_kzt)}</strong><span>{countLabel(m.out_degree, 'получатель', 'получателя', 'получателей')} · {countLabel(m.out_tx, 'перевод', 'перевода', 'переводов')}</span></dd></div>
       </dl>
       <p className="wb-flows__meta">
-        <span>Исходящие к входящим: <span className="wb-mono">{m.pass_through === null ? 'не определено' : formatScore(m.pass_through)}</span></span>
-        <span>Связей с исходными клиентами: <span className="wb-mono">{formatInt(m.seed_in_count)} вх. · {formatInt(m.seed_out_count)} исх.</span></span>
-        {lastIn && <span>Последнее поступление {formatDate(lastIn)}{margin !== null && `, до конца периода ${countLabel(margin, 'день', 'дня', 'дней')}`}</span>}
+        <span>Отдано / получено <span className="wb-mono">{m.pass_through === null ? '—' : formatScore(m.pass_through)}</span></span>
+        <span>Связи с исходными клиентами: от них <span className="wb-mono">{formatInt(m.seed_in_count)}</span>, к ним <span className="wb-mono">{formatInt(m.seed_out_count)}</span></span>
+        {lastIn && <span>Последнее поступление {formatDate(lastIn)}</span>}
       </p>
     </section>
-
-    {limits.length > 0 && <section className="wb-section wb-section--attention" aria-labelledby="wb-limits-title">
-      <h3 id="wb-limits-title" className="wb-section__title">Границы наблюдения</h3>
-      {limits.map(limit => <p key={limit} className="wb-limit"><Icon name="alert" size={15} />{limit}</p>)}
-    </section>}
 
     <section className="wb-section" aria-labelledby="wb-paths-title">
       <h3 id="wb-paths-title" className="wb-section__title">Пути от исходных клиентов</h3>
@@ -137,9 +133,10 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <p className="wb-caveat">{REACH_CAVEAT}</p>
     </section>
 
-    <section className="wb-section" aria-labelledby="wb-next-title">
-      <h3 id="wb-next-title" className="wb-section__title">Следующий запрос данных</h3>
-      <p className="wb-next">{node.next_request}</p>
+    <section className={`wb-section${limits.length ? ' wb-section--attention' : ''}`} aria-labelledby="wb-gaps-title">
+      <h3 id="wb-gaps-title" className="wb-section__title">Пробелы и следующий запрос</h3>
+      {limits.map(limit => <p key={limit} className="wb-limit"><Icon name="alert" size={15} />{limit}</p>)}
+      <p className="wb-next"><Icon name="chevron" size={14} />{node.next_request}</p>
     </section>
 
     {cluster && <section className="wb-section" aria-labelledby="wb-cluster-title">
@@ -151,11 +148,31 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
 
     <AssistantSlot focusGid={node.gid} onSelectGid={onSelect} />
 
-    {policy.limitations.length > 0 && <details className="wb-disclosure wb-section">
-      <summary>Ограничения данных · {policy.limitations.length}</summary>
-      <ul className="wb-limitations">{policy.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul>
-    </details>}
+    <div className="wb-section wb-more-details">
+      <details className="wb-disclosure">
+        <summary>Из чего складывается приоритет</summary>
+        {families.length > 0 && <dl className="wb-families">{families.map(([key, value]) => <div key={key}>
+          <dt>{FAMILY_LABEL[key] ?? key}</dt>
+          <dd><span className="wb-meter wb-meter--small"><i style={{transform: `scaleX(${clamp01(value)})`}} /></span><span className="wb-mono">{formatScore(value)}</span></dd>
+        </div>)}</dl>}
+        <p className="wb-footnote">{policy.priority_description}</p>
+      </details>
+      {policy.limitations.length > 0 && <details className="wb-disclosure">
+        <summary>Ограничения данных · {policy.limitations.length}</summary>
+        <ul className="wb-limitations">{policy.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul>
+      </details>}
+    </div>
   </aside>;
+}
+
+/** Строка сравнения: знак и роль, полоса длиной ровно в опору, число. Равные опоры выглядят равными. */
+function CompareRow({role, score, reason, primary = false}: {role: string; score: number; reason?: string; primary?: boolean}) {
+  return <div className={`wb-compare__row${primary ? ' is-primary' : ''}`} title={reason}>
+    <span className="wb-compare__who">{primary ? 'Гипотеза' : 'Альтернатива'}</span>
+    <RoleTag role={role} />
+    <span className={`wb-bar wb-role--${role}`} aria-hidden="true"><i style={{transform: `scaleX(${clamp01(score)})`}} /></span>
+    <span className="wb-compare__score">{formatScore(score)}</span>
+  </div>;
 }
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));

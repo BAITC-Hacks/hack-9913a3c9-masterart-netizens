@@ -1,10 +1,31 @@
 /* Основания: одна колонка чтения. Разделы отделены воздухом; подробности — под раскрытием. */
-.wb-account { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "kind copy" "gid copy"; align-items: center; column-gap: 12px; }
+.wb-account { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "kind copy" "gid copy" "priority priority"; align-items: center; column-gap: 12px; }
 .wb-account__kind { grid-area: kind; margin: 0 0 4px; font-size: 12.5px; color: var(--wb-muted); }
 .wb-account__gid { grid-area: gid; margin: 0; overflow: hidden; font: 300 23px/1.25 var(--wb-mono); letter-spacing: -0.01em; text-overflow: ellipsis; }
 .wb-account .wb-copy { grid-area: copy; }
+.wb-account__priority { grid-area: priority; display: grid; grid-template-columns: auto auto minmax(40px, 1fr) auto; align-items: center; gap: 10px; margin-top: 14px; font-size: 12.5px; color: var(--wb-soft); }
+.wb-account__priority strong { font: 300 17px/1 var(--wb-mono); color: var(--wb-fg); }
+.wb-account__rank { color: var(--wb-muted); white-space: nowrap; }
 
-.wb-role { margin-top: 26px; padding-bottom: 8px; }
+.wb-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
+.wb-facts li { display: grid; align-content: start; gap: 3px; padding: 12px 12px 11px; border-radius: 12px; background: var(--wb-sunken); }
+.wb-facts strong { font: 300 21px/1.1 var(--wb-mono); color: var(--wb-fg); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.wb-facts span { font-size: 12px; line-height: 1.35; color: var(--wb-soft); }
+.wb-facts small { font-size: 11.5px; color: var(--wb-gold); }
+.wb-facts li.is-below small { color: var(--wb-muted); }
+
+.wb-compare { display: grid; gap: 8px; margin-top: 18px; }
+.wb-compare__row { display: grid; grid-template-columns: 86px minmax(0, 1fr) minmax(60px, 1.1fr) 40px; align-items: center; gap: 10px; font-size: 12.5px; }
+.wb-compare__who { font-size: 11.5px; color: var(--wb-muted); }
+.wb-compare__row.is-primary .wb-role-tag { color: var(--wb-fg); }
+.wb-bar { display: block; height: 6px; overflow: hidden; border-radius: 6px; background: var(--wb-line); }
+.wb-bar i { display: block; height: 100%; border-radius: 6px; background: var(--role); opacity: .85; transform-origin: left; transition: transform var(--wb-slow) var(--wb-ease); }
+.wb-compare__row:not(.is-primary) .wb-bar i { opacity: .5; }
+.wb-compare__score { font: 400 13px/1 var(--wb-mono); text-align: right; color: var(--wb-fg); }
+.wb-compare__note { margin: 10px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--wb-muted); }
+.wb-more-details { display: grid; gap: 2px; }
+
+.wb-role { margin-top: 28px; padding-bottom: 8px; }
 .wb-role__line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; color: var(--role); }
 .wb-role__name { margin: 0; font: 270 30px/1.1 var(--wb-display); letter-spacing: -0.02em; color: var(--wb-fg); }
 .wb-role__score { display: grid; justify-items: end; gap: 2px; margin: 0; }
@@ -74,7 +95,9 @@
 .wb-witness__who { font-size: 11.5px; color: var(--wb-muted); }
 .wb-witness__hop { display: flex; gap: 14px; margin: 6px 0 0; font-size: 12.5px; color: var(--wb-gold); font-variant-numeric: tabular-nums; }
 .wb-caveat { margin: 14px 0 0; padding-left: 12px; border-left: 2px solid var(--wb-line-strong); font-size: 12.5px; line-height: 1.5; color: var(--wb-soft); }
-.wb-next { margin: 0; font-size: 14px; line-height: 1.6; }
+.wb-next { display: flex; gap: 8px; margin: 10px 0 0; font-size: 14px; line-height: 1.55; }
+.wb-next svg { flex: none; margin-top: 4px; color: var(--wb-gold); }
+.wb-limit + .wb-next, .wb-section__title + .wb-next { margin-top: 0; }
 .wb-cluster-line { margin: 0; font-size: 12.5px; color: var(--wb-soft); font-variant-numeric: tabular-nums; }
 .wb-hypothesis { margin: 8px 0 14px; font: 400 14.5px/1.6 var(--wb-serif); }
 .wb-limitations { display: grid; gap: 8px; margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: var(--wb-soft); }
