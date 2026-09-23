@@ -27,6 +27,12 @@ UNSUPPORTED_PATTERN = re.compile(
 )
 NUMBER_TOKEN = re.compile(r"(?<![\w.])[-+]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?![\w.])")
 ID_CONTEXT = re.compile(r"(?:\bgid|сч[её]т(?:а|у|е|ом)?|\baccount)\s*[:#=]?\s*`?$", re.IGNORECASE)
+NAVIGATION_PATTERN = re.compile(r"открой|открыть|перейди|перейти|\bopen\b|\bnavigate\b|go to|покажи.*карт|show.*map", re.IGNORECASE)
+
+
+def navigation_requested(question: str) -> bool:
+    return bool(NAVIGATION_PATTERN.search(question)) and not re.search(
+        r"не\s+откры|не\s+переход|do not open|don't open|https?://", question, re.IGNORECASE)
 
 
 def _base(message: str, *, warnings: list[str] | None = None, intent: str = "help") -> dict:
@@ -75,6 +81,18 @@ def _rules(question: str, selected: list[str], mentioned: list[str], graph: Grap
     gids = mentioned or selected
     gid = gids[0] if len(gids) == 1 else None
     limit = _limit(q)
+    if navigation_requested(question):
+        if re.search(r"сохран[её]н|избранн|saved", q):
+            return "navigate_view", {"view": "saved", "gid": None, "cluster_id": None}
+        if re.search(r"очеред|queue", q):
+            return "navigate_view", {"view": "queue", "gid": None, "cluster_id": None}
+        if re.search(r"кластер|cluster", q):
+            match = re.search(r"(?:кластер(?:а|е|у)?|cluster)\s*[:#]?\s*(\d+)\b", q)
+            return "navigate_view", {"view": "cluster", "gid": None if match else gid,
+                                     "cluster_id": int(match.group(1)) if match else None}
+        if gid and (mentioned or re.search(r"сч[её]т|карт|account|\bmap\b|этот|его|\bit\b|this", q)):
+            return "navigate_view", {"view": "map" if re.search(r"карт|\bmap\b", q) else "account", "gid": gid, "cluster_id": None}
+        return "help", {"topic": "help"}
     if re.search(r"сравн|compare", q):
         return "compare_nodes", {"gids": gids}
     insight_stems = {"цикл|возврат|cycles?": "cycles", "маршрут|routes?": "routes",
@@ -173,6 +191,8 @@ def _model_query(question: str, selected: list[str], mentioned: list[str], graph
     if not isinstance(name, str):
         raise QueryError("Модель не указала имя операции.")
     args = _parse_arguments(call.get("arguments"))
+    if name == "navigate_view" and not navigation_requested(question):
+        raise QueryError("Переход по интерфейсу не запрошен пользователем.")
     allowed = set(mentioned or (selected + [g for turn in history for g in turn["result_gids"]]))
     if "gids" in args and (not isinstance(args["gids"], list)
                            or any(not isinstance(g, str) or g not in allowed for g in args["gids"])):
@@ -185,7 +205,7 @@ def _model_query(question: str, selected: list[str], mentioned: list[str], graph
     source_scope = set(mentioned or selected)
     if name == "find_convergence" and source_scope and set(args.get("sources", [])) != source_scope:
         raise QueryError("Модель изменила выбранное множество источников.")
-    if name == "get_clusters" and args.get("cluster_id") is not None:
+    if name in ("get_clusters", "navigate_view") and args.get("cluster_id") is not None:
         allowed_clusters = {graph.nodes[g]["cluster_id"] for g in allowed}
         allowed_clusters.update(int(m.group(1)) for m in re.finditer(
             r"(?:кластер(?:а|е|у)?|cluster)\s*[:#]?\s*(\d+)\b", question, re.IGNORECASE))
@@ -262,6 +282,8 @@ def answer(question, selection, analysis, *, api_key=None, model=None, transport
         if model_used is not None:
             response["model"] = model_used
             response["effort"] = chosen_effort
+        if result["kind"] == "navigation":
+            response["navigation"] = copy.deepcopy(result["facts"])
         return response
     except QueryError as exc:
         return _base(str(exc), intent="invalid")

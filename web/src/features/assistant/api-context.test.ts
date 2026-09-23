@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { askAssistant, loadAssistantOptions } from './api';
+import { askAssistant, loadAssistantOptions, parseAssistantResponse } from './api';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -32,4 +32,16 @@ it('ASSIST-18 передаёт точный контекст, модель и о
   expect(actual.effort).toBe('low');
   expect(actual.answer_rich_md).toBe(response.answer_rich_md);
   expect(actual.dataset_fingerprint).toBe(options.dataset_fingerprint);
+});
+
+it('ASSIST-19 разрешает переход только к счёту ответа и известному разделу', () => {
+  const body = { answer_md: 'Переход', nodes: ['9007199254740993'], intent: 'navigation', args: {},
+    parser: 'rules', warnings: [], citations: [], tool_trace: [] };
+  const good = { view: 'account', gid: '9007199254740993', cluster_id: null };
+  expect(parseAssistantResponse({ ...body, navigation: good }).navigation).toEqual(good);
+  for (const navigation of [{ ...good, gid: '9007199254740995' }, { ...good, gid: 9007199254740993 },
+    { ...good, view: 'https://example.test' }, { view: 'cluster', gid: null, cluster_id: null },
+    { ...good, view: 'queue' }]) {
+    expect(() => parseAssistantResponse({ ...body, navigation })).toThrow();
+  }
 });
