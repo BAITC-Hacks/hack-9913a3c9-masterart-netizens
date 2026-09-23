@@ -1,12 +1,8 @@
 import { SafeAnswer } from './SafeAnswer';
 import { parserLabel } from './api';
 import type { AssistantResponse } from './types';
-
-export function NodeLink({ gid, onSelectNode }: { gid: string; onSelectNode: (gid: string) => void }) {
-  return <button type="button" className="fa-node" onClick={() => onSelectNode(gid)} aria-label={`Открыть счёт ${gid} на карте`}>
-    <span className="fa-gid" dir="ltr">{gid}</span><span aria-hidden="true">↗</span>
-  </button>;
-}
+import { NodeLink } from './NodeLink';
+export { NodeLink } from './NodeLink';
 
 export function NodeLinks({ gids, onSelectNode }: { gids: string[]; onSelectNode: (gid: string) => void }) {
   if (gids.length === 0) return null;
@@ -24,7 +20,7 @@ export function AnswerCard({ response, onSelectNode }: { response: AssistantResp
   return <div className="fa-result" data-parser={response.parser}>
     <p className="fa-mode">{parserLabel(response)}</p>
     {response.parser === 'openai' ? <p className="fa-caption">Модель помогает разобрать вопрос. Основания ответа — результаты операций с графом.</p> : null}
-    <SafeAnswer text={response.answer_md} />
+    <SafeAnswer text={response.answer_md} gids={response.nodes} onSelectNode={onSelectNode} />
     {response.warnings.length > 0 ? <div className="fa-warnings">
       <p className="fa-section-label">Ограничения ответа</p>
       <ul>{response.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>

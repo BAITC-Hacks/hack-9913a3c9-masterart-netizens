@@ -116,4 +116,23 @@ describe('ASSIST — запросы и безопасный показ', () => {
     expect(html).toContain('Вопрос к данным');
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it('ASSIST-15 открывает только точные ссылки из результата прямо в ответе', () => {
+    const html = renderToStaticMarkup(<AnswerCard response={parseAssistantResponse(fixture({
+      answer_md: `[${NEXT}](?gid=${NEXT}) — priority\\_score; &lt;script&gt; &amp; &quot;факт&quot;`,
+    }))} onSelectNode={() => {}} />);
+    expect(html).not.toContain(`](?gid=${NEXT})`);
+    expect(html).toContain(`Открыть счёт ${NEXT} на карте`);
+    expect(html).toContain('priority_score');
+    expect(html).not.toContain('priority\\_score');
+    expect(html).toContain('&lt;script&gt; &amp; &quot;факт&quot;');
+    expect(html).not.toContain('<script>');
+  });
+  it('ASSIST-16 не превращает посторонний или подменённый gid в действие', () => {
+    const html = renderToStaticMarkup(<AnswerCard response={parseAssistantResponse(fixture({
+      answer_md: `[${FIRST}](?gid=${NEXT}) [12](?gid=12) [опасно](https://example.test)`,
+      nodes: [], citations: [],
+    }))} onSelectNode={() => {}} />);
+    expect(html).not.toMatch(/<(button|a)\s/);
+    expect(html).toContain(`[${FIRST}](?gid=${NEXT})`);
+  });
 });
