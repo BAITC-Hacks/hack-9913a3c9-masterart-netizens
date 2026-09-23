@@ -1,8 +1,52 @@
 import { SafeAnswer } from './SafeAnswer';
-import { parserLabel } from './api';
-import type { AssistantResponse } from './types';
+import { isGid, parserLabel } from './api';
+import type { AssistantResponse, JsonObject, JsonValue } from './types';
+import {ROLE_LABEL} from '../../data/format';
 import { NodeLink } from './NodeLink';
 export { NodeLink } from './NodeLink';
+
+const OPERATION_LABELS: Record<string, string> = {
+  node: 'Карточка счёта', get_node: 'Карточка счёта', explain_node: 'Карточка счёта',
+  neighbors: 'Наблюдаемые переводы', get_neighbors: 'Наблюдаемые переводы',
+  rank: 'Очередь проверки', rank_nodes: 'Очередь проверки',
+  comparison: 'Сравнение счетов', compare_nodes: 'Сравнение счетов',
+  clusters: 'Метрики кластеров', get_clusters: 'Метрики кластеров',
+  convergence: 'Схождение путей', find_convergence: 'Схождение путей',
+  temporal: 'Путь с датами', get_temporal: 'Путь с датами', gaps: 'Пробелы наблюдения', get_gaps: 'Пробелы наблюдения',
+  insights: 'Рассчитанные наблюдения', get_insights: 'Рассчитанные наблюдения',
+  navigation: 'Переход по приложению', navigate_view: 'Переход по приложению', help: 'Справка',
+  invalid: 'Проверка запроса', unsupported: 'Границы возможностей',
+};
+
+function operationLabel(name: JsonValue | undefined): string {
+  return typeof name === 'string' && typeof OPERATION_LABELS[name] === 'string' ? OPERATION_LABELS[name] : 'Запрос к графу';
+}
+
+function record(value: JsonValue): JsonObject | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null;
+}
+
+/** В интерфейсе — смысл условий и ссылки на счета. Полные доказательства остаются в ответе API. */
+function Conditions({args, allowedGids, onSelectNode}: {args: JsonObject; allowedGids: string[]; onSelectNode: (gid: string) => void}) {
+  const rows: {label: string; value?: string; gids?: string[]}[] = [];
+  if (isGid(args.gid)) rows.push({label: 'Счёт', gids: [args.gid]});
+  if (Array.isArray(args.gids)) rows.push({label: 'Сравниваемые счета', gids: args.gids.filter(isGid)});
+  if (Array.isArray(args.sources)) rows.push(args.sources.length
+    ? {label: 'Источники путей', gids: args.sources.filter(isGid)} : {label: 'Источники путей', value: 'Все исходные клиенты'});
+  if (typeof args.limit === 'number') rows.push({label: 'Показать не больше', value: String(args.limit)});
+  if (typeof args.min_sources === 'number') rows.push({label: 'Минимум источников', value: String(args.min_sources)});
+  if (typeof args.cluster_id === 'number') rows.push({label: 'Кластер', value: String(args.cluster_id)});
+  if (typeof args.role === 'string' && typeof ROLE_LABEL[args.role] === 'string') rows.push({label: 'Гипотеза роли', value: ROLE_LABEL[args.role]});
+  const modes: Record<string, string> = {static: 'Без учёта дат', strict: 'Только более поздний день', same_day: 'Возможный порядок в тот же день'};
+  if (typeof args.mode === 'string' && typeof modes[args.mode] === 'string') rows.push({label: 'Порядок дат', value: modes[args.mode]});
+  const directions: Record<string, string> = {in: 'Входящие', out: 'Исходящие', both: 'Входящие и исходящие'};
+  if (typeof args.direction === 'string' && typeof directions[args.direction] === 'string') rows.push({label: 'Переводы', value: directions[args.direction]});
+  if (!rows.length) return null;
+  return <dl>{rows.map((row, index) => <div key={index}><dt>{row.label}</dt><dd>
+    {row.gids ? row.gids.every(gid => allowedGids.includes(gid))
+      ? <NodeLinks gids={row.gids} onSelectNode={onSelectNode} /> : row.gids.join(' · ') : row.value}
+  </dd></div>)}</dl>;
+}
 
 export function NodeLinks({ gids, onSelectNode }: { gids: string[]; onSelectNode: (gid: string) => void }) {
   if (gids.length === 0) return null;
@@ -35,20 +79,21 @@ export function AnswerCard({ response, onSelectNode }: { response: AssistantResp
       <ol className="fa-citations">{response.citations.map((citation, index) => <li key={index}>
         <p>{citation.label}</p>
         <NodeLinks gids={citation.gids} onSelectNode={onSelectNode} />
-        <details className="fa-details fa-raw">
-          <summary>Данные основания {index + 1}</summary>
-          <pre>{JSON.stringify(citation.detail, null, 2)}</pre>
-        </details>
+        {typeof record(citation.detail)?.source === 'string'
+          ? <p className="fa-caption">Источник: {String(record(citation.detail)?.source).split(/[\\/]/).pop()}</p> : null}
       </li>)}</ol>
     </details> : <p className="fa-caption">Ссылки на основания для этого ответа не получены.</p>}
     <details className="fa-details fa-audit">
       <summary>Как получен ответ</summary>
       <dl><div><dt>Разбор вопроса</dt><dd>{parserLabel(response)}</dd></div>
-        <div><dt>Операция</dt><dd><code>{response.intent || 'Не определена'}</code></dd></div>
-        <div><dt>Параметры</dt><dd><pre>{JSON.stringify(response.args, null, 2)}</pre></dd></div></dl>
-      <p className="fa-section-label">Вызовы инструментов · {response.tool_trace.length}</p>
-      {response.tool_trace.length ? <ol className="fa-trace">{response.tool_trace.map((trace, index) => <li key={index}><pre>{JSON.stringify(trace, null, 2)}</pre></li>)}</ol>
-        : <p className="fa-caption">В ответе нет журнала вызовов.</p>}
+        <div><dt>Операция</dt><dd>{operationLabel(response.intent)}</dd></div></dl>
+      <Conditions args={response.args} allowedGids={response.nodes} onSelectNode={onSelectNode} />
+      {response.tool_trace.length ? <>
+        <p className="fa-section-label">Проверенные операции · {response.tool_trace.length}</p>
+        <ol className="fa-trace">{response.tool_trace.map((trace, index) => <li key={index}>
+          {operationLabel(record(trace)?.name ?? record(trace)?.tool)}
+        </li>)}</ol>
+      </> : <p className="fa-caption">Операция с графом не выполнялась.</p>}
     </details>
   </div>;
 }
