@@ -10,7 +10,7 @@
   .wb-inspector { order: 2; overflow: visible; padding: 24px 18px 40px; border: 0; border-top: 1px solid var(--wb-line); }
   .wb-rail { order: 3; overflow: visible; padding: 20px 14px 48px; border: 0; border-top: 1px solid var(--wb-line); scroll-padding-top: 0; }
   /* На узком экране список прокручивается в собственном окне под переключателем, поэтому полоса не липнет. */
-  .wb-rail__head { position: static; margin: 0; padding: 0; border: 0; background: none; }
+  .wb-rail__head { position: static; margin: 0; padding: 0; border: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
   .wb-leads, .wb-clusters { max-height: 420px; overflow: auto; }
   .wb-map { height: auto; padding: 14px 16px 10px; }
   .wb-map__viewport { flex: none; height: min(62dvh, 520px); }
