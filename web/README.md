@@ -73,8 +73,7 @@ WORKBENCH_REAL=../out/analysis.json npm test   # те же проверки на
 
 Запуск: `npm test`; на настоящем файле — `WORKBENCH_REAL=../out/analysis.json npm test`.
 Состояния экрана для браузерной проверки перечислены в `surface.manifest.json` (двенадцать состояний,
-переход панели поиска, два сценария), например:
-`node verify.mjs http://127.0.0.1:8765/ --manifest web/surface.manifest.json`.
+переход панели поиска, два сценария).
 Параметр `?analysis=/out/<файл>.json` загружает другой файл из `/out/`, чтобы показать состояние
 «файл не найден»; адреса вне `/out/` игнорируются.
 
