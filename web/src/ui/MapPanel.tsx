@@ -15,7 +15,9 @@ import type {AccountHistory} from '../app/useAccountHistory';
  * Центр рабочего места: направленная окрестность выбранного счёта. Карточка соседа открывает его,
  * свёрнутая карточка ведёт в список, где видны все участники без исключения.
  */
-export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void; history: AccountHistory}) {
+export function MapPanel({index, hood, mode, onSelect, history, mapRequest = 0}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void; history: AccountHistory;
+  /** Счётчик запросов «показать карту» (переход из ответа помощника): каждый новый номер включает карту вместо списка. */
+  mapRequest?: number}) {
   const focus = hood.focus;
   // Пояснение нужно только там, где денег в эту сторону нет совсем; встречный поток — тоже поток.
   const notes = useMemo(() => ({
@@ -31,6 +33,8 @@ export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIn
   const outlineTarget = useRef<string | null>(null);
 
   const view = useMapView({width: layout.width, height: layout.height, onEscape: () => false});
+  const {setMode: setViewMode} = view;
+  useEffect(() => { if (mapRequest > 0) setViewMode('map'); }, [mapRequest, setViewMode]);
   useLayoutEffect(() => {
     const el = view.viewport.current;
     if (!el) return;

@@ -7,7 +7,6 @@ import {MODE_HINT, MODE_LABEL, REACH_CAVEAT, ROLE_HINT, countLabel, formatDate, 
 import {Gid} from './Gid';
 import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
-import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
 import {SaveAccountButton, useReportSession} from '../features/shortlist';
 import {AccountInsights} from '../features/insights';
@@ -154,8 +153,6 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <details className="wb-disclosure"><summary>О кластере</summary><p className="wb-hypothesis">{cluster.hypothesis}</p></details>
       <button type="button" className="wb-button wb-button--quiet" onClick={() => onOpenCluster(cluster.cluster_id)}>Открыть кластер<Icon name="chevron" size={14} /></button>
     </section>}
-
-    <AssistantSlot focusGid={node.gid} onSelectGid={onSelect} />
 
     <div className="wb-section wb-more-details">
       <details className="wb-disclosure">
