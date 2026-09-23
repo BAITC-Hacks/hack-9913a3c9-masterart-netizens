@@ -6,6 +6,9 @@
 .wb-rail { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: auto; padding: 18px 14px 40px 18px; border-right: 1px solid var(--wb-line); }
 .wb-center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .wb-inspector { min-height: 0; overflow: auto; padding: 26px 30px 64px; border-left: 1px solid var(--wb-line); }
+/* Подписи для чтения с экрана (.wb-visually-hidden) позиционированы абсолютно. Без позиционированного
+   предка они выходят из прокручиваемой панели и удлиняют всю страницу, поэтому ряды и панели служат им опорой. */
+.wb-app, .wb-rail, .wb-center, .wb-inspector, .wb-outline, .wb-clusterview, .wb-lead, .wb-cluster { position: relative; }
 .wb-empty { margin: auto; max-width: 30ch; text-align: center; color: var(--wb-muted); }
 
 .wb-top { position: relative; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; min-height: 64px; padding: 10px 24px; border-bottom: 1px solid var(--wb-line); }
