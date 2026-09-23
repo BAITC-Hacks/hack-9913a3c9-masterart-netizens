@@ -1,9 +1,9 @@
-/* Средняя ширина: колонки уже. Узкий экран: одна колонка — карта, основания, затем очередь. */
+/* От 1180 px — три колонки. Уже — одна колонка: карта во всю ширину, затем основания и очередь. */
 @media (max-width: 1280px) {
   .wb-main { grid-template-columns: minmax(248px, 280px) minmax(0, 1fr) minmax(320px, 372px); }
   .wb-inspector { padding: 22px 22px 56px; }
 }
-@media (max-width: 1023px) {
+@media (max-width: 1179px) {
   .wb-app { height: auto; min-height: 100dvh; }
   .wb-main { display: flex; flex-direction: column; }
   .wb-center { order: 1; }

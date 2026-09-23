@@ -24,7 +24,7 @@ export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIn
   }), [focus, hood.mutual.length]);
   // Число колонок следует ширине окна, чтобы карточки оставались читаемыми без мелкого масштаба.
   const [viewportWidth, setViewportWidth] = useState(0);
-  const columns = viewportWidth ? Math.max(2, Math.min(5, Math.floor((viewportWidth / 0.9 - 64) / (CARD_W + 24)))) : 4;
+  const columns = viewportWidth ? Math.max(2, Math.min(5, Math.floor((viewportWidth / 0.8 - 64) / (CARD_W + 24)))) : 3;
   const layout = useMemo(() => layoutEgo(hood, {notes, columns}), [hood, notes, columns]);
   const witness = mode === 'strict' ? focus.temporal.strict_witness : mode === 'same_day' ? focus.temporal.same_day_witness : null;
   const witnessPayer = witness?.hops.at(-1)?.src ?? null;
