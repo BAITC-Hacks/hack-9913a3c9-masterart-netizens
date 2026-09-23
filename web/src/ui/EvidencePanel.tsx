@@ -37,7 +37,8 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const alt = alternatives[0];
   const rule = policy.rules.find(r => r.role === node.role);
   const counterparties = hood.payers.length + hood.recipients.length + hood.mutual.length;
-  const facts = useMemo(() => roleFacts(node, rule, counterparties), [node, rule, counterparties]);
+  const transitRule = useMemo(() => index.analysis.policy.rules.find(r => r.role === 'transit'), [index]);
+  const facts = useMemo(() => roleFacts(node, rule, counterparties, transitRule), [node, rule, counterparties, transitRule]);
   const rank = index.topRank.get(node.gid);
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');

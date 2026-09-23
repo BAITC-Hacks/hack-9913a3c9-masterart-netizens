@@ -20,9 +20,13 @@ export interface Metrics {
   in_tx: number; out_tx: number;
   seed_in_count: number; seed_out_count: number;
   pass_through: number | null;
+  /** Поля правил finance-policy/2. В файлах первой версии их нет, поэтому они необязательны. */
+  counterparties?: number;
+  forward_share?: number | null;
+  value_window_days?: number | null;
 }
 export interface Observation { outgoing_censored: boolean; warnings: string[] }
-export interface RoleAlternative { role: Role; score: number; reason: string }
+export interface RoleAlternative { role: Role; score: number; reason: string; basis?: string }
 export interface WitnessHop { src: string; dst: string; date: string; sum_kzt: number }
 export interface Witness { seed_gid: string; hops: WitnessHop[] }
 export interface Temporal {
@@ -32,7 +36,7 @@ export interface Temporal {
 }
 export interface AccountNode {
   gid: string; depth: number; is_seed: boolean;
-  role: Role; role_score: number; cluster_id: number; priority_score: number; evidence: string;
+  role: Role; role_score: number; role_basis?: string; cluster_id: number; priority_score: number; evidence: string;
   metrics: Metrics; observation: Observation; role_alternatives: RoleAlternative[];
   next_request: string; temporal: Temporal;
 }
