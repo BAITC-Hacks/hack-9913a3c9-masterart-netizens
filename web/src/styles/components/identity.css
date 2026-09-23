@@ -1,0 +1,7 @@
+/* Идентификаторы и роли: моноширинные цифры, группы — отступами, знак роли — цветом и формой. */
+.wb-gid { font-family: var(--wb-mono); font-variant-numeric: tabular-nums; letter-spacing: .01em; white-space: nowrap; }
+.wb-gid > span + span { margin-left: .34em; }
+.wb-glyph { flex: none; color: var(--role); }
+.wb-role-tag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--wb-soft); }
+.wb-role-tag__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wb-role-tag__score { font: 400 11.5px/1 var(--wb-mono); color: var(--wb-muted); }

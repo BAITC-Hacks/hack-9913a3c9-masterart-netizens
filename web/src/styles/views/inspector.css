@@ -1,0 +1,70 @@
+/* Основания по счёту: одна колонка чтения, разделы — линиями и воздухом, без плашек. */
+.wb-inspector__head { padding-bottom: 20px; border-bottom: 1px solid var(--wb-line); }
+.wb-inspector__gid { margin: 0; font: 300 24px/1.25 var(--wb-mono); letter-spacing: -0.01em; }
+.wb-inspector__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.wb-section { padding: 22px 0; border-bottom: 1px solid var(--wb-line); }
+.wb-section__title { margin: 0 0 14px; font: 400 11.5px/1.2 var(--wb-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--wb-muted); }
+.wb-section.is-attention .wb-section__title { color: var(--wb-alert); }
+
+.wb-role { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; color: var(--role); }
+.wb-role__name { margin: 0; font: 270 30px/1.1 var(--wb-display); letter-spacing: -0.02em; color: var(--wb-fg); }
+.wb-role__hint { margin: 4px 0 0; font-size: 12.5px; color: var(--wb-muted); }
+.wb-role__score { display: grid; justify-items: end; gap: 3px; margin: 0; }
+.wb-role__score span { font-size: 10.5px; letter-spacing: .04em; color: var(--wb-muted); }
+.wb-role__score strong { font: 300 22px/1 var(--wb-mono); color: var(--wb-fg); }
+.wb-evidence { margin: 16px 0 0; font: 400 16px/1.6 var(--wb-serif); color: var(--wb-fg); }
+.wb-rule { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--wb-sunken); }
+.wb-rule p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--wb-soft); }
+.wb-rule__label { margin-right: 8px; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--wb-muted); }
+.wb-thresholds { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.wb-thresholds > div { display: inline-flex; gap: 6px; padding: 2px 9px; border: 1px solid var(--wb-line); border-radius: 999px; font-size: 11.5px; }
+.wb-thresholds dt { color: var(--wb-muted); }
+.wb-thresholds dd { margin: 0; font-family: var(--wb-mono); }
+.wb-alt { margin-top: 16px; padding: 12px 14px; border: 1px dashed var(--wb-line-strong); border-radius: 12px; }
+.wb-alt__label { margin: 0 0 6px; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--wb-muted); }
+.wb-alt__head { margin: 0; }
+.wb-alt__reason { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--wb-soft); }
+.wb-candidates { display: grid; gap: 10px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+.wb-candidates li { display: grid; gap: 2px; }
+.wb-candidates li > span:last-child { color: var(--wb-muted); }
+.wb-footnote { margin: 12px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--wb-muted); }
+
+.wb-priority { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 16px; }
+.wb-priority__value { grid-row: span 2; margin: 0; font: 270 34px/1 var(--wb-display); font-variant-numeric: tabular-nums; }
+.wb-meter { height: 3px; overflow: hidden; border-radius: 3px; background: var(--wb-line); }
+.wb-meter i { display: block; height: 100%; background: var(--wb-gold-line); transform-origin: left; transition: transform var(--wb-slow) var(--wb-ease); }
+.wb-priority__rank { margin: 0; font-size: 12.5px; color: var(--wb-soft); }
+
+.wb-flows { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wb-flows thead th { padding: 0 0 6px 12px; font-weight: 400; font-size: 11.5px; color: var(--wb-muted); text-align: right; white-space: nowrap; }
+.wb-flows thead th svg { vertical-align: -2px; margin-right: 3px; }
+.wb-flows th[scope="row"] { padding: 7px 0; font-weight: 400; color: var(--wb-muted); text-align: left; border-top: 1px solid var(--wb-line); }
+.wb-flows td { padding: 7px 0 7px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; border-top: 1px solid var(--wb-line); }
+.wb-flows__ratio { margin: 12px 0 0; font-size: 13px; }
+.wb-flows__ratio strong { font-weight: 400; font-family: var(--wb-mono); }
+
+.wb-limit { display: flex; gap: 10px; margin: 0 0 8px; font-size: 13px; line-height: 1.5; }
+.wb-limit svg { flex: none; margin-top: 2px; color: var(--wb-alert); }
+
+.wb-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.wb-modes button { display: grid; align-content: start; gap: 4px; min-height: 64px; padding: 10px; border: 1px solid var(--wb-line); border-radius: 12px; background: transparent; text-align: left; cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease); }
+.wb-modes button:hover { border-color: var(--wb-line-strong); }
+.wb-modes button.is-active { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
+.wb-modes__count { font: 300 20px/1 var(--wb-mono); }
+.wb-modes__label { font-size: 11.5px; line-height: 1.3; color: var(--wb-soft); }
+.wb-modes__hint { margin: 10px 0 12px; font-size: 12.5px; line-height: 1.5; color: var(--wb-soft); }
+.wb-witness { margin: 4px 0 0; padding: 0; list-style: none; }
+.wb-witness li { position: relative; padding: 0 0 14px 26px; }
+.wb-witness li::before { content: ""; position: absolute; top: 16px; bottom: 0; left: 6px; border-left: 1px solid var(--wb-line-strong); }
+.wb-witness li:last-child { padding-bottom: 0; }
+.wb-witness li:last-child::before { display: none; }
+.wb-witness__dot { position: absolute; top: 5px; left: 1px; width: 11px; height: 11px; border: 1px solid var(--wb-gold-line); border-radius: 50%; background: var(--wb-paper); }
+.wb-witness li.is-focus .wb-witness__dot { background: var(--wb-gold-line); }
+.wb-witness__stop { display: grid; gap: 1px; font-size: 13px; }
+.wb-witness__who { font-size: 11px; color: var(--wb-muted); }
+.wb-witness__hop { display: flex; gap: 14px; margin: 6px 0 0; font-size: 12.5px; color: var(--wb-gold); font-variant-numeric: tabular-nums; }
+.wb-caveat { margin: 14px 0 0; padding-left: 12px; border-left: 2px solid var(--wb-line-strong); font-size: 12.5px; line-height: 1.5; color: var(--wb-soft); }
+.wb-next { margin: 0; font-size: 14px; line-height: 1.6; }
+.wb-cluster-line { margin: 0; font-size: 12.5px; color: var(--wb-soft); font-variant-numeric: tabular-nums; }
+.wb-hypothesis { margin: 8px 0 14px; font: 400 15px/1.6 var(--wb-serif); }
+.wb-limitations { display: grid; gap: 8px; margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: var(--wb-soft); }

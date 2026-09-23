@@ -1,0 +1,47 @@
+/* Карта окрестности. Камера и полноэкранный режим — из Command Center; бумага вместо стекла. */
+.wb-map { display: flex; flex-direction: column; min-height: 0; height: 100%; padding: 18px 24px 14px; }
+.wb-map.is-fullscreen { position: fixed; inset: 0; z-index: 50; background: var(--wb-bg); }
+.wb-map.is-fullscreen:focus-visible { outline: none; }
+.wb-map__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 16px; margin-bottom: 14px; }
+.wb-map__title h2 { margin: 0; font: 300 22px/1.2 var(--wb-display); letter-spacing: -0.015em; }
+.wb-map__title p { margin: 4px 0 0; font-size: 12.5px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
+.wb-map__cycles { display: inline-flex; align-items: center; gap: 4px; color: var(--wb-cycle); }
+.wb-map__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.wb-map__viewport { flex: 1; min-height: 320px; overflow: auto; border: 1px solid var(--wb-line); border-radius: 16px; background: var(--wb-sunken); overscroll-behavior: contain; touch-action: none; cursor: grab; }
+.wb-map__viewport.is-panning { cursor: grabbing; user-select: none; }
+.wb-map__viewport:focus-visible { outline-offset: -2px; }
+.wb-map__canvas { position: relative; }
+.wb-map__edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.wb-edge { fill: none; stroke: var(--wb-edge); stroke-linecap: round; transition: opacity var(--wb-slow) var(--wb-ease); }
+.wb-edge--inner { stroke-dasharray: 3 5; opacity: .6; }
+.wb-edge--fold { stroke-dasharray: 2 6; opacity: .55; }
+.wb-edge.is-cycle { stroke: var(--wb-cycle); }
+.wb-edge.is-witness { stroke: var(--wb-gold-line); }
+.wb-arrowhead--plain { fill: var(--wb-edge); }
+.wb-arrowhead--cycle { fill: var(--wb-cycle); }
+.wb-arrowhead--witness { fill: var(--wb-gold-line); }
+.wb-map__band { position: absolute; transform: translateX(-50%); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--wb-soft); white-space: nowrap; }
+
+.wb-card { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 14px; overflow: hidden; border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-card); color: var(--wb-fg); text-align: left; box-shadow: var(--wb-shadow-sm); }
+button.wb-card { cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease), transform var(--wb-normal) var(--wb-ease); }
+button.wb-card:hover { border-color: var(--wb-line-strong); box-shadow: var(--wb-shadow-md); transform: translateY(-1px); }
+button.wb-card:active { transform: translateY(0) scale(.99); }
+.wb-card--focus { border-color: var(--wb-gold-line); box-shadow: 0 0 0 4px var(--wb-gold-wash), var(--wb-shadow-md); }
+.wb-card.is-witness { border-color: var(--wb-gold-line); }
+.wb-card__eyebrow { margin-bottom: -2px; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--wb-gold); }
+.wb-card__role { display: flex; max-width: 100%; }
+.wb-card__missing { font-size: 12px; color: var(--wb-alert); }
+.wb-card__gid { font-size: 12.5px; }
+.wb-card__relation { max-width: 100%; overflow: hidden; font-size: 11.5px; color: var(--wb-soft); font-variant-numeric: tabular-nums; white-space: nowrap; text-overflow: ellipsis; }
+.wb-card__badges { display: flex; gap: 6px; margin-top: auto; max-width: 100%; overflow: hidden; }
+.wb-card__badges em { padding: 1px 7px; border: 1px solid var(--wb-line); border-radius: 999px; font-style: normal; font-size: 10.5px; line-height: 16px; color: var(--wb-muted); white-space: nowrap; }
+.wb-card--fold, .wb-card--note { justify-content: center; border-style: dashed; background: transparent; box-shadow: none; }
+.wb-card--fold strong { font: 300 17px/1.2 var(--wb-display); }
+.wb-card--fold span { font: 400 12.5px/1.2 var(--wb-mono); color: var(--wb-soft); }
+.wb-card--fold small { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--wb-gold); }
+.wb-card--note p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--wb-muted); }
+
+.wb-map__legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 2px 0; font-size: 11.5px; color: var(--wb-muted); }
+.wb-legend-line { display: inline-block; width: 18px; margin-right: 6px; vertical-align: middle; border-top: 1.6px solid var(--wb-edge); }
+.wb-legend-line.is-cycle { border-color: var(--wb-cycle); }
+.wb-legend-line.is-witness { border-color: var(--wb-gold-line); }

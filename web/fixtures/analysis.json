@@ -1,0 +1,5776 @@
+{
+ "schema_version": "finance-workbench/v1",
+ "fixture": {
+  "synthetic": true,
+  "label": "Синтетические данные для разработки интерфейса. Это не результат анализа выборки организаторов."
+ },
+ "summary": {
+  "n_nodes": 54,
+  "n_edges": 62,
+  "n_transactions": 63,
+  "n_seed": 10,
+  "total_kzt": 22490000,
+  "period_start": "2026-07-01",
+  "period_end": "2026-07-31",
+  "n_boundary": 6,
+  "n_isolates": 2,
+  "n_weak_components": 3,
+  "input_sha256": "d7efc5ead9d0ca2fc9254347677f6eba4035ea8ceb8ded8d12cab29dec132069"
+ },
+ "policy": {
+  "version": "fixture-0",
+  "rules": [
+   {
+    "role": "consolidator",
+    "description": "Много разных плательщиков у одного счёта.",
+    "thresholds": {
+     "min_distinct_payers": 7
+    }
+   },
+   {
+    "role": "transit",
+    "description": "Отдаёт примерно столько же, сколько получил.",
+    "thresholds": {
+     "pass_through_min": 0.8,
+     "pass_through_max": 1.2
+    }
+   },
+   {
+    "role": "distributor",
+    "description": "Много разных получателей у одного счёта.",
+    "thresholds": {
+     "min_distinct_recipients": 10
+    }
+   },
+   {
+    "role": "terminal",
+    "description": "Получает, но исходящих нет при достаточном запасе наблюдения.",
+    "thresholds": {
+     "max_depth": 3,
+     "min_observation_days": 7
+    }
+   },
+   {
+    "role": "coordinator",
+    "description": "Связывает несколько групп и исходных клиентов.",
+    "thresholds": {
+     "min_seed_payers": 2,
+     "min_groups": 3
+    }
+   },
+   {
+    "role": "peripheral",
+    "description": "Признаков других ролей не найдено.",
+    "thresholds": {}
+   }
+  ],
+  "priority_description": "Синтетика: приоритет задан вручную, чтобы показать очередь. В реальном анализе он складывается из нескольких раскрытых групп признаков.",
+  "score_description": "Опора правила — эвристическая сила признаков, а не вероятность и не вывод о виновности.",
+  "limitations": [
+   "Собраны только исходящие переводы от исходных клиентов на глубину 4 шага.",
+   "Переводы меньше 5 000 ₸ в выборку не попали.",
+   "Порядок переводов внутри одного дня неизвестен.",
+   "Полный баланс счёта по этим данным не вычисляется."
+  ]
+ },
+ "nodes": [
+  {
+   "gid": "999000001834368100",
+   "depth": 4,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.2,
+   "cluster_id": 2,
+   "priority_score": 0.277,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 45000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": true,
+    "warnings": [
+     "Исходящие не наблюдаются: счёт на границе сбора данных (4 шага от исходных клиентов)."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.2,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.1,
+     "reason": "Граница выборки: отсутствие исходящих не доказывает остановку денег."
+    }
+   ],
+   "next_request": "Расширить сбор на 5-й шаг: исходящие переводы этого счёта.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000036665284150",
+       "date": "2026-07-06",
+       "sum_kzt": 195000
+      },
+      {
+       "src": "999000036665284150",
+       "dst": "999000080535960150",
+       "date": "2026-07-08",
+       "sum_kzt": 50000
+      },
+      {
+       "src": "999000080535960150",
+       "dst": "999000001834368100",
+       "date": "2026-07-09",
+       "sum_kzt": 45000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000036665284150",
+       "date": "2026-07-06",
+       "sum_kzt": 195000
+      },
+      {
+       "src": "999000036665284150",
+       "dst": "999000080535960150",
+       "date": "2026-07-08",
+       "sum_kzt": 50000
+      },
+      {
+       "src": "999000080535960150",
+       "dst": "999000001834368100",
+       "date": "2026-07-09",
+       "sum_kzt": 45000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000007307672150",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.216,
+   "cluster_id": 1,
+   "priority_score": 0.38,
+   "evidence": "Мало связей: 0 вх., 3 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 3,
+    "in_kzt": 0,
+    "out_kzt": 1610000,
+    "in_tx": 0,
+    "out_tx": 3,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.216,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000007779887100",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.71,
+   "cluster_id": 1,
+   "priority_score": 0.51,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 400000,
+    "out_kzt": 390000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.975
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.71,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000093905878150",
+     "hops": [
+      {
+       "src": "999000093905878150",
+       "dst": "999000007779887100",
+       "date": "2026-07-02",
+       "sum_kzt": 400000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000093905878150",
+     "hops": [
+      {
+       "src": "999000093905878150",
+       "dst": "999000007779887100",
+       "date": "2026-07-02",
+       "sum_kzt": 400000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000009264540100",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.83,
+   "cluster_id": 3,
+   "priority_score": 0.78,
+   "evidence": "Получил 1,0 млн ₸ от 2 плательщиков и через 1 день отдал 99% одному получателю.",
+   "metrics": {
+    "in_degree": 2,
+    "out_degree": 1,
+    "in_kzt": 1000000,
+    "out_kzt": 990000,
+    "in_tx": 2,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.99
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.83,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "consolidator",
+     "score": 0.3,
+     "reason": "Только 2 плательщика — ниже порога."
+    }
+   ],
+   "next_request": "Запросить назначение платежа A → B от 4 июля.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000010141181150",
+   "depth": 3,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.74,
+   "cluster_id": 5,
+   "priority_score": 0.6,
+   "evidence": "Цепочка из 3 переводов в один день, 16 июля; отдал 98% полученного.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 2,
+    "in_kzt": 290000,
+    "out_kzt": 285000,
+    "in_tx": 1,
+    "out_tx": 2,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.983
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.74,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.2,
+     "reason": "Мало переводов."
+    }
+   ],
+   "next_request": "Запросить время переводов 16 июля, чтобы установить порядок внутри дня.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [
+     "999000086523547100"
+    ],
+    "strict_witness": null,
+    "same_day_witness": {
+     "seed_gid": "999000086523547100",
+     "hops": [
+      {
+       "src": "999000086523547100",
+       "dst": "999000088683509100",
+       "date": "2026-07-16",
+       "sum_kzt": 300000
+      },
+      {
+       "src": "999000088683509100",
+       "dst": "999000031948661150",
+       "date": "2026-07-16",
+       "sum_kzt": 295000
+      },
+      {
+       "src": "999000031948661150",
+       "dst": "999000010141181150",
+       "date": "2026-07-16",
+       "sum_kzt": 290000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000010856381100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.235,
+   "cluster_id": 2,
+   "priority_score": 0.276,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 255000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.235,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000010856381100",
+       "date": "2026-07-06",
+       "sum_kzt": 255000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000010856381100",
+       "date": "2026-07-06",
+       "sum_kzt": 255000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000011608660100",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.58,
+   "cluster_id": 4,
+   "priority_score": 0.8,
+   "evidence": "Отдаёт 72% полученного; есть возвратные потоки U ↔ G и цикл U → V → X → U.",
+   "metrics": {
+    "in_degree": 3,
+    "out_degree": 2,
+    "in_kzt": 665000,
+    "out_kzt": 290000,
+    "in_tx": 3,
+    "out_tx": 2,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.436
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.58,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "coordinator",
+     "score": 0.41,
+     "reason": "Участвует в двух циклах."
+    }
+   ],
+   "next_request": "Запросить выписки U, V, X, G за июль целиком, включая мелкие переводы.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000048549985150"
+    ],
+    "same_day_seed_ids": [
+     "999000048549985150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000011655640150",
+   "depth": 4,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.217,
+   "cluster_id": 3,
+   "priority_score": 0.201,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 230000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": true,
+    "warnings": [
+     "Исходящие не наблюдаются: счёт на границе сбора данных (4 шага от исходных клиентов)."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.217,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.1,
+     "reason": "Граница выборки: отсутствие исходящих не доказывает остановку денег."
+    }
+   ],
+   "next_request": "Расширить сбор на 5-й шаг: исходящие переводы этого счёта.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000011655640150",
+       "date": "2026-07-07",
+       "sum_kzt": 230000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000011655640150",
+       "date": "2026-07-07",
+       "sum_kzt": 230000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000012574052150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.74,
+   "cluster_id": 1,
+   "priority_score": 0.54,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 220000,
+    "out_kzt": 215000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.977
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.74,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000073192834100"
+    ],
+    "same_day_seed_ids": [
+     "999000073192834100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000073192834100",
+     "hops": [
+      {
+       "src": "999000073192834100",
+       "dst": "999000012574052150",
+       "date": "2026-07-03",
+       "sum_kzt": 220000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000073192834100",
+     "hops": [
+      {
+       "src": "999000073192834100",
+       "dst": "999000012574052150",
+       "date": "2026-07-03",
+       "sum_kzt": 220000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000012630796150",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.05,
+   "cluster_id": 6,
+   "priority_score": 0.336,
+   "evidence": "Исходный клиент без переводов в выборке.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 0,
+    "in_kzt": 0,
+    "out_kzt": 0,
+    "in_tx": 0,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный.",
+     "В выборке нет ни одного перевода с участием этого счёта."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.05,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000013026881150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.72,
+   "cluster_id": 1,
+   "priority_score": 0.52,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 2,
+    "out_degree": 1,
+    "in_kzt": 500000,
+    "out_kzt": 340000,
+    "in_tx": 2,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.68
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.72,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 2,
+    "strict_seed_count": 2,
+    "same_day_seed_count": 2,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000013026881150",
+       "date": "2026-07-02",
+       "sum_kzt": 150000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000013026881150",
+       "date": "2026-07-02",
+       "sum_kzt": 150000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000014269697100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.156,
+   "cluster_id": 2,
+   "priority_score": 0.297,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 135000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.156,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000014269697100",
+       "date": "2026-07-06",
+       "sum_kzt": 135000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000014269697100",
+       "date": "2026-07-06",
+       "sum_kzt": 135000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000014724797100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.206,
+   "cluster_id": 2,
+   "priority_score": 0.223,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 75000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.206,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000014724797100",
+       "date": "2026-07-06",
+       "sum_kzt": 75000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000014724797100",
+       "date": "2026-07-06",
+       "sum_kzt": 75000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000015123665150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.8,
+   "cluster_id": 3,
+   "priority_score": 0.74,
+   "evidence": "Отдал 99% полученного двум получателям через 2 дня после поступления.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 2,
+    "in_kzt": 990000,
+    "out_kzt": 980000,
+    "in_tx": 1,
+    "out_tx": 2,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.99
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.8,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "distributor",
+     "score": 0.4,
+     "reason": "2 получателя — ниже порога."
+    }
+   ],
+   "next_request": "Запросить сведения о получателях F и K.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000018118622100",
+   "depth": 4,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.244,
+   "cluster_id": 3,
+   "priority_score": 0.299,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 240000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": true,
+    "warnings": [
+     "Исходящие не наблюдаются: счёт на границе сбора данных (4 шага от исходных клиентов)."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.244,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.1,
+     "reason": "Граница выборки: отсутствие исходящих не доказывает остановку денег."
+    }
+   ],
+   "next_request": "Расширить сбор на 5-й шаг: исходящие переводы этого счёта.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000018118622100",
+       "date": "2026-07-07",
+       "sum_kzt": 240000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000018118622100",
+       "date": "2026-07-07",
+       "sum_kzt": 240000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000020548176150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.159,
+   "cluster_id": 2,
+   "priority_score": 0.186,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 150000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.159,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000020548176150",
+       "date": "2026-07-06",
+       "sum_kzt": 150000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000020548176150",
+       "date": "2026-07-06",
+       "sum_kzt": 150000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000021001565150",
+   "depth": 4,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.201,
+   "cluster_id": 5,
+   "priority_score": 0.13,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 280000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": true,
+    "warnings": [
+     "Исходящие не наблюдаются: счёт на границе сбора данных (4 шага от исходных клиентов)."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.201,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.1,
+     "reason": "Граница выборки: отсутствие исходящих не доказывает остановку денег."
+    }
+   ],
+   "next_request": "Расширить сбор на 5-й шаг: исходящие переводы этого счёта.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [
+     "999000086523547100"
+    ],
+    "strict_witness": null,
+    "same_day_witness": {
+     "seed_gid": "999000086523547100",
+     "hops": [
+      {
+       "src": "999000086523547100",
+       "dst": "999000088683509100",
+       "date": "2026-07-16",
+       "sum_kzt": 300000
+      },
+      {
+       "src": "999000088683509100",
+       "dst": "999000031948661150",
+       "date": "2026-07-16",
+       "sum_kzt": 295000
+      },
+      {
+       "src": "999000031948661150",
+       "dst": "999000010141181150",
+       "date": "2026-07-16",
+       "sum_kzt": 290000
+      },
+      {
+       "src": "999000010141181150",
+       "dst": "999000021001565150",
+       "date": "2026-07-18",
+       "sum_kzt": 280000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000021456712100",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.185,
+   "cluster_id": 1,
+   "priority_score": 0.404,
+   "evidence": "Мало связей: 0 вх., 2 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 2,
+    "in_kzt": 0,
+    "out_kzt": 730000,
+    "in_tx": 0,
+    "out_tx": 2,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.185,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000028423905150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.238,
+   "cluster_id": 2,
+   "priority_score": 0.18,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 240000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.238,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000028423905150",
+       "date": "2026-07-06",
+       "sum_kzt": 240000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000028423905150",
+       "date": "2026-07-06",
+       "sum_kzt": 240000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000031948661150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.201,
+   "cluster_id": 5,
+   "priority_score": 0.141,
+   "evidence": "Мало связей: 1 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 295000,
+    "out_kzt": 290000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.983
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.201,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [
+     "999000086523547100"
+    ],
+    "strict_witness": null,
+    "same_day_witness": {
+     "seed_gid": "999000086523547100",
+     "hops": [
+      {
+       "src": "999000086523547100",
+       "dst": "999000088683509100",
+       "date": "2026-07-16",
+       "sum_kzt": 300000
+      },
+      {
+       "src": "999000088683509100",
+       "dst": "999000031948661150",
+       "date": "2026-07-16",
+       "sum_kzt": 295000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000033169200100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.223,
+   "cluster_id": 2,
+   "priority_score": 0.113,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 165000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.223,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000033169200100",
+       "date": "2026-07-06",
+       "sum_kzt": 165000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000033169200100",
+       "date": "2026-07-06",
+       "sum_kzt": 165000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000036665284150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.2,
+   "cluster_id": 2,
+   "priority_score": 0.253,
+   "evidence": "Мало связей: 1 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 195000,
+    "out_kzt": 50000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.256
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.2,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000036665284150",
+       "date": "2026-07-06",
+       "sum_kzt": 195000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000036665284150",
+       "date": "2026-07-06",
+       "sum_kzt": 195000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000039162790150",
+   "depth": 4,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.157,
+   "cluster_id": 3,
+   "priority_score": 0.195,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 220000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": true,
+    "warnings": [
+     "Исходящие не наблюдаются: счёт на границе сбора данных (4 шага от исходных клиентов)."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.157,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.1,
+     "reason": "Граница выборки: отсутствие исходящих не доказывает остановку денег."
+    }
+   ],
+   "next_request": "Расширить сбор на 5-й шаг: исходящие переводы этого счёта.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000039162790150",
+       "date": "2026-07-08",
+       "sum_kzt": 220000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000039162790150",
+       "date": "2026-07-08",
+       "sum_kzt": 220000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000040935429100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.218,
+   "cluster_id": 2,
+   "priority_score": 0.239,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 180000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.218,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000040935429100",
+       "date": "2026-07-06",
+       "sum_kzt": 180000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000040935429100",
+       "date": "2026-07-06",
+       "sum_kzt": 180000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000041410496100",
+   "depth": 1,
+   "is_seed": false,
+   "role": "coordinator",
+   "role_score": 0.62,
+   "cluster_id": 1,
+   "priority_score": 0.88,
+   "evidence": "Получает от 2 исходных клиентов и платит в 3 разные группы в течение 2 дней.",
+   "metrics": {
+    "in_degree": 2,
+    "out_degree": 3,
+    "in_kzt": 1600000,
+    "out_kzt": 1430000,
+    "in_tx": 2,
+    "out_tx": 3,
+    "seed_in_count": 2,
+    "seed_out_count": 0,
+    "pass_through": 0.894
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "coordinator",
+     "score": 0.62,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "distributor",
+     "score": 0.48,
+     "reason": "3 получателя — ниже порога распределителя."
+    }
+   ],
+   "next_request": "Запросить связи Q с исходными клиентами вне банка и назначение платежей.",
+   "temporal": {
+    "static_seed_count": 2,
+    "strict_seed_count": 2,
+    "same_day_seed_count": 2,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000041522645100",
+   "depth": 3,
+   "is_seed": false,
+   "role": "terminal",
+   "role_score": 0.71,
+   "cluster_id": 1,
+   "priority_score": 0.64,
+   "evidence": "Получил 3,04 млн ₸ от одного отправителя; исходящих до 31 июля нет, запас наблюдения 16 дней.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 3040000,
+    "out_kzt": 0,
+    "in_tx": 2,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "terminal",
+     "score": 0.71,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.3,
+     "reason": "Один плательщик."
+    }
+   ],
+   "next_request": "Запросить исходящие переводы T1 вне банка и снятие наличных за август.",
+   "temporal": {
+    "static_seed_count": 4,
+    "strict_seed_count": 4,
+    "same_day_seed_count": 4,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000021456712100",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000021456712100",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000013026881150",
+       "date": "2026-07-02",
+       "sum_kzt": 150000
+      },
+      {
+       "src": "999000013026881150",
+       "dst": "999000098539721150",
+       "date": "2026-07-08",
+       "sum_kzt": 340000
+      },
+      {
+       "src": "999000098539721150",
+       "dst": "999000041522645100",
+       "date": "2026-07-14",
+       "sum_kzt": 3000000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000013026881150",
+       "date": "2026-07-02",
+       "sum_kzt": 150000
+      },
+      {
+       "src": "999000013026881150",
+       "dst": "999000098539721150",
+       "date": "2026-07-08",
+       "sum_kzt": 340000
+      },
+      {
+       "src": "999000098539721150",
+       "dst": "999000041522645100",
+       "date": "2026-07-14",
+       "sum_kzt": 3000000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000044252038150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.204,
+   "cluster_id": 2,
+   "priority_score": 0.102,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 105000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.204,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000044252038150",
+       "date": "2026-07-06",
+       "sum_kzt": 105000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000044252038150",
+       "date": "2026-07-06",
+       "sum_kzt": 105000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000045712506150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.226,
+   "cluster_id": 2,
+   "priority_score": 0.269,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 120000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.226,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000045712506150",
+       "date": "2026-07-06",
+       "sum_kzt": 120000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000045712506150",
+       "date": "2026-07-06",
+       "sum_kzt": 120000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000048549985150",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.198,
+   "cluster_id": 4,
+   "priority_score": 0.348,
+   "evidence": "Мало связей: 0 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 1,
+    "in_kzt": 0,
+    "out_kzt": 400000,
+    "in_tx": 0,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.198,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000051176869150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "distributor",
+   "role_score": 0.9,
+   "cluster_id": 2,
+   "priority_score": 0.9,
+   "evidence": "15 получателей за один день, 1,9 млн ₸ из 2,9 млн полученных; суммы похожи по размеру.",
+   "metrics": {
+    "in_degree": 2,
+    "out_degree": 15,
+    "in_kzt": 2900000,
+    "out_kzt": 2325000,
+    "in_tx": 2,
+    "out_tx": 15,
+    "seed_in_count": 1,
+    "seed_out_count": 1,
+    "pass_through": 0.802
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "distributor",
+     "score": 0.9,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "coordinator",
+     "score": 0.35,
+     "reason": "Получает также от связующего узла Q."
+    }
+   ],
+   "next_request": "Запросить сведения о получателях и назначение переводов 6 июля.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000099326980100",
+     "hops": [
+      {
+       "src": "999000099326980100",
+       "dst": "999000051176869150",
+       "date": "2026-07-01",
+       "sum_kzt": 2100000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000099326980100",
+     "hops": [
+      {
+       "src": "999000099326980100",
+       "dst": "999000051176869150",
+       "date": "2026-07-01",
+       "sum_kzt": 2100000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000051722615100",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.05,
+   "cluster_id": 7,
+   "priority_score": 0.355,
+   "evidence": "Исходный клиент без переводов в выборке.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 0,
+    "in_kzt": 0,
+    "out_kzt": 0,
+    "in_tx": 0,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный.",
+     "В выборке нет ни одного перевода с участием этого счёта."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.05,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000053967368150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.78,
+   "cluster_id": 1,
+   "priority_score": 0.58,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 450000,
+    "out_kzt": 440000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.978
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.78,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000021456712100"
+    ],
+    "same_day_seed_ids": [
+     "999000021456712100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000021456712100",
+     "hops": [
+      {
+       "src": "999000021456712100",
+       "dst": "999000053967368150",
+       "date": "2026-07-20",
+       "sum_kzt": 450000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000021456712100",
+     "hops": [
+      {
+       "src": "999000021456712100",
+       "dst": "999000053967368150",
+       "date": "2026-07-20",
+       "sum_kzt": 450000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000055588841150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.208,
+   "cluster_id": 2,
+   "priority_score": 0.256,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 90000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.208,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000055588841150",
+       "date": "2026-07-06",
+       "sum_kzt": 90000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000055588841150",
+       "date": "2026-07-06",
+       "sum_kzt": 90000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000062649869150",
+   "depth": 3,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.66,
+   "cluster_id": 3,
+   "priority_score": 0.7,
+   "evidence": "Отдал 99% полученного; все получатели на границе выборки.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 4,
+    "in_kzt": 700000,
+    "out_kzt": 790000,
+    "in_tx": 1,
+    "out_tx": 4,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 1.129
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.66,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "distributor",
+     "score": 0.52,
+     "reason": "4 получателя, у всех исходящие не наблюдаются."
+    }
+   ],
+   "next_request": "Расширить сбор на 5-й шаг для получателей F.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000066946744150",
+   "depth": 3,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.213,
+   "cluster_id": 3,
+   "priority_score": 0.3,
+   "evidence": "Мало связей: 1 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 280000,
+    "out_kzt": 60000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.214
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.213,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000066946744150",
+       "date": "2026-07-06",
+       "sum_kzt": 280000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000066946744150",
+       "date": "2026-07-06",
+       "sum_kzt": 280000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000071095466100",
+   "depth": 3,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.23,
+   "cluster_id": 4,
+   "priority_score": 0.228,
+   "evidence": "Мало связей: 1 вх., 2 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 2,
+    "in_kzt": 190000,
+    "out_kzt": 220000,
+    "in_tx": 1,
+    "out_tx": 2,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 1.158
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.23,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000048549985150"
+    ],
+    "same_day_seed_ids": [
+     "999000048549985150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      },
+      {
+       "src": "999000011608660100",
+       "dst": "999000099262809100",
+       "date": "2026-07-04",
+       "sum_kzt": 200000
+      },
+      {
+       "src": "999000099262809100",
+       "dst": "999000071095466100",
+       "date": "2026-07-05",
+       "sum_kzt": 190000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      },
+      {
+       "src": "999000011608660100",
+       "dst": "999000099262809100",
+       "date": "2026-07-04",
+       "sum_kzt": 200000
+      },
+      {
+       "src": "999000099262809100",
+       "dst": "999000071095466100",
+       "date": "2026-07-05",
+       "sum_kzt": 190000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000071203982150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.75,
+   "cluster_id": 1,
+   "priority_score": 0.55,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 300000,
+    "out_kzt": 295000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.983
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.75,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000007307672150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000071203982150",
+       "date": "2026-07-04",
+       "sum_kzt": 300000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000071203982150",
+       "date": "2026-07-04",
+       "sum_kzt": 300000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000072757780150",
+   "depth": 4,
+   "is_seed": false,
+   "role": "consolidator",
+   "role_score": 0.44,
+   "cluster_id": 3,
+   "priority_score": 0.66,
+   "evidence": "5 разных плательщиков; исходящие не наблюдаются — граница выборки.",
+   "metrics": {
+    "in_degree": 5,
+    "out_degree": 0,
+    "in_kzt": 250000,
+    "out_kzt": 0,
+    "in_tx": 5,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": true,
+    "warnings": [
+     "Исходящие не наблюдаются: счёт на границе сбора данных (4 шага от исходных клиентов)."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "consolidator",
+     "score": 0.44,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.4,
+     "reason": "Небольшие суммы; роль нельзя уточнить без исходящих."
+    }
+   ],
+   "next_request": "Расширить сбор: исходящие переводы H4 за июль–август.",
+   "temporal": {
+    "static_seed_count": 6,
+    "strict_seed_count": 5,
+    "same_day_seed_count": 6,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000048549985150",
+     "999000073192834100",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000048549985150",
+     "999000073192834100",
+     "999000086523547100",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000072757780150",
+       "date": "2026-07-08",
+       "sum_kzt": 100000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000009264540100",
+       "date": "2026-07-03",
+       "sum_kzt": 480000
+      },
+      {
+       "src": "999000009264540100",
+       "dst": "999000015123665150",
+       "date": "2026-07-04",
+       "sum_kzt": 990000
+      },
+      {
+       "src": "999000015123665150",
+       "dst": "999000062649869150",
+       "date": "2026-07-06",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000062649869150",
+       "dst": "999000072757780150",
+       "date": "2026-07-08",
+       "sum_kzt": 100000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000073192834100",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.217,
+   "cluster_id": 1,
+   "priority_score": 0.351,
+   "evidence": "Мало связей: 0 вх., 3 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 3,
+    "in_kzt": 0,
+    "out_kzt": 1240000,
+    "in_tx": 0,
+    "out_tx": 3,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.217,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000074183100100",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.73,
+   "cluster_id": 1,
+   "priority_score": 0.53,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 500000,
+    "out_kzt": 495000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.99
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.73,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000073192834100"
+    ],
+    "same_day_seed_ids": [
+     "999000073192834100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000073192834100",
+     "hops": [
+      {
+       "src": "999000073192834100",
+       "dst": "999000074183100100",
+       "date": "2026-07-03",
+       "sum_kzt": 500000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000073192834100",
+     "hops": [
+      {
+       "src": "999000073192834100",
+       "dst": "999000074183100100",
+       "date": "2026-07-03",
+       "sum_kzt": 500000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000074911981100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.211,
+   "cluster_id": 2,
+   "priority_score": 0.265,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 60000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.211,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000074911981100",
+       "date": "2026-07-06",
+       "sum_kzt": 60000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000074911981100",
+       "date": "2026-07-06",
+       "sum_kzt": 60000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000077815210150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.229,
+   "cluster_id": 2,
+   "priority_score": 0.135,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 210000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.229,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000077815210150",
+       "date": "2026-07-06",
+       "sum_kzt": 210000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000077815210150",
+       "date": "2026-07-06",
+       "sum_kzt": 210000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000080535960150",
+   "depth": 3,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.6,
+   "cluster_id": 2,
+   "priority_score": 0.4,
+   "evidence": "Отдал 90% полученного на следующий день.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 2,
+    "in_kzt": 50000,
+    "out_kzt": 90000,
+    "in_tx": 1,
+    "out_tx": 2,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 1.8
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.6,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.35,
+     "reason": "Малые суммы."
+    }
+   ],
+   "next_request": "Уточнить назначение платежа W1 → Z1.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000036665284150",
+       "date": "2026-07-06",
+       "sum_kzt": 195000
+      },
+      {
+       "src": "999000036665284150",
+       "dst": "999000080535960150",
+       "date": "2026-07-08",
+       "sum_kzt": 50000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000036665284150",
+       "date": "2026-07-06",
+       "sum_kzt": 195000
+      },
+      {
+       "src": "999000036665284150",
+       "dst": "999000080535960150",
+       "date": "2026-07-08",
+       "sum_kzt": 50000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000081457069100",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.214,
+   "cluster_id": 2,
+   "priority_score": 0.351,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 120000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.214,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000081457069100",
+       "date": "2026-07-06",
+       "sum_kzt": 120000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000081457069100",
+       "date": "2026-07-06",
+       "sum_kzt": 120000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000082163512150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.76,
+   "cluster_id": 1,
+   "priority_score": 0.56,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 610000,
+    "out_kzt": 600000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.984
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.76,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000007307672150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000082163512150",
+       "date": "2026-07-04",
+       "sum_kzt": 610000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000082163512150",
+       "date": "2026-07-04",
+       "sum_kzt": 610000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000086523547100",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.242,
+   "cluster_id": 5,
+   "priority_score": 0.406,
+   "evidence": "Мало связей: 0 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 1,
+    "in_kzt": 0,
+    "out_kzt": 300000,
+    "in_tx": 0,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.242,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000088683509100",
+   "depth": 1,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.243,
+   "cluster_id": 5,
+   "priority_score": 0.158,
+   "evidence": "Мало связей: 1 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 300000,
+    "out_kzt": 295000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.983
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.243,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000086523547100"
+    ],
+    "same_day_seed_ids": [
+     "999000086523547100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000086523547100",
+     "hops": [
+      {
+       "src": "999000086523547100",
+       "dst": "999000088683509100",
+       "date": "2026-07-16",
+       "sum_kzt": 300000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000086523547100",
+     "hops": [
+      {
+       "src": "999000086523547100",
+       "dst": "999000088683509100",
+       "date": "2026-07-16",
+       "sum_kzt": 300000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000088920009150",
+   "depth": 1,
+   "is_seed": false,
+   "role": "transit",
+   "role_score": 0.77,
+   "cluster_id": 1,
+   "priority_score": 0.57,
+   "evidence": "Отдал 97–99% полученного одному получателю C.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 280000,
+    "out_kzt": 275000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 1,
+    "seed_out_count": 0,
+    "pass_through": 0.982
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "transit",
+     "score": 0.77,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "peripheral",
+     "score": 0.25,
+     "reason": "Один получатель и один плательщик."
+    }
+   ],
+   "next_request": "Запросить назначение платежа в C.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000021456712100"
+    ],
+    "same_day_seed_ids": [
+     "999000021456712100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000021456712100",
+     "hops": [
+      {
+       "src": "999000021456712100",
+       "dst": "999000088920009150",
+       "date": "2026-07-05",
+       "sum_kzt": 280000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000021456712100",
+     "hops": [
+      {
+       "src": "999000021456712100",
+       "dst": "999000088920009150",
+       "date": "2026-07-05",
+       "sum_kzt": 280000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000093905878150",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.226,
+   "cluster_id": 1,
+   "priority_score": 0.436,
+   "evidence": "Мало связей: 0 вх., 3 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 3,
+    "in_kzt": 0,
+    "out_kzt": 1650000,
+    "in_tx": 0,
+    "out_tx": 3,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.226,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  },
+  {
+   "gid": "999000094188499150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.151,
+   "cluster_id": 4,
+   "priority_score": 0.137,
+   "evidence": "Мало связей: 1 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 90000,
+    "out_kzt": 85000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.944
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.151,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000048549985150"
+    ],
+    "same_day_seed_ids": [
+     "999000048549985150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      },
+      {
+       "src": "999000011608660100",
+       "dst": "999000094188499150",
+       "date": "2026-07-06",
+       "sum_kzt": 90000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      },
+      {
+       "src": "999000011608660100",
+       "dst": "999000094188499150",
+       "date": "2026-07-06",
+       "sum_kzt": 90000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000098426938150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.224,
+   "cluster_id": 2,
+   "priority_score": 0.188,
+   "evidence": "Мало связей: 1 вх., 0 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 0,
+    "in_kzt": 225000,
+    "out_kzt": 0,
+    "in_tx": 1,
+    "out_tx": 0,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.224,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 3,
+    "strict_seed_count": 3,
+    "same_day_seed_count": 3,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000093905878150",
+     "999000099326980100"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000098426938150",
+       "date": "2026-07-06",
+       "sum_kzt": 225000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000051176869150",
+       "date": "2026-07-02",
+       "sum_kzt": 800000
+      },
+      {
+       "src": "999000051176869150",
+       "dst": "999000098426938150",
+       "date": "2026-07-06",
+       "sum_kzt": 225000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000098539721150",
+   "depth": 2,
+   "is_seed": false,
+   "role": "consolidator",
+   "role_score": 0.86,
+   "cluster_id": 1,
+   "priority_score": 0.93,
+   "evidence": "8 разных плательщиков за 5 дней, 3,05 млн ₸; 99% полученного ушло одному получателю через 2–3 дня.",
+   "metrics": {
+    "in_degree": 8,
+    "out_degree": 1,
+    "in_kzt": 3050000,
+    "out_kzt": 3040000,
+    "in_tx": 8,
+    "out_tx": 2,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.997
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "consolidator",
+     "score": 0.86,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "transit",
+     "score": 0.55,
+     "reason": "Почти вся сумма сразу уходит дальше одним переводом."
+    }
+   ],
+   "next_request": "Запросить назначение платежей от 8 плательщиков и входящие переводы C за июнь.",
+   "temporal": {
+    "static_seed_count": 4,
+    "strict_seed_count": 4,
+    "same_day_seed_count": 4,
+    "strict_seed_ids": [
+     "999000007307672150",
+     "999000021456712100",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "same_day_seed_ids": [
+     "999000007307672150",
+     "999000021456712100",
+     "999000073192834100",
+     "999000093905878150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000013026881150",
+       "date": "2026-07-02",
+       "sum_kzt": 150000
+      },
+      {
+       "src": "999000013026881150",
+       "dst": "999000098539721150",
+       "date": "2026-07-08",
+       "sum_kzt": 340000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000007307672150",
+     "hops": [
+      {
+       "src": "999000007307672150",
+       "dst": "999000041410496100",
+       "date": "2026-07-01",
+       "sum_kzt": 700000
+      },
+      {
+       "src": "999000041410496100",
+       "dst": "999000013026881150",
+       "date": "2026-07-02",
+       "sum_kzt": 150000
+      },
+      {
+       "src": "999000013026881150",
+       "dst": "999000098539721150",
+       "date": "2026-07-08",
+       "sum_kzt": 340000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000099262809100",
+   "depth": 2,
+   "is_seed": false,
+   "role": "peripheral",
+   "role_score": 0.218,
+   "cluster_id": 4,
+   "priority_score": 0.242,
+   "evidence": "Мало связей: 1 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 1,
+    "out_degree": 1,
+    "in_kzt": 200000,
+    "out_kzt": 190000,
+    "in_tx": 1,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": 0.95
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": []
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.218,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 1,
+    "strict_seed_count": 1,
+    "same_day_seed_count": 1,
+    "strict_seed_ids": [
+     "999000048549985150"
+    ],
+    "same_day_seed_ids": [
+     "999000048549985150"
+    ],
+    "strict_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      },
+      {
+       "src": "999000011608660100",
+       "dst": "999000099262809100",
+       "date": "2026-07-04",
+       "sum_kzt": 200000
+      }
+     ]
+    },
+    "same_day_witness": {
+     "seed_gid": "999000048549985150",
+     "hops": [
+      {
+       "src": "999000048549985150",
+       "dst": "999000011608660100",
+       "date": "2026-07-03",
+       "sum_kzt": 400000
+      },
+      {
+       "src": "999000011608660100",
+       "dst": "999000099262809100",
+       "date": "2026-07-04",
+       "sum_kzt": 200000
+      }
+     ]
+    }
+   }
+  },
+  {
+   "gid": "999000099326980100",
+   "depth": 0,
+   "is_seed": true,
+   "role": "peripheral",
+   "role_score": 0.193,
+   "cluster_id": 2,
+   "priority_score": 0.425,
+   "evidence": "Мало связей: 0 вх., 1 исх.; выраженных признаков роли нет.",
+   "metrics": {
+    "in_degree": 0,
+    "out_degree": 1,
+    "in_kzt": 0,
+    "out_kzt": 2100000,
+    "in_tx": 0,
+    "out_tx": 1,
+    "seed_in_count": 0,
+    "seed_out_count": 0,
+    "pass_through": null
+   },
+   "observation": {
+    "outgoing_censored": false,
+    "warnings": [
+     "Входящие переводы исходного клиента из-за пределов выборки не видны; баланс неполный."
+    ]
+   },
+   "role_alternatives": [
+    {
+     "role": "peripheral",
+     "score": 0.193,
+     "reason": "Основная гипотеза."
+    },
+    {
+     "role": "terminal",
+     "score": 0.12,
+     "reason": "Мало исходящих."
+    }
+   ],
+   "next_request": "Дополнительный запрос не требуется, пока нет других признаков.",
+   "temporal": {
+    "static_seed_count": 0,
+    "strict_seed_count": 0,
+    "same_day_seed_count": 0,
+    "strict_seed_ids": [],
+    "same_day_seed_ids": [],
+    "strict_witness": null,
+    "same_day_witness": null
+   }
+  }
+ ],
+ "edges": [
+  {
+   "src": "999000007307672150",
+   "dst": "999000041410496100",
+   "sum_kzt": 700000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000007307672150",
+   "dst": "999000071203982150",
+   "sum_kzt": 300000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000007307672150",
+   "dst": "999000082163512150",
+   "sum_kzt": 610000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000007779887100",
+   "dst": "999000098539721150",
+   "sum_kzt": 390000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000009264540100",
+   "dst": "999000015123665150",
+   "sum_kzt": 990000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000010141181150",
+   "dst": "999000021001565150",
+   "sum_kzt": 280000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000010141181150",
+   "dst": "999000072757780150",
+   "sum_kzt": 5000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000011608660100",
+   "dst": "999000094188499150",
+   "sum_kzt": 90000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000011608660100",
+   "dst": "999000099262809100",
+   "sum_kzt": 200000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000012574052150",
+   "dst": "999000098539721150",
+   "sum_kzt": 215000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000013026881150",
+   "dst": "999000098539721150",
+   "sum_kzt": 340000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000015123665150",
+   "dst": "999000062649869150",
+   "sum_kzt": 700000,
+   "n_tx": 1,
+   "depth": 3
+  },
+  {
+   "src": "999000015123665150",
+   "dst": "999000066946744150",
+   "sum_kzt": 280000,
+   "n_tx": 1,
+   "depth": 3
+  },
+  {
+   "src": "999000021456712100",
+   "dst": "999000053967368150",
+   "sum_kzt": 450000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000021456712100",
+   "dst": "999000088920009150",
+   "sum_kzt": 280000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000031948661150",
+   "dst": "999000010141181150",
+   "sum_kzt": 290000,
+   "n_tx": 1,
+   "depth": 3
+  },
+  {
+   "src": "999000036665284150",
+   "dst": "999000080535960150",
+   "sum_kzt": 50000,
+   "n_tx": 1,
+   "depth": 3
+  },
+  {
+   "src": "999000041410496100",
+   "dst": "999000009264540100",
+   "sum_kzt": 480000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000041410496100",
+   "dst": "999000013026881150",
+   "sum_kzt": 150000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000041410496100",
+   "dst": "999000051176869150",
+   "sum_kzt": 800000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000048549985150",
+   "dst": "999000011608660100",
+   "sum_kzt": 400000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000010856381100",
+   "sum_kzt": 255000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000014269697100",
+   "sum_kzt": 135000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000014724797100",
+   "sum_kzt": 75000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000020548176150",
+   "sum_kzt": 150000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000028423905150",
+   "sum_kzt": 240000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000033169200100",
+   "sum_kzt": 165000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000036665284150",
+   "sum_kzt": 195000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000040935429100",
+   "sum_kzt": 180000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000044252038150",
+   "sum_kzt": 105000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000045712506150",
+   "sum_kzt": 120000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000055588841150",
+   "sum_kzt": 90000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000074911981100",
+   "sum_kzt": 60000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000077815210150",
+   "sum_kzt": 210000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000081457069100",
+   "sum_kzt": 120000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000098426938150",
+   "sum_kzt": 225000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000053967368150",
+   "dst": "999000098539721150",
+   "sum_kzt": 440000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000011655640150",
+   "sum_kzt": 230000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000018118622100",
+   "sum_kzt": 240000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000039162790150",
+   "sum_kzt": 220000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000072757780150",
+   "sum_kzt": 100000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000066946744150",
+   "dst": "999000072757780150",
+   "sum_kzt": 60000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000071095466100",
+   "dst": "999000011608660100",
+   "sum_kzt": 180000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000071095466100",
+   "dst": "999000072757780150",
+   "sum_kzt": 40000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000071203982150",
+   "dst": "999000098539721150",
+   "sum_kzt": 295000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000073192834100",
+   "dst": "999000009264540100",
+   "sum_kzt": 520000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000073192834100",
+   "dst": "999000012574052150",
+   "sum_kzt": 220000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000073192834100",
+   "dst": "999000074183100100",
+   "sum_kzt": 500000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000074183100100",
+   "dst": "999000098539721150",
+   "sum_kzt": 495000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000080535960150",
+   "dst": "999000001834368100",
+   "sum_kzt": 45000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000080535960150",
+   "dst": "999000072757780150",
+   "sum_kzt": 45000,
+   "n_tx": 1,
+   "depth": 4
+  },
+  {
+   "src": "999000082163512150",
+   "dst": "999000098539721150",
+   "sum_kzt": 600000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000086523547100",
+   "dst": "999000088683509100",
+   "sum_kzt": 300000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000088683509100",
+   "dst": "999000031948661150",
+   "sum_kzt": 295000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000088920009150",
+   "dst": "999000098539721150",
+   "sum_kzt": 275000,
+   "n_tx": 1,
+   "depth": 2
+  },
+  {
+   "src": "999000093905878150",
+   "dst": "999000007779887100",
+   "sum_kzt": 400000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000093905878150",
+   "dst": "999000013026881150",
+   "sum_kzt": 350000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000093905878150",
+   "dst": "999000041410496100",
+   "sum_kzt": 900000,
+   "n_tx": 1,
+   "depth": 1
+  },
+  {
+   "src": "999000094188499150",
+   "dst": "999000011608660100",
+   "sum_kzt": 85000,
+   "n_tx": 1,
+   "depth": 3
+  },
+  {
+   "src": "999000098539721150",
+   "dst": "999000041522645100",
+   "sum_kzt": 3040000,
+   "n_tx": 2,
+   "depth": 3
+  },
+  {
+   "src": "999000099262809100",
+   "dst": "999000071095466100",
+   "sum_kzt": 190000,
+   "n_tx": 1,
+   "depth": 3
+  },
+  {
+   "src": "999000099326980100",
+   "dst": "999000051176869150",
+   "sum_kzt": 2100000,
+   "n_tx": 1,
+   "depth": 1
+  }
+ ],
+ "transactions": [
+  {
+   "src": "999000007307672150",
+   "dst": "999000041410496100",
+   "date": "2026-07-01",
+   "sum_kzt": 700000
+  },
+  {
+   "src": "999000093905878150",
+   "dst": "999000041410496100",
+   "date": "2026-07-01",
+   "sum_kzt": 900000
+  },
+  {
+   "src": "999000099326980100",
+   "dst": "999000051176869150",
+   "date": "2026-07-01",
+   "sum_kzt": 2100000
+  },
+  {
+   "src": "999000041410496100",
+   "dst": "999000013026881150",
+   "date": "2026-07-02",
+   "sum_kzt": 150000
+  },
+  {
+   "src": "999000041410496100",
+   "dst": "999000051176869150",
+   "date": "2026-07-02",
+   "sum_kzt": 800000
+  },
+  {
+   "src": "999000093905878150",
+   "dst": "999000007779887100",
+   "date": "2026-07-02",
+   "sum_kzt": 400000
+  },
+  {
+   "src": "999000093905878150",
+   "dst": "999000013026881150",
+   "date": "2026-07-02",
+   "sum_kzt": 350000
+  },
+  {
+   "src": "999000041410496100",
+   "dst": "999000009264540100",
+   "date": "2026-07-03",
+   "sum_kzt": 480000
+  },
+  {
+   "src": "999000048549985150",
+   "dst": "999000011608660100",
+   "date": "2026-07-03",
+   "sum_kzt": 400000
+  },
+  {
+   "src": "999000073192834100",
+   "dst": "999000009264540100",
+   "date": "2026-07-03",
+   "sum_kzt": 520000
+  },
+  {
+   "src": "999000073192834100",
+   "dst": "999000012574052150",
+   "date": "2026-07-03",
+   "sum_kzt": 220000
+  },
+  {
+   "src": "999000073192834100",
+   "dst": "999000074183100100",
+   "date": "2026-07-03",
+   "sum_kzt": 500000
+  },
+  {
+   "src": "999000007307672150",
+   "dst": "999000071203982150",
+   "date": "2026-07-04",
+   "sum_kzt": 300000
+  },
+  {
+   "src": "999000007307672150",
+   "dst": "999000082163512150",
+   "date": "2026-07-04",
+   "sum_kzt": 610000
+  },
+  {
+   "src": "999000009264540100",
+   "dst": "999000015123665150",
+   "date": "2026-07-04",
+   "sum_kzt": 990000
+  },
+  {
+   "src": "999000011608660100",
+   "dst": "999000099262809100",
+   "date": "2026-07-04",
+   "sum_kzt": 200000
+  },
+  {
+   "src": "999000021456712100",
+   "dst": "999000088920009150",
+   "date": "2026-07-05",
+   "sum_kzt": 280000
+  },
+  {
+   "src": "999000099262809100",
+   "dst": "999000071095466100",
+   "date": "2026-07-05",
+   "sum_kzt": 190000
+  },
+  {
+   "src": "999000011608660100",
+   "dst": "999000094188499150",
+   "date": "2026-07-06",
+   "sum_kzt": 90000
+  },
+  {
+   "src": "999000015123665150",
+   "dst": "999000062649869150",
+   "date": "2026-07-06",
+   "sum_kzt": 700000
+  },
+  {
+   "src": "999000015123665150",
+   "dst": "999000066946744150",
+   "date": "2026-07-06",
+   "sum_kzt": 280000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000010856381100",
+   "date": "2026-07-06",
+   "sum_kzt": 255000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000014269697100",
+   "date": "2026-07-06",
+   "sum_kzt": 135000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000014724797100",
+   "date": "2026-07-06",
+   "sum_kzt": 75000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000020548176150",
+   "date": "2026-07-06",
+   "sum_kzt": 150000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000028423905150",
+   "date": "2026-07-06",
+   "sum_kzt": 240000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000033169200100",
+   "date": "2026-07-06",
+   "sum_kzt": 165000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000036665284150",
+   "date": "2026-07-06",
+   "sum_kzt": 195000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000040935429100",
+   "date": "2026-07-06",
+   "sum_kzt": 180000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000044252038150",
+   "date": "2026-07-06",
+   "sum_kzt": 105000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000045712506150",
+   "date": "2026-07-06",
+   "sum_kzt": 120000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000055588841150",
+   "date": "2026-07-06",
+   "sum_kzt": 90000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000074911981100",
+   "date": "2026-07-06",
+   "sum_kzt": 60000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000077815210150",
+   "date": "2026-07-06",
+   "sum_kzt": 210000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000081457069100",
+   "date": "2026-07-06",
+   "sum_kzt": 120000
+  },
+  {
+   "src": "999000051176869150",
+   "dst": "999000098426938150",
+   "date": "2026-07-06",
+   "sum_kzt": 225000
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000011655640150",
+   "date": "2026-07-07",
+   "sum_kzt": 230000
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000018118622100",
+   "date": "2026-07-07",
+   "sum_kzt": 240000
+  },
+  {
+   "src": "999000071095466100",
+   "dst": "999000011608660100",
+   "date": "2026-07-07",
+   "sum_kzt": 180000
+  },
+  {
+   "src": "999000007779887100",
+   "dst": "999000098539721150",
+   "date": "2026-07-08",
+   "sum_kzt": 390000
+  },
+  {
+   "src": "999000013026881150",
+   "dst": "999000098539721150",
+   "date": "2026-07-08",
+   "sum_kzt": 340000
+  },
+  {
+   "src": "999000036665284150",
+   "dst": "999000080535960150",
+   "date": "2026-07-08",
+   "sum_kzt": 50000
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000039162790150",
+   "date": "2026-07-08",
+   "sum_kzt": 220000
+  },
+  {
+   "src": "999000062649869150",
+   "dst": "999000072757780150",
+   "date": "2026-07-08",
+   "sum_kzt": 100000
+  },
+  {
+   "src": "999000071095466100",
+   "dst": "999000072757780150",
+   "date": "2026-07-08",
+   "sum_kzt": 40000
+  },
+  {
+   "src": "999000094188499150",
+   "dst": "999000011608660100",
+   "date": "2026-07-08",
+   "sum_kzt": 85000
+  },
+  {
+   "src": "999000012574052150",
+   "dst": "999000098539721150",
+   "date": "2026-07-09",
+   "sum_kzt": 215000
+  },
+  {
+   "src": "999000066946744150",
+   "dst": "999000072757780150",
+   "date": "2026-07-09",
+   "sum_kzt": 60000
+  },
+  {
+   "src": "999000074183100100",
+   "dst": "999000098539721150",
+   "date": "2026-07-09",
+   "sum_kzt": 495000
+  },
+  {
+   "src": "999000080535960150",
+   "dst": "999000001834368100",
+   "date": "2026-07-09",
+   "sum_kzt": 45000
+  },
+  {
+   "src": "999000080535960150",
+   "dst": "999000072757780150",
+   "date": "2026-07-09",
+   "sum_kzt": 45000
+  },
+  {
+   "src": "999000071203982150",
+   "dst": "999000098539721150",
+   "date": "2026-07-10",
+   "sum_kzt": 295000
+  },
+  {
+   "src": "999000082163512150",
+   "dst": "999000098539721150",
+   "date": "2026-07-10",
+   "sum_kzt": 600000
+  },
+  {
+   "src": "999000088920009150",
+   "dst": "999000098539721150",
+   "date": "2026-07-11",
+   "sum_kzt": 275000
+  },
+  {
+   "src": "999000053967368150",
+   "dst": "999000098539721150",
+   "date": "2026-07-12",
+   "sum_kzt": 440000
+  },
+  {
+   "src": "999000098539721150",
+   "dst": "999000041522645100",
+   "date": "2026-07-14",
+   "sum_kzt": 3000000
+  },
+  {
+   "src": "999000098539721150",
+   "dst": "999000041522645100",
+   "date": "2026-07-15",
+   "sum_kzt": 40000
+  },
+  {
+   "src": "999000031948661150",
+   "dst": "999000010141181150",
+   "date": "2026-07-16",
+   "sum_kzt": 290000
+  },
+  {
+   "src": "999000086523547100",
+   "dst": "999000088683509100",
+   "date": "2026-07-16",
+   "sum_kzt": 300000
+  },
+  {
+   "src": "999000088683509100",
+   "dst": "999000031948661150",
+   "date": "2026-07-16",
+   "sum_kzt": 295000
+  },
+  {
+   "src": "999000010141181150",
+   "dst": "999000072757780150",
+   "date": "2026-07-17",
+   "sum_kzt": 5000
+  },
+  {
+   "src": "999000010141181150",
+   "dst": "999000021001565150",
+   "date": "2026-07-18",
+   "sum_kzt": 280000
+  },
+  {
+   "src": "999000021456712100",
+   "dst": "999000053967368150",
+   "date": "2026-07-20",
+   "sum_kzt": 450000
+  }
+ ],
+ "clusters": [
+  {
+   "cluster_id": 1,
+   "n_nodes": 15,
+   "n_seed": 4,
+   "sum_kzt_internal": 10950000,
+   "top_gids": [
+    "999000098539721150",
+    "999000041410496100",
+    "999000041522645100"
+   ],
+   "hypothesis": "Восемь промежуточных счетов переводят средства четырёх исходных клиентов в один счёт C; дальше почти вся сумма уходит одному получателю."
+  },
+  {
+   "cluster_id": 2,
+   "n_nodes": 19,
+   "n_seed": 2,
+   "sum_kzt_internal": 4520000,
+   "top_gids": [
+    "999000051176869150",
+    "999000099326980100",
+    "999000080535960150"
+   ],
+   "hypothesis": "Один счёт раздаёт средства пятнадцати получателям в один день; один из получателей — исходный клиент."
+  },
+  {
+   "cluster_id": 3,
+   "n_nodes": 8,
+   "n_seed": 0,
+   "sum_kzt_internal": 2820000,
+   "top_gids": [
+    "999000009264540100",
+    "999000015123665150",
+    "999000062649869150"
+   ],
+   "hypothesis": "Цепочка передачи с сохранением суммы (A → B → F); продолжение за границей выборки."
+  },
+  {
+   "cluster_id": 4,
+   "n_nodes": 5,
+   "n_seed": 1,
+   "sum_kzt_internal": 1145000,
+   "top_gids": [
+    "999000011608660100",
+    "999000048549985150",
+    "999000099262809100"
+   ],
+   "hypothesis": "Небольшая группа с возвратными потоками: деньги возвращаются к отправителю через один или два шага."
+  },
+  {
+   "cluster_id": 5,
+   "n_nodes": 5,
+   "n_seed": 1,
+   "sum_kzt_internal": 1165000,
+   "top_gids": [
+    "999000010141181150",
+    "999000086523547100",
+    "999000088683509100"
+   ],
+   "hypothesis": "Цепочка переводов внутри одного дня; порядок по датам установить нельзя."
+  },
+  {
+   "cluster_id": 6,
+   "n_nodes": 1,
+   "n_seed": 1,
+   "sum_kzt_internal": 0,
+   "top_gids": [
+    "999000012630796150"
+   ],
+   "hypothesis": "Исходный клиент без переводов в выборке."
+  },
+  {
+   "cluster_id": 7,
+   "n_nodes": 1,
+   "n_seed": 1,
+   "sum_kzt_internal": 0,
+   "top_gids": [
+    "999000051722615100"
+   ],
+   "hypothesis": "Исходный клиент без переводов в выборке."
+  }
+ ],
+ "top_nodes": [
+  {
+   "rank": 1,
+   "gid": "999000098539721150",
+   "role": "consolidator",
+   "priority_score": 0.93,
+   "why": "8 разных плательщиков за 5 дней, 3,05 млн ₸; 99% полученного ушло одному получателю через 2–3 дня."
+  },
+  {
+   "rank": 2,
+   "gid": "999000051176869150",
+   "role": "distributor",
+   "priority_score": 0.9,
+   "why": "15 получателей за один день, 1,9 млн ₸ из 2,9 млн полученных; суммы похожи по размеру."
+  },
+  {
+   "rank": 3,
+   "gid": "999000041410496100",
+   "role": "coordinator",
+   "priority_score": 0.88,
+   "why": "Получает от 2 исходных клиентов и платит в 3 разные группы в течение 2 дней."
+  },
+  {
+   "rank": 4,
+   "gid": "999000011608660100",
+   "role": "transit",
+   "priority_score": 0.8,
+   "why": "Отдаёт 72% полученного; есть возвратные потоки U ↔ G и цикл U → V → X → U."
+  },
+  {
+   "rank": 5,
+   "gid": "999000009264540100",
+   "role": "transit",
+   "priority_score": 0.78,
+   "why": "Получил 1,0 млн ₸ от 2 плательщиков и через 1 день отдал 99% одному получателю."
+  },
+  {
+   "rank": 6,
+   "gid": "999000015123665150",
+   "role": "transit",
+   "priority_score": 0.74,
+   "why": "Отдал 99% полученного двум получателям через 2 дня после поступления."
+  },
+  {
+   "rank": 7,
+   "gid": "999000062649869150",
+   "role": "transit",
+   "priority_score": 0.7,
+   "why": "Отдал 99% полученного; все получатели на границе выборки."
+  },
+  {
+   "rank": 8,
+   "gid": "999000072757780150",
+   "role": "consolidator",
+   "priority_score": 0.66,
+   "why": "5 разных плательщиков; исходящие не наблюдаются — граница выборки."
+  },
+  {
+   "rank": 9,
+   "gid": "999000041522645100",
+   "role": "terminal",
+   "priority_score": 0.64,
+   "why": "Получил 3,04 млн ₸ от одного отправителя; исходящих до 31 июля нет, запас наблюдения 16 дней."
+  },
+  {
+   "rank": 10,
+   "gid": "999000010141181150",
+   "role": "transit",
+   "priority_score": 0.6,
+   "why": "Цепочка из 3 переводов в один день, 16 июля; отдал 98% полученного."
+  },
+  {
+   "rank": 11,
+   "gid": "999000053967368150",
+   "role": "transit",
+   "priority_score": 0.58,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 12,
+   "gid": "999000088920009150",
+   "role": "transit",
+   "priority_score": 0.57,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 13,
+   "gid": "999000082163512150",
+   "role": "transit",
+   "priority_score": 0.56,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 14,
+   "gid": "999000071203982150",
+   "role": "transit",
+   "priority_score": 0.55,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 15,
+   "gid": "999000012574052150",
+   "role": "transit",
+   "priority_score": 0.54,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 16,
+   "gid": "999000074183100100",
+   "role": "transit",
+   "priority_score": 0.53,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 17,
+   "gid": "999000013026881150",
+   "role": "transit",
+   "priority_score": 0.52,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 18,
+   "gid": "999000007779887100",
+   "role": "transit",
+   "priority_score": 0.51,
+   "why": "Отдал 97–99% полученного одному получателю C."
+  },
+  {
+   "rank": 19,
+   "gid": "999000093905878150",
+   "role": "peripheral",
+   "priority_score": 0.436,
+   "why": "Мало связей: 0 вх., 3 исх.; выраженных признаков роли нет."
+  },
+  {
+   "rank": 20,
+   "gid": "999000099326980100",
+   "role": "peripheral",
+   "priority_score": 0.425,
+   "why": "Мало связей: 0 вх., 1 исх.; выраженных признаков роли нет."
+  }
+ ],
+ "temporal_summary": {
+  "semantics": {
+   "structural": "Путь по наблюдаемым переводам без учёта дат.",
+   "strict": "Каждый следующий перевод строго позже предыдущего.",
+   "same_day": "Переводы одного дня допускаются в любом порядке."
+  },
+  "reached_by_at_least_1_seed": {
+   "structural": 45,
+   "strict": 42,
+   "same_day": 45
+  },
+  "reached_by_at_least_5_seeds": {
+   "structural": 1,
+   "strict": 1,
+   "same_day": 1
+  }
+ }
+}
