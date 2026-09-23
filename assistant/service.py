@@ -10,7 +10,7 @@ from typing import Callable
 from . import openai
 from .config import load_config, DEFAULT_EFFORT, MODEL_EFFORTS
 from .conversation import dataset_fingerprint as fingerprint_for, referenced_gids, validate_history
-from .queries import GraphQueries, MAX_SOURCES, QueryError, ROLES
+from .queries import GraphQueries, MAX_SOURCES, MAX_INSIGHT_RESULTS, QueryError, ROLES
 from .render import UNSUPPORTED, render
 
 NO_KEY = "Ключ модели не настроен. Выполнен локальный разбор по правилам, без языковой модели."
@@ -76,6 +76,14 @@ def _rules(question: str, selected: list[str], mentioned: list[str], graph: Grap
     limit = _limit(q)
     if re.search(r"сравн|compare", q):
         return "compare_nodes", {"gids": gids}
+    insight_stems = {"цикл|возврат|cycles?": "cycles", "маршрут|routes?": "routes",
+                     "всплеск|bursts?": "bursts", "дроблен|splitting": "splitting",
+                     "быстрый транзит|pass.through": "pass_through", "устойчив|resilien": "resilience",
+                     "профиль.*глубин|depth.profile": "depth_profile"}
+    section = next((name for pattern, name in insight_stems.items() if re.search(pattern, q)), None)
+    if section:
+        scoped = gid if mentioned or re.search(r"этого|выбран|этот|this|selected", q) else None
+        return "get_insights", {"section": section, "gid": scoped, "limit": min(limit, MAX_INSIGHT_RESULTS)}
     if re.search(r"сход|схожд|достиж|пересеч|хотя бы|конверген|converg|reachable|\d+\s*(?:из|of)\s*\d+", q):
         match = re.search(r"(?:хотя бы|не менее|минимум|at least)\s+(\d+)|\b(\d+)\s*(?:из|of)\s*\d+", q)
         k = int(next(g for g in match.groups() if g is not None)) if match else 2
