@@ -82,6 +82,30 @@ def render(result: dict) -> str:
             lines.append("- Следующий запрос: " + text(node["next_request"]))
         lines.append("Основание очереди: " + text(facts["priority_description"]))
         lines.append("Более высокий приоритет означает порядок проверки, а не большую вероятность виновности.")
+    elif kind == "insights":
+        lines.append(facts["title"] + ".")
+        if facts["scope_gid"]:
+            lines.append("Счёт " + link(facts["scope_gid"]) + ": смотрим сохранённые примеры и отметки этого раздела.")
+        lines.append(text(facts["method"]))
+        for flag in facts["account_flags"]:
+            lines.append(text(flag["text"]))
+        for example in facts["examples"]:
+            lines.append("- " + text(example.get("text") or example.get("request") or "Пример доступен в основании ответа."))
+        if facts["section"] == "resilience":
+            strategies = {"priority": "по приоритету", "flow": "по обороту", "random": "случайно"}
+            for scenario in facts["scenarios"]:
+                strategy = strategies.get(scenario["strategy"], "по рассчитанному сценарию")
+                averaging = f" (среднее по {scenario['runs']} наборам)" if scenario["strategy"] == "random" else ""
+                lines.append(f"- Удаление {scenario['n_removed']} счетов {strategy}{averaging}: "
+                             f"компонент — {scenario['components']}, крупнейшая — {scenario['largest_component_nodes']} счетов; "
+                             f"достижимых остальных счетов от исходных — {scenario['reachable_non_seed']}.")
+            lines.append(f"Показано сценариев: {len(facts['scenarios'])} из {facts['total_scenarios']}.")
+        else:
+            lines.append(f"Показано сохранённых примеров: {len(facts['examples'])} из {facts['matching_examples']} подходящих; "
+                         f"в разделе сохранено {facts['saved_examples']} примеров по всей выборке.")
+            if not facts["examples"]:
+                lines.append("Подходящего сохранённого примера нет. Это не доказывает отсутствие паттерна: список примеров ограничен.")
+        lines.extend(text(item) for item in facts["limitations"])
     elif kind == "neighbors":
         direction = {"in": "входящие", "out": "исходящие", "both": "входящие и исходящие"}[facts["direction"]]
         lines.append(f"Счёт {link(facts['gid'])}: {direction} связи. Показано {facts['shown']} из {facts['total_edges']} наблюдаемых рёбер, по убыванию суммы.")

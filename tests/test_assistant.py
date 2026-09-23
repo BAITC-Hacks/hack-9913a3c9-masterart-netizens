@@ -241,6 +241,32 @@ class AssistantTests(unittest.TestCase):
             self.assertEqual(result["intent"], "invalid")
             self.assertEqual(fake.calls, [])
 
+    def test_F07_insights_read_saved_examples_without_claiming_exhaustive_search(self):
+        self.data["insights"] = {"sections": [{"key": "cycles", "title": "Циклы", "method": "Наблюдаемые рёбра.",
+            "counts": {"cycles": 3}, "examples": [{"cycle": [X, Y], "text": "Два встречных ребра."}],
+            "limitations": ["Не доказывает движение тех же денег."]}],
+            "by_gid": {Z: [{"section": "cycles", "text": "В полном расчёте отмечен цикл."}]}}
+        graph = GraphQueries(self.data)
+        result = self.ask("Покажи циклы")
+        self.assertEqual(result["intent"], "insights")
+        self.assertEqual(result["nodes"], [X, Y])
+        self.assertEqual(result["citations"][1]["pointer"], "/insights/sections/0/examples/0")
+        missing = self.ask("Покажи циклы этого счёта", [Z])
+        self.assertIn("В полном расчёте отмечен цикл", missing["answer_md"])
+        self.assertIn("Это не доказывает отсутствие паттерна", missing["answer_md"])
+        for args in ({"section": "unknown", "gid": None, "limit": 3},
+                     {"section": "cycles", "gid": None, "limit": 11},
+                     {"section": "cycles", "gid": "999", "limit": 3}):
+            with self.assertRaises(QueryError):
+                graph.execute("get_insights", args)
+        self.data["insights"]["sections"][0]["examples"][0]["cycle"] = [X, "999"]
+        self.assertEqual(self.ask("Покажи циклы")["intent"], "invalid")
+
+    def test_F07_absent_insights_do_not_fabricate_examples(self):
+        result = self.ask("Покажи циклы")
+        self.assertEqual(result["intent"], "invalid")
+        self.assertIn("ещё не рассчитаны", result["answer_md"])
+
     def test_F07_k_of_n_is_partial_not_all_sources(self):
         result = self.ask("Достижимы хотя бы от 2 выбранных счетов", [A, B, I])
         self.assertEqual(result["intent"], "convergence")
@@ -477,6 +503,27 @@ class AssistantTests(unittest.TestCase):
 
 
 class OfficialAssistantTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get("ASSISTANT_ANALYSIS_PATH"), "Нужен путь к официальному analysis.json")
+    def test_F07_real_computed_insights_and_random_baseline(self):
+        from assistant.queries import INSIGHT_SECTIONS
+        data = json.loads(Path(os.environ["ASSISTANT_ANALYSIS_PATH"]).read_text())
+        if "insights" not in data:
+            self.skipTest("В этом снимке дополнительные паттерны ещё не рассчитаны")
+        graph = GraphQueries(data)
+        for section in INSIGHT_SECTIONS:
+            result = graph.execute("get_insights", {"section": section, "gid": None, "limit": 3})
+            self.assertTrue(all(gid in graph.nodes for gid in result["nodes"]))
+            self.assertLessEqual(len(result["facts"]["examples"]), 3)
+            for item in result["citations"]:
+                pointer = data
+                for key in item["pointer"].strip("/").split("/"):
+                    pointer = pointer[int(key)] if isinstance(pointer, list) else pointer[key]
+        resilience = graph.execute("get_insights", {"section": "resilience", "gid": None, "limit": 3})
+        self.assertEqual([r["strategy"] for r in resilience["facts"]["scenarios"]], ["priority", "flow", "random"])
+        self.assertEqual(len({r["n_removed"] for r in resilience["facts"]["scenarios"]}), 1)
+        from assistant.render import render
+        self.assertIn("среднее по 50 наборам", render(resilience))
+
     @unittest.skipUnless(os.environ.get("ASSISTANT_ANALYSIS_PATH"), "ASSISTANT_ANALYSIS_PATH не задан; официальные данные не проверены")
     def test_F07_official_graph_queries_without_model(self):
         data = json.loads(Path(os.environ["ASSISTANT_ANALYSIS_PATH"]).read_text(encoding="utf-8"))
