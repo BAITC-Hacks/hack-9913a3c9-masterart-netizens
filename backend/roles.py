@@ -155,8 +155,8 @@ def coordinator(m: NodeMetrics) -> Candidate:
 RULES = (coordinator, distributor, consolidator, transit, terminal)
 
 
-SHORT_WINDOW = "окно наблюдения короткое"
-SHORT_VALUE_WINDOW = "основная сумма поступила в конце периода"
+SHORT_WINDOW = "короткое окно наблюдения"
+SHORT_VALUE_WINDOW = "поздние поступления"
 
 
 def observation_gap(m: NodeMetrics) -> str:
@@ -231,12 +231,19 @@ def select(candidates: list) -> tuple:
 
 def evidence_text(m: NodeMetrics, primary: Candidate, runner_up: Candidate) -> str:
     """Объяснение для nodes_roles.csv: 1–200 символов, только собственные метрики счёта."""
-    label = policy.ROLE_LABELS_RU[primary.role]
-    alt = policy.ROLE_LABELS_RU[runner_up.role]
     gap = observation_gap(m)
-    head = f"«{label}» {score_ru(primary.score)}"
+    head = f"«{policy.ROLE_LABELS_RU[primary.role]}» {score_ru(primary.score)}"
     if primary.role == "peripheral" and gap:
-        head += f" (опора снижена: {gap})"
+        # Пометка о пробеле наблюдения нужна, но не ценой обрезанного объяснения:
+        # если вместе она не помещается в 200 символов, она остаётся в предупреждениях карточки.
+        noted = _evidence_body(m, primary, runner_up, f"{head} (снижено: {gap})")
+        if len(noted) <= 200:
+            return noted
+    return clip_text(_evidence_body(m, primary, runner_up, head), 200)
+
+
+def _evidence_body(m: NodeMetrics, primary: Candidate, runner_up: Candidate, head: str) -> str:
+    alt = policy.ROLE_LABELS_RU[runner_up.role]
     raw = m.pass_through
     corridor = T("transit", "pass_through_low") <= (raw or 0) <= T("transit", "pass_through_high")
     if m.in_degree == 0 and m.out_degree == 0:
@@ -250,7 +257,7 @@ def evidence_text(m: NodeMetrics, primary: Candidate, runner_up: Candidate) -> s
     elif primary.role == "peripheral" and runner_up.score == 0:
         text = f"{head}: признаков ролей не найдено."
     elif primary.role == "peripheral":
-        text = f"{head}: ни один признак не достиг порога. Ближайший — {alt} {score_ru(runner_up.score)}: {runner_up.reason}."
+        text = f"{head}: признаки ниже порога. Ближайший — {alt} {score_ru(runner_up.score)}: {runner_up.reason}."
     elif runner_up.score > primary.score:
         text = (
             f"Гипотеза {head}: {primary.reason}. "
@@ -258,9 +265,9 @@ def evidence_text(m: NodeMetrics, primary: Candidate, runner_up: Candidate) -> s
         )
     else:
         text = f"Гипотеза {head}: {primary.reason}. Альтернатива: {alt} {score_ru(runner_up.score)}."
-    if m.outgoing_censored and primary.role in ("consolidator", "coordinator"):
+    if m.outgoing_censored and primary.role in ("consolidator", "coordinator", "peripheral") and "не собирались" not in text:
         text = text[:-1] + "; исходящие не собирались."
-    return clip_text(text, 200)
+    return " ".join(text.split())
 
 
 def warnings_for(m: NodeMetrics) -> list:
