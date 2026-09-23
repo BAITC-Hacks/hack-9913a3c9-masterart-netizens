@@ -36,6 +36,7 @@ import pyarrow.parquet as pq
 
 from backend.analysis import TemporalIntegrationError, build_analysis
 from backend.exports import render_outputs, write_attempt, write_receipt
+from backend.insights import compute_insights
 from backend.io import REQUIRED_COLUMNS, InputValidationError, load_dataset
 
 REQUIRED_FILES = tuple(f"{name}.parquet" for name in REQUIRED_COLUMNS)
@@ -290,6 +291,12 @@ def _ingest_locked(files: Mapping[str, bytes], out_dir: Path, originals: Mapping
                 (staging_dir / name).write_bytes(bytes(files[name]))
             data = load_dataset(staging_dir)
         analysis = build_analysis(data)
+        try:
+            # Как в командной строке: дополнительные наблюдения строятся после анализа, и их сбой
+            # не отменяет обязательные выгрузки нового набора.
+            analysis["insights"] = compute_insights(analysis)
+        except Exception:  # noqa: BLE001
+            pass
     except ImportRejected as exc:
         raise _failed(out_dir, started_at, str(exc), exc.status) from None
     except InputValidationError as exc:

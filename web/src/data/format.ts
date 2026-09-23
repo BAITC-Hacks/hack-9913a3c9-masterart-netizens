@@ -13,7 +13,7 @@ export const ROLE_HINT: Record<string, string> = {
   consolidator: 'собирает переводы от нескольких участников',
   transit: 'передаёт дальше примерно то, что получил',
   distributor: 'раздаёт средства многим получателям',
-  terminal: 'деньги приходят и дальше не наблюдаются',
+  terminal: 'деньги приходят, а дальше уходит не больше 20% наблюдаемых входящих',
   coordinator: 'кандидат в связующий узел между группами',
   peripheral: 'признаков роли не найдено',
 };
@@ -46,7 +46,8 @@ export function formatKztCompact(value: number): string {
   return formatKzt(value);
 }
 export const formatInt = (value: number) => intFormat.format(value);
-export const formatScore = (value: number) => scoreFormat.format(value);
+// Значение ниже порога 0,5 не показывается как «0,50», как и в объяснениях конвейера.
+export const formatScore = (value: number) => scoreFormat.format(value < 0.5 && Math.round(value * 100) >= 50 ? 0.49 : value);
 /** Доля в процентах так же, как в тексте оснований конвейера: «12%». */
 export const formatPercent = (share: number) => `${Math.round(share * 100)}%`;
 

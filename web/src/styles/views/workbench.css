@@ -56,3 +56,11 @@
 @keyframes wb-progress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 /* Без движения полоса загрузки остаётся видимой и неподвижной, а не уезжает за край после одного кадра. */
 @media (prefers-reduced-motion: reduce) { .wb-status__bar i { width: 100%; animation: none; opacity: .5; } }
+
+/* Четыре вкладки левой панели: прокручивается только полоса вкладок, строки очереди не сдвигаются. */
+.wb-rail__head { min-width: 0; }
+.wb-rail__tabs { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; flex-wrap: nowrap; }
+.wb-rail__tabs::-webkit-scrollbar { display: none; }
+.wb-rail__tabs > button { flex: none; white-space: nowrap; }
+/* Действия по счёту: PDF-справка, сохранение и текстовая версия в одну строку с переносом. */
+.wb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

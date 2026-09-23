@@ -242,6 +242,8 @@ def _pass_through(g: _Graph) -> _Section:
             first = bisect_left(in_dates, o.date - dt.timedelta(days=max_lag))
             last = bisect_right(in_dates, o.date)
             for i in ins[first:last]:
+                if i.src == o.dst:
+                    continue  # возврат тому же плательщику (A→B→A) — не передача дальше
                 lag = (o.date - i.date).days
                 if lo * i.tiyn <= o.tiyn <= hi * i.tiyn:
                     key = (lag, abs(o.tiyn - i.tiyn), i)

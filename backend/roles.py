@@ -257,19 +257,24 @@ def _evidence_body(m: NodeMetrics, primary: Candidate, runner_up: Candidate, hea
     elif primary.role == "peripheral" and runner_up.score == 0:
         text = f"{head}: признаков ролей не найдено."
     elif primary.role == "peripheral":
-        text = f"{head}: признаки ниже порога. Ближайший — {alt} {score_ru(runner_up.score)}: {runner_up.reason}."
+        text = f"{head}: признаки ниже порога. Ближайший — {alt} {score_ru(runner_up.score)}: {runner_up.reason.rstrip('.')}."
     elif runner_up.score > primary.score:
         # При одинаковом округлении «сильнее» читалось бы как противоречие «0,58 сильнее 0,58».
         stronger = "сильнее" if score_ru(runner_up.score) != score_ru(primary.score) else "не слабее"
         text = (
-            f"Гипотеза {head}: {primary.reason}. "
+            f"Гипотеза {head}: {primary.reason.rstrip('.')}. "
             f"{alt.capitalize()} {score_ru(runner_up.score)} {stronger}, но признаки веера приоритетнее."
         )
     else:
-        text = f"Гипотеза {head}: {primary.reason}. Альтернатива: {alt} {score_ru(runner_up.score)}."
+        text = f"Гипотеза {head}: {primary.reason.rstrip('.')}. Альтернатива: {alt} {score_ru(runner_up.score)}."
     if m.outgoing_censored and primary.role in ("consolidator", "coordinator", "peripheral") and "не собирались" not in text:
         text = text[:-1] + "; исходящие не собирались."
     return " ".join(text.split())
+
+
+def _before_end(days) -> str:
+    """«за N дн. до конца периода» или «в последний день периода» вместо «за 0 дн.»."""
+    return "в последний день периода" if not days else f"за {days} дн. до конца периода"
 
 
 def warnings_for(m: NodeMetrics) -> list:
@@ -285,9 +290,13 @@ def warnings_for(m: NodeMetrics) -> list:
         notes.append("Исходящие превышают наблюдаемые поступления: баланс неполон (остаток или поступления вне выборки).")
     min_margin = T("terminal", "min_margin_days")
     if m.out_degree == 0 and m.margin_days is not None and m.margin_days < min_margin and not m.outgoing_censored:
-        notes.append(f"Последнее поступление за {m.margin_days} дн. до конца периода: окно наблюдения короткое.")
+        if m.window_days is not None and m.window_days >= min_margin:
+            # 90% суммы пришло раньше: окно достаточное, поздним был лишь последний небольшой перевод.
+            notes.append(f"Последнее небольшое поступление — {_before_end(m.margin_days)}; 90% суммы набралось раньше, за {m.window_days} дн. до конца.")
+        else:
+            notes.append(f"Последнее поступление — {_before_end(m.margin_days)}: окно наблюдения короткое.")
     if observation_gap(m) == SHORT_VALUE_WINDOW:
-        notes.append(f"90% суммы набралось за {m.window_days} дн. до конца периода: окно наблюдения короткое.")
+        notes.append(f"90% суммы набралось {_before_end(m.window_days)}: окно наблюдения короткое.")
     return notes
 
 
@@ -308,9 +317,9 @@ def next_request(m: NodeMetrics, role: str) -> str:
         return requests[role]
     gap = observation_gap(m)
     if gap == SHORT_WINDOW:
-        return f"Запросить операции счёта после конца периода: после последнего поступления прошло лишь {m.margin_days} дн."
+        return f"Запросить операции счёта после конца периода: последнее поступление — {_before_end(m.margin_days)}."
     if gap == SHORT_VALUE_WINDOW:
-        return f"Запросить операции счёта после конца периода: 90% суммы набралось лишь за {m.window_days} дн. до его конца."
+        return f"Запросить операции счёта после конца периода: 90% суммы набралось {_before_end(m.window_days)}."
     if m.is_seed:
         return "Запросить входящие переводы исходного клиента, не попавшие в выгрузку."
     if m.out_tiyn > m.in_tiyn * T("transit", "pass_through_high"):
