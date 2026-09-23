@@ -1,4 +1,4 @@
-import {useEffect, useLayoutEffect, useMemo, useRef} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {GraphIndex} from '../data/graph';
 import type {Mode} from '../data/schema';
 import type {Neighborhood} from '../data/neighborhood';
@@ -16,17 +16,29 @@ import {Outline} from './Outline';
  */
 export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void}) {
   const focus = hood.focus;
+  // Пояснение нужно только там, где денег в эту сторону нет совсем; встречный поток — тоже поток.
   const notes = useMemo(() => ({
-    in: focus.is_seed ? 'Входящие исходного клиента из-за пределов выборки не собирались' : 'Входящих переводов в выборке нет',
-    out: focus.observation.outgoing_censored ? 'Исходящие не наблюдаются: граница сбора данных' : 'Исходящих переводов в выборке нет',
-  }), [focus]);
-  const layout = useMemo(() => layoutEgo(hood, {notes}), [hood, notes]);
+    in: hood.mutual.length ? null : focus.is_seed ? 'Входящие исходного клиента из-за пределов выборки не собирались' : 'Входящих переводов в выборке нет',
+    out: hood.mutual.length ? null : focus.observation.outgoing_censored ? 'Исходящие не наблюдаются: граница сбора данных' : 'Исходящих переводов в выборке нет',
+  }), [focus, hood.mutual.length]);
+  // Число колонок следует ширине окна, чтобы карточки оставались читаемыми без мелкого масштаба.
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const columns = viewportWidth ? Math.max(2, Math.min(5, Math.floor((viewportWidth / 0.9 - 64) / (CARD_W + 24)))) : 4;
+  const layout = useMemo(() => layoutEgo(hood, {notes, columns}), [hood, notes, columns]);
   const witness = mode === 'strict' ? focus.temporal.strict_witness : mode === 'same_day' ? focus.temporal.same_day_witness : null;
   const witnessPayer = witness?.hops.at(-1)?.src ?? null;
   const outlineTarget = useRef<string | null>(null);
 
   const view = useMapView({width: layout.width, height: layout.height, onEscape: () => false});
-  useLayoutEffect(() => { view.fitMap(); }, [layout]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const el = view.viewport.current;
+    if (!el) return;
+    setViewportWidth(el.clientWidth);
+    const observer = new ResizeObserver(() => setViewportWidth(el.clientWidth));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [view.viewport, view.mode]);
+  useLayoutEffect(() => { view.focusMap({x: layout.focus.x, y: layout.focus.y, w: CARD_W, h: CARD_H}); }, [layout]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (view.mode !== 'outline' || !outlineTarget.current) return;
     document.getElementById(outlineTarget.current)?.scrollIntoView({block: 'start'});
@@ -38,11 +50,11 @@ export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood
 
   return <MapFrame view={view} label="Связи счёта">
     <header className="wb-map__head">
-      <div className="wb-map__title">
-        <h2>Направленные связи</h2>
-        <p>{countLabel(hood.payers.length + hood.mutual.length, 'плательщик', 'плательщика', 'плательщиков')} · {countLabel(hood.recipients.length + hood.mutual.length, 'получатель', 'получателя', 'получателей')}
-          {cycles > 0 && <> · <span className="wb-map__cycles"><Icon name="cycle" size={13} />{countLabel(cycles, 'возвратный поток', 'возвратных потока', 'возвратных потоков')}</span></>}</p>
-      </div>
+      <p className="wb-map__title">
+        <span>{countLabel(hood.payers.length + hood.mutual.length, 'плательщик', 'плательщика', 'плательщиков')}</span>
+        <span>{countLabel(hood.recipients.length + hood.mutual.length, 'получатель', 'получателя', 'получателей')}</span>
+        {cycles > 0 && <span className="wb-map__cycles"><Icon name="cycle" size={13} />{countLabel(cycles, 'возвратный поток', 'возвратных потока', 'возвратных потоков')}</span>}
+      </p>
       <MapTools view={view} />
     </header>
     {view.mode === 'map'
@@ -64,10 +76,9 @@ export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood
       </MapViewport>
       : <Outline index={index} hood={hood} onSelect={onSelect} />}
     <p className="wb-map__legend">
-      <span><i className="wb-legend-line" />перевод, стрелка — направление денег</span>
-      <span><i className="wb-legend-line is-cycle" />возвратный поток</span>
-      {witness && <span><i className="wb-legend-line is-witness" />последний шаг датированного пути</span>}
-      <span>толщина — сумма</span>
+      <span><i className="wb-legend-line" />стрелка — направление денег, толщина — сумма</span>
+      {cycles > 0 && <span><i className="wb-legend-line is-cycle" />возвратный поток</span>}
+      {witness && <span><i className="wb-legend-line is-witness" />последний шаг пути по датам</span>}
     </p>
   </MapFrame>;
 }
@@ -90,25 +101,21 @@ function MapCard({card, index, witnessPayer, onSelect, onOpenFold}: {
   const node = link.node;
   const isFocus = card.kind === 'focus';
   const m = node?.metrics;
-  const relation = card.kind === 'payer' ? `заплатил ${formatKzt(link.toFocus!.sum_kzt)} · ${formatInt(link.toFocus!.n_tx)} пер.`
-    : card.kind === 'recipient' ? `получил ${formatKzt(link.fromFocus!.sum_kzt)} · ${formatInt(link.fromFocus!.n_tx)} пер.`
-    : card.kind === 'mutual' ? `↓ ${formatKzt(link.toFocus!.sum_kzt)} · ↑ ${formatKzt(link.fromFocus!.sum_kzt)}`
-    : m ? `${formatInt(m.in_degree)} вх. · ${formatInt(m.out_degree)} исх. · приоритет ${formatScore(node!.priority_score)}` : '';
-  const badges = [
-    node?.is_seed && 'исходный клиент',
-    node?.observation.outgoing_censored && 'граница выборки',
-    m && m.in_degree + m.out_degree === 0 && 'нет переводов',
-    index.topRank.has(link.gid) && `№ ${index.topRank.get(link.gid)} в очереди`,
-  ].filter(Boolean) as string[];
+  const edgeLine = card.kind === 'payer' ? link.toFocus : card.kind === 'recipient' ? link.fromFocus : null;
+  const relation = edgeLine ? <><span className="wb-mono">{formatKzt(edgeLine.sum_kzt)}</span> · {countLabel(edgeLine.n_tx, 'перевод', 'перевода', 'переводов')}</>
+    : card.kind === 'mutual' ? <><span className="wb-mono">↓ {formatKzt(link.toFocus!.sum_kzt)}</span> <span className="wb-mono">↑ {formatKzt(link.fromFocus!.sum_kzt)}</span></>
+    : m ? <>{formatInt(m.in_degree)} вх. · {formatInt(m.out_degree)} исх.</> : null;
+  const rank = index.topRank.get(link.gid);
+  const flag = node?.observation.outgoing_censored ? 'граница выборки' : node?.is_seed ? 'исходный клиент'
+    : m && m.in_degree + m.out_degree === 0 ? 'нет переводов' : rank ? `№ ${rank} в очереди` : null;
   const content = <>
-    <span className="wb-card__role">{node ? <RoleTag role={node.role} score={formatScore(node.role_score)} /> : <span className="wb-card__missing">нет в списке узлов</span>}</span>
+    <span className="wb-card__role">{node ? <><RoleTag role={node.role} /><span className="wb-card__score">{formatScore(node.role_score)}</span></> : <span className="wb-card__missing">нет в списке узлов</span>}</span>
     <Gid gid={link.gid} className="wb-card__gid" />
-    <span className="wb-card__relation">{relation}</span>
-    {badges.length > 0 && <span className="wb-card__badges">{badges.slice(0, 2).map(badge => <em key={badge}>{badge}</em>)}</span>}
+    {relation && <span className="wb-card__relation">{relation}</span>}
+    {flag && <span className="wb-card__flag">{flag}</span>}
   </>;
   const className = `wb-card wb-card--${card.kind}${link.gid === witnessPayer ? ' is-witness' : ''}`;
-  if (isFocus) return <div className={className} style={style} aria-label={`Выбранный счёт ${link.gid}`}><span className="wb-card__eyebrow">выбранный счёт</span>{content}</div>;
+  if (isFocus) return <div className={className} style={style} aria-label={`Выбранный счёт ${link.gid}`}>{content}</div>;
   return <button type="button" className={className} style={style} onClick={() => onSelect(link.gid)} aria-label={`Открыть счёт ${link.gid}`}>{content}</button>;
 }
 
-export {CARD_H};

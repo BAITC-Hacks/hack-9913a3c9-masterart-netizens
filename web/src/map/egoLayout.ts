@@ -72,7 +72,7 @@ export function layoutEgo(hood: Neighborhood, {cap = 10, columns = 5, notes = {i
   };
 
   if (payerRows.length) {
-    labels.push({key: 'label-in', x: centerX, y: y + 4, text: hood.payers.length ? `Платили этому счёту · ${hood.payers.length}` : 'Входящие'});
+    labels.push({key: 'label-in', x: centerX, y: y + 4, text: hood.payers.length ? `Платили этому счёту` : 'Входящие'});
     y += LABEL;
     placeRows(payerRows);
     y += BAND_GAP;
@@ -81,11 +81,11 @@ export function layoutEgo(hood: Neighborhood, {cap = 10, columns = 5, notes = {i
   cards.push(focus);
   right.forEach((cell, i) => cards.push({...cell, x: focus.x + CARD_W + SIDE_GAP + i * (CARD_W + SIDE_GAP), y}));
   left.forEach((cell, i) => cards.push({...cell, x: focus.x - (i + 1) * (CARD_W + SIDE_GAP), y}));
-  if (left.length || right.length) labels.push({key: 'label-mutual', x: centerX, y: y - 22, text: `Встречные потоки · ${hood.mutual.length}`});
+  if (left.length || right.length) labels.push({key: 'label-mutual', x: centerX, y: y - 22, text: 'Встречные потоки'});
   y += CARD_H;
   if (recipientRows.length) {
     y += BAND_GAP;
-    labels.push({key: 'label-out', x: centerX, y: y + 4, text: hood.recipients.length ? `Получали от этого счёта · ${hood.recipients.length}` : 'Исходящие'});
+    labels.push({key: 'label-out', x: centerX, y: y + 4, text: hood.recipients.length ? `Получали от этого счёта` : 'Исходящие'});
     y += LABEL;
     placeRows(recipientRows);
   }

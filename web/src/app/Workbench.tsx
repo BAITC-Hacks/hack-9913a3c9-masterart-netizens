@@ -16,12 +16,12 @@ import {ClusterPanel} from '../ui/ClusterPanel';
  */
 export type RailTab = 'leads' | 'clusters';
 
+const unknownGid = (gid: string, index: GraphIndex) => `Счёт ${gid} из ссылки не найден среди ${countLabel(index.byGid.size, 'счёта', 'счетов', 'счетов')} выборки.`;
+
 function initialState(index: GraphIndex) {
   const hash = readHash();
   const fallback = index.analysis.top_nodes.find(top => index.byGid.has(top.gid))?.gid ?? index.gids[0] ?? null;
-  if (hash.gid && !index.byGid.has(hash.gid)) {
-    return {gid: fallback, mode: hash.mode ?? 'structural', notice: `Счёт ${hash.gid} из ссылки не найден среди ${countLabel(index.byGid.size, 'счёта', 'счетов', 'счетов')} выборки.`};
-  }
+  if (hash.gid && !index.byGid.has(hash.gid)) return {gid: fallback, mode: hash.mode ?? 'structural', notice: unknownGid(hash.gid, index)};
   return {gid: hash.gid ?? fallback, mode: hash.mode ?? 'structural', notice: null as string | null};
 }
 
@@ -36,7 +36,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
   useEffect(() => { writeHash({gid: selected, mode}, false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const select = useCallback((gid: string) => {
-    if (!index.byGid.has(gid)) { setNotice(`Счёт ${gid} не найден среди ${countLabel(index.byGid.size, 'счёта', 'счетов', 'счетов')} выборки.`); return; }
+    if (!index.byGid.has(gid)) { setNotice(unknownGid(gid, index)); return; }
     setSelected(gid); setCluster(null); setNotice(null);
     writeHash({gid, mode}, true);
   }, [index, mode]);
@@ -49,7 +49,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
       if (hash.mode) setModeState(hash.mode);
       if (!hash.gid) return;
       if (index.byGid.has(hash.gid)) { setSelected(hash.gid); setNotice(null); setCluster(null); }
-      else setNotice(`Счёт ${hash.gid} из ссылки не найден среди ${countLabel(index.byGid.size, 'счёта', 'счетов', 'счетов')} выборки.`);
+      else setNotice(unknownGid(hash.gid, index));
     };
     window.addEventListener('hashchange', onHash);
     window.addEventListener('popstate', onHash);
@@ -60,10 +60,9 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
   const openCluster = useCallback((id: number) => { setCluster(id); setRailTab('clusters'); }, []);
 
   return <div className="wb-app">
-    <TopBar index={index} warnings={warnings} />
+    <TopBar index={index} warnings={warnings} onSelect={select} notice={notice} onDismissNotice={() => setNotice(null)} />
     <div className="wb-main">
-      <LeadsRail index={index} selected={selected} tab={railTab} onTab={setRailTab} onSelect={select}
-        openCluster={cluster} onOpenCluster={openCluster} notice={notice} onDismissNotice={() => setNotice(null)} />
+      <LeadsRail index={index} selected={selected} tab={railTab} onTab={setRailTab} onSelect={select} openCluster={cluster} onOpenCluster={openCluster} />
       <section className="wb-center" aria-label={cluster !== null ? 'Кластер' : 'Связи счёта'}>
         {cluster !== null
           ? <ClusterPanel index={index} clusterId={cluster} selected={selected} onSelect={select} onClose={() => setCluster(null)} />

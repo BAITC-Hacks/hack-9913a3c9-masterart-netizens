@@ -1,26 +1,25 @@
 import type {ComponentType} from 'react';
-import type {GraphIndex} from '../data/graph';
-import type {Mode} from '../data/schema';
 
 /**
- * Место для аналитического помощника. Панель помощника живёт в src/features/assistant/index.tsx
- * (отдельная часть проекта) и экспортирует AssistantPanel с этими свойствами. Пока файла нет,
- * слот пуст: основной ручной сценарий от помощника не зависит.
+ * Место для аналитического помощника. Панель живёт в src/features/assistant/index.tsx (отдельная
+ * часть проекта) и экспортирует AssistantPanel с общим контрактом ниже. Пока файла нет, слот пуст:
+ * основной ручной сценарий от помощника не зависит. Выбор счёта из ответа помощника проходит через
+ * ту же проверку, что и поиск: неизвестный gid не открывается.
  */
 export interface AssistantPanelProps {
-  /** Проверенный индекс файла анализа: только чтение. */
-  index: GraphIndex;
-  /** Выбранный счёт — строка цифр — или null. */
-  focusGid: string | null;
-  /** Выбранный режим учёта дат. */
-  mode: Mode;
-  /** Открыть счёт на карте; принимает только gid из индекса. */
-  onSelectGid: (gid: string) => void;
+  /** Выбранные счета — строки цифр; сейчас это один выбранный счёт или пустой список. */
+  selection: string[];
+  /** Открыть счёт на карте. */
+  onSelectNode: (gid: string) => void;
+  className?: string;
 }
 
 const modules = import.meta.glob<{AssistantPanel?: ComponentType<AssistantPanelProps>}>('../features/assistant/index.tsx', {eager: true});
 const Panel = Object.values(modules)[0]?.AssistantPanel;
 
-export function AssistantSlot(props: AssistantPanelProps) {
-  return Panel ? <Panel {...props} /> : null;
+export function AssistantSlot({focusGid, onSelectGid}: {focusGid: string | null; onSelectGid: (gid: string) => void}) {
+  if (!Panel) return null;
+  return <section className="wb-section wb-assistant-slot" aria-label="Помощник">
+    <Panel selection={focusGid ? [focusGid] : []} onSelectNode={onSelectGid} className="wb-assistant" />
+  </section>;
 }

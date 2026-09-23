@@ -32,7 +32,19 @@ export function useMapView({width, height, onEscape}: {width: number; height: nu
       el.scrollTop = Math.max(0, (height * next - el.clientHeight) / 2);
     });
   }, [fit, width, height]);
-  return {mode, setMode, zoom, viewport, camera, frame, fullScreen, toggleFullScreen, fitMap};
+  /** Читаемый масштаб (не мельче 0,6) по ширине и выбранный счёт в центре — так карта открывается. */
+  const focusMap = React.useCallback((target: {x: number; y: number; w: number; h: number}) => {
+    const el = viewport.current;
+    if (!el?.clientWidth || !width) return;
+    const next = Math.max(0.6, Math.min(1, (el.clientWidth - 8) / width));
+    setFitZoom(Math.min(MIN_ZOOM, fit()));
+    setZoom(next);
+    requestAnimationFrame(() => {
+      el.scrollLeft = Math.max(0, (target.x + target.w / 2) * next - el.clientWidth / 2);
+      el.scrollTop = Math.max(0, (target.y + target.h / 2) * next - el.clientHeight / 2);
+    });
+  }, [fit, width]);
+  return {mode, setMode, zoom, viewport, camera, frame, fullScreen, toggleFullScreen, fitMap, focusMap};
 }
 export type MapView = ReturnType<typeof useMapView>;
 

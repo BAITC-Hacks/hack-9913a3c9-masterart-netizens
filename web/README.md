@@ -73,7 +73,8 @@ WORKBENCH_REAL=../out/analysis.json npm test   # те же проверки на
 
 `src/app/AssistantSlot.tsx` подключает `src/features/assistant/index.tsx`, если такой файл есть. Эту часть
 разрабатывают отдельно. Модуль экспортирует `AssistantPanel` со свойствами
-`{index, focusGid, mode, onSelectGid}`. Пока модуля нет, место пустое: ручной сценарий от помощника не зависит.
+`{selection: string[], onSelectNode(gid), className?}`. Счёт, выбранный из ответа помощника, открывается
+через ту же проверку, что и поиск. Пока модуля нет, место пустое: ручной сценарий от помощника не зависит.
 
 ## Заимствованный код
 

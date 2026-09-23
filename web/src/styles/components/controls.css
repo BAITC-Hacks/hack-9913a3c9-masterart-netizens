@@ -20,15 +20,17 @@
 .wb-zoom button[aria-pressed="true"] { color: var(--wb-gold); }
 
 .wb-search { position: relative; }
-.wb-search__field { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 14px; border: 1px solid var(--wb-line-strong); border-radius: 12px; background: var(--wb-card); color: var(--wb-muted); transition: border-color var(--wb-normal) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease); }
+.wb-search__field { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 14px; border: 1px solid var(--wb-line-strong); border-radius: 999px; background: var(--wb-card); color: var(--wb-muted); transition: border-color var(--wb-normal) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease); }
 .wb-search__field:focus-within { border-color: var(--wb-gold-line); box-shadow: 0 0 0 4px var(--wb-gold-wash); }
 .wb-search__field input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--wb-fg); font: 400 15px/1.2 var(--wb-mono); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .wb-search__field input::placeholder { font-family: var(--wb-sans); letter-spacing: 0; color: var(--wb-faint); }
-.wb-search__status { margin: 6px 2px 0; min-height: 1.5em; font-size: 12px; line-height: 1.45; color: var(--wb-muted); }
+.wb-search__panel { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 30; padding: 10px 6px 6px; border: 1px solid var(--wb-line); border-radius: 16px; background: var(--wb-card); box-shadow: var(--wb-shadow-md); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity var(--wb-fast) var(--wb-ease), transform var(--wb-normal) var(--wb-ease); }
+.wb-search__panel.is-open { opacity: 1; transform: none; pointer-events: auto; }
+.wb-search__status { margin: 0 8px 4px; font-size: 12.5px; line-height: 1.45; color: var(--wb-muted); }
 .wb-search.is-not_found .wb-search__status, .wb-search.is-invalid .wb-search__status { color: var(--wb-alert); }
 .wb-search.is-exact .wb-search__status { color: var(--wb-gold); }
-.wb-search__options { margin: 6px 0 0; padding: 4px; list-style: none; border: 1px solid var(--wb-line); border-radius: 12px; background: var(--wb-card); box-shadow: var(--wb-shadow-md); }
-.wb-search__options li { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.wb-search__options { margin: 4px 0 0; padding: 0; list-style: none; }
+.wb-search__options li { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: 10px; cursor: pointer; font-size: 13px; }
 .wb-search__options li:hover, .wb-search__options li.is-active { background: var(--wb-gold-wash); }
 
 .wb-notice { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--wb-alert) 35%, transparent); border-radius: 12px; font-size: 12.5px; line-height: 1.45; color: var(--wb-fg); }
@@ -36,4 +38,12 @@
 .wb-notice span { flex: 1; }
 .wb-notice__close { display: grid; place-items: center; width: 28px; height: 28px; margin: -4px -4px 0 0; border: 0; border-radius: 999px; background: transparent; color: var(--wb-muted); cursor: pointer; }
 
-.wb-details summary { display: flex; align-items: center; min-height: 36px; font-size: 13px; color: var(--wb-soft); cursor: pointer; }
+.wb-iconbutton { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--wb-line); border-radius: 50%; background: transparent; color: var(--wb-soft); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
+.wb-iconbutton:hover { color: var(--wb-fg); border-color: var(--wb-gold-line); }
+.wb-disclosure { margin-top: 6px; }
+.wb-disclosure > summary { display: flex; align-items: center; gap: 8px; min-height: 36px; list-style: none; font-size: 13px; color: var(--wb-soft); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease); }
+.wb-disclosure > summary::-webkit-details-marker { display: none; }
+.wb-disclosure > summary::before { content: ""; width: 6px; height: 6px; margin: 0 3px 0 1px; border-right: 1.3px solid currentColor; border-bottom: 1.3px solid currentColor; transform: rotate(-45deg); transition: transform var(--wb-normal) var(--wb-ease); }
+.wb-disclosure[open] > summary::before { transform: rotate(45deg); }
+.wb-disclosure > summary:hover { color: var(--wb-fg); }
+.wb-disclosure > :not(summary) { margin-left: 16px; }
