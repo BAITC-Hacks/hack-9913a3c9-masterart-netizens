@@ -1,0 +1,24 @@
+# Локальные инструкции и инструменты AI-агентов
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+OPERATING.md
+contest-kit/
+.claude/
+.codex/
+.agents/
+.harness/
+.worktreeinclude
+.worktreebootstrap.json
+
+# Секреты, зависимости и результаты сборки
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.venv/
+__pycache__/
+.DS_Store
