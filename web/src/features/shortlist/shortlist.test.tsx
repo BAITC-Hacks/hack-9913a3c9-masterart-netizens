@@ -254,6 +254,15 @@ describe('Сохранённые счета — PDF-отчёт', () => {
     await expect(fetchReport({gids: [A], mode: 'structural'}, {fetcher: hang, timeoutMs: 10})).rejects.toMatchObject({kind: 'timeout'});
   });
 
+  it('[SHORTLIST-REPORT-REJECT] неизвестный gid: показывается текст сервера, а не «не подключён»', async () => {
+    // Тело и заголовки — ровно ответ живого serve.py на неизвестный gid (проверено curl в 16:51).
+    const live = async () => new Response('{"error": "Счёт 999999999999999999 не найден в файле анализа"}', {status: 404, headers: {'content-type': 'application/json; charset=utf-8'}});
+    const failure = await fetchReport({gids: [A], mode: 'structural'}, {fetcher: live}).catch(error => error);
+    expect(failure.kind).toBe('rejected');
+    expect(failure.message).toBe('Счёт 999999999999999999 не найден в файле анализа (ответ 404).');
+    expect(failure.message).not.toContain('не подключён');
+  });
+
   it('[SHORTLIST-REPORT] имя файла из заголовка — только безопасное .pdf', () => {
     expect(filenameFromDisposition('attachment; filename="spravka-3-schetov.pdf"')).toBe('spravka-3-schetov.pdf');
     expect(filenameFromDisposition("attachment; filename*=UTF-8''spravka-1.pdf")).toBe('spravka-1.pdf');

@@ -3,6 +3,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {parseAssistantResponse} from './api';
 import {AssistantLauncher, AssistantWorkspace} from './AssistantWorkspace';
 import {CONVERSATIONS_KEY, createConversationStore, type ConversationStorage} from './conversationStore';
+import {OPTIONS} from './model.test';
 
 class MemoryStorage implements ConversationStorage {
   readonly map = new Map<string, string>();
@@ -17,8 +18,10 @@ const answer = parseAssistantResponse({
   answer_md: '## Роль\nГипотеза: **распределитель**.', nodes: [GID], intent: 'explain_node', args: {gid: GID}, parser: 'rules',
   warnings: [], citations: [{label: 'Метрики счёта', gid: GID}], tool_trace: [],
 });
-const render = (storage: ConversationStorage | null, selection: string[] = []) => renderToStaticMarkup(
-  <AssistantWorkspace scope={SCOPE} selection={selection} onSelectNode={() => {}} open={false} onClose={() => {}} storage={storage} />);
+// SCOPE совпадает с OPTIONS.dataset_fingerprint: разговоры ключуются отпечатком данных от сервера.
+const render = (storage: ConversationStorage | null, selection: string[] = [], ready = true) => renderToStaticMarkup(
+  <AssistantWorkspace scope={'e'.repeat(64)} selection={selection} onSelectNode={() => {}} open={false} onClose={() => {}} storage={storage}
+    initialOptions={ready ? OPTIONS : undefined} />);
 
 describe('Рабочая область разговоров — интерфейс', () => {
   it('[CHAT-UI] пустая область: подсказки, поле вопроса внизу, честная подпись о модели и контексте', () => {
@@ -28,8 +31,10 @@ describe('Рабочая область разговоров — интерфе�
     expect(html).toContain('Объяснить роль');
     expect(html).toContain('Цепочки по датам');
     expect(html).toContain('Вопрос о счёте');
-    expect(html).toContain('Модель выбирает сервер');
-    expect(html).toContain('прежние ответы в запрос не передаются');
+    expect(html).toContain('GPT-6 Astra');
+    expect(html).toContain('Среднее');
+    expect(html).toContain('учитывает до 6 последних вопросов этого разговора');
+    expect(html).not.toContain('прежние ответы в запрос не передаются');
     expect(html).toContain('aria-label="Отправить вопрос"');
     expect(html).toContain('Здесь появятся разговоры по этому набору данных');
   });
@@ -52,7 +57,7 @@ describe('Рабочая область разговоров — интерфе�
     expect(html).toContain(`Начат со счёта <span class="fa-gid" dir="ltr">${GID}</span>`);
     expect(html).toContain('Другие наборы данных · 1');
     expect(html).toContain('Продолжить их можно, только открыв тот файл');
-    expect(html).toContain(`sha256 ${OTHER.slice(0, 12)}`);
+    expect(html).toContain(`данные ${OTHER.slice(0, 12)}`);
     expect(html).toContain('Переименовать');
     expect(html).toContain('Удалить');
   });
@@ -62,6 +67,16 @@ describe('Рабочая область разговоров — интерфе�
     mem.setItem(CONVERSATIONS_KEY, '{не json');
     expect(render(mem)).toContain('Сохранённые разговоры не удалось прочитать');
     expect(render(null)).toContain('Разговоры действуют до перезагрузки страницы');
+  });
+
+  it('[CHAT-MODEL] пока настройки не загружены, отправка закрыта и разговоры не показаны', () => {
+    const mem = new MemoryStorage();
+    createConversationStore({scope: 'e'.repeat(64), storage: mem}).create(null);
+    const html = render(mem, [], false);
+    expect(html).toContain('Загружаем настройки модели…');
+    expect(html).toContain('Загружаем разговоры…');
+    expect(html).toMatch(/<button type="submit" class="fa-ws-send" disabled=""/);
+    expect(html).not.toContain('учитывает до');
   });
 
   it('[CHAT-UI] значок в шапке открывает диалог и доступен по имени', () => {

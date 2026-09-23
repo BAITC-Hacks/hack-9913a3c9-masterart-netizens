@@ -23,6 +23,9 @@ export interface StoredTurn {
   /** Выбор на карте в момент вопроса — точные строки gid. */
   selection: string[];
   askedAt: string;
+  /** Модель и усилие, которые были запрошены; ответ сам сообщает, чем он получен на самом деле. */
+  model?: string;
+  effort?: string;
   response?: AssistantResponse;
   error?: string;
 }
@@ -74,7 +77,7 @@ export interface ConversationStore {
   undoRemove(): void;
   setDraft(id: string, draft: string): void;
   /** Добавляет вопрос; заголовок пустого разговора берётся из первого вопроса. */
-  ask(id: string, question: string, selection: readonly string[]): string | null;
+  ask(id: string, question: string, selection: readonly string[], requested?: AssistantSettings): string | null;
   answer(id: string, turnId: string, response: AssistantResponse): void;
   fail(id: string, turnId: string, message: string): void;
   setSettings(settings: AssistantSettings): void;
@@ -108,6 +111,8 @@ function parseTurn(raw: unknown): StoredTurn | null {
   if (!isObj(raw) || !str(raw.id, 100) || !str(raw.question, MAX_QUESTION_LENGTH) || !str(raw.askedAt, 40)) return null;
   if (!Array.isArray(raw.selection) || !raw.selection.every(isGid)) return null;
   const turn: StoredTurn = {id: raw.id, question: raw.question, selection: [...raw.selection], askedAt: raw.askedAt};
+  if (str(raw.model, 100) && raw.model) turn.model = raw.model;
+  if (str(raw.effort, 100) && raw.effort) turn.effort = raw.effort;
   if (raw.response !== undefined) {
     try { turn.response = parseAssistantResponse(raw.response); } catch { turn.error = BROKEN_ANSWER; }
   } else if (str(raw.error, 2000)) {
@@ -290,11 +295,13 @@ export function createConversationStore(options: ConversationStoreOptions): Conv
       cancelDraftTimer();
       draftTimer = setTimeout(() => { draftTimer = null; commit(); }, draftDelay);
     },
-    ask(id, question, selection) {
+    ask(id, question, selection, requested) {
       const conversation = find(id);
       const text = question.trim();
       if (!conversation || !text || text.length > MAX_QUESTION_LENGTH || !selection.every(isGid)) return null;
       const turn: StoredTurn = {id: newId(), question: text, selection: [...new Set(selection)], askedAt: stamp()};
+      if (requested?.model) turn.model = requested.model.slice(0, 100);
+      if (requested?.effort) turn.effort = requested.effort.slice(0, 100);
       const title = conversation.title || text.replace(/\s+/g, ' ').slice(0, MAX_TITLE_LENGTH);
       replace({...conversation, title, draft: '', updatedAt: turn.askedAt, turns: [...conversation.turns, turn].slice(-MAX_TURNS)});
       cancelDraftTimer();
