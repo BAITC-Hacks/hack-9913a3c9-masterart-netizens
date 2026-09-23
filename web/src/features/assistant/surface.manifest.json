@@ -1,0 +1,31 @@
+{
+  "surface": "Панель вопросов к графу",
+  "entry": "index.tsx",
+  "verification_status": "pending_browser_integration",
+  "themes": ["light", "dark"],
+  "viewports": [{"width":375,"height":812},{"width":1440,"height":1000}],
+  "states": [
+    {"id":"empty","reach":{"fixture":"selection=[]"},"expect":{"text":"Обзор всего графа"}},
+    {"id":"selection","reach":{"fixture":"selection=[\"9007199254740993\"]"},"expect":{"text":"9007199254740993"}},
+    {"id":"loading","reach":{"steps":["Заполнить поле Вопрос к данным", "Нажать Задать вопрос; задержать ответ сервера"]},"expect":{"text":"Проверяем вопрос по данным графа…"}},
+    {"id":"local","reach":{"fixture":"POST: parser=rules; warnings=[Модель не настроена]; синтетические данные"},"expect":{"text":"Локальный разбор · без модели"}},
+    {"id":"model","reach":{"fixture":"POST: parser=openai; model=проверочная-модель; синтетические данные"},"expect":{"text":"Разбор запроса: OpenAI"}},
+    {"id":"none","reach":{"fixture":"POST: parser=none; синтетические данные"},"expect":{"text":"Запрос не распознан"}},
+    {"id":"error","reach":{"fixture":"POST возвращает HTTP 500"},"expect":{"text":"Повторить этот вопрос"}},
+    {"id":"cancelled","reach":{"steps":["Начать запрос с задержанным ответом", "Нажать Остановить"]},"expect":{"text":"Запрос остановлен."}},
+    {"id":"timeout","reach":{"fixture":"POST не отвечает 60 секунд"},"expect":{"text":"Сервер не ответил за минуту."}},
+    {"id":"sources","reach":{"steps":["Получить ответ с citations", "Открыть Основания ответа", "Открыть Данные основания 1"]},"expect":{"selector":".fa-citations pre"}},
+    {"id":"trace","reach":{"steps":["Получить ответ с tool_trace", "Открыть Как получен ответ"]},"expect":{"selector":".fa-trace pre"}},
+    {"id":"long","reach":{"fixture":"Длинный русский ответ; 20 счетов; длинный журнал"},"expect":{"text":"Ещё счетов:"}},
+    {"id":"invalid-id","reach":{"fixture":"POST: nodes=[9007199254740992] как число"},"expect":{"text":"Сервер вернул ответ в неизвестном формате."}}
+  ],
+  "transitions": [
+    {"id":"press","trigger":"Нажать кнопку","targets":[".fa-button", ".fa-node"],"duration":150,"easing":"cubic-bezier(.16,1,.3,1)","properties":["transform"],"reduced_motion":"none"},
+    {"id":"disabled","trigger":"Начать запрос","targets":[".fa-button:disabled"],"duration":150,"easing":"cubic-bezier(.16,1,.3,1)","properties":["opacity"],"reduced_motion":"none"}
+  ],
+  "flows": [
+    {"id":"citation","steps":["Выбрать подсказку", "Отправить вопрос", "Открыть основание", "Нажать счёт 9007199254740993"],"ends":"onSelectNode получает строку 9007199254740993 без округления"},
+    {"id":"retry","steps":["Получить HTTP 500", "Сменить выбор на карте", "Повторить этот вопрос"],"ends":"Повтор отправляет исходный снимок selection"},
+    {"id":"late-response","steps":["Начать медленный запрос", "Остановить", "Отправить другой вопрос", "Вернуть первый ответ после второго"],"ends":"Первый запрос остаётся остановленным, второй сохраняет свой ответ"}
+  ]
+}
