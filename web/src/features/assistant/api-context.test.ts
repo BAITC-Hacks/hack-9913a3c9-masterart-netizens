@@ -18,7 +18,7 @@ it('ASSIST-17 читает возможности сервера и отверг
 });
 
 it('ASSIST-18 передаёт точный контекст, модель и отпечаток без прозы прежнего ответа', async () => {
-  const response = { answer_md: 'Факты', nodes: ['9007199254740993'], intent: 'node', args: {}, parser: 'openai',
+  const response = { answer_md: 'Факты', answer_rich_md: '| Счёт |\n| --- |\n| 9007199254740993 |', nodes: ['9007199254740993'], intent: 'node', args: {}, parser: 'openai',
     warnings: [], citations: [], tool_trace: [], model: 'gpt-6-astra', effort: 'low',
     dataset_fingerprint: options.dataset_fingerprint, history_turns_used: 1 };
   const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(response)));
@@ -30,5 +30,6 @@ it('ASSIST-18 передаёт точный контекст, модель и о
   expect(JSON.parse(fetcher.mock.calls[0]?.[1].body)).toEqual(request);
   expect(actual.history_turns_used).toBe(1);
   expect(actual.effort).toBe('low');
+  expect(actual.answer_rich_md).toBe(response.answer_rich_md);
   expect(actual.dataset_fingerprint).toBe(options.dataset_fingerprint);
 });
