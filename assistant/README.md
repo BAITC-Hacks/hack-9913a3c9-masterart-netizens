@@ -84,7 +84,7 @@ HTTP-запроса принимать нельзя.
 Изменение любых данных, периода или правил меняет отпечаток; продолжение старого диалога
 отклоняется до вызова модели. Полная видимая история и её сохранение принадлежат интерфейсу.
 
-GPT-6 Astra: `low`, `medium`, `high`, `xhigh`, `max`; Sol и Luna дополнительно допускают `none`.
+GPT-6 Astra: `low`, `medium`, `high`, `xhigh`, `max`; GPT-5.6 Sol и GPT-5.6 Luna дополнительно допускают `none`.
 По умолчанию Astra/medium. См. [официальную документацию уровней рассуждения](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort).
 
 Внешний запрос направляется только в `https://api.openai.com/v1/responses`; перенаправления
