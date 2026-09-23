@@ -8,7 +8,9 @@
   .wb-main { display: flex; flex-direction: column; }
   .wb-center { order: 1; }
   .wb-inspector { order: 2; overflow: visible; padding: 24px 18px 40px; border: 0; border-top: 1px solid var(--wb-line); }
-  .wb-rail { order: 3; overflow: visible; padding: 20px 14px 48px; border: 0; border-top: 1px solid var(--wb-line); }
+  .wb-rail { order: 3; overflow: visible; padding: 20px 14px 48px; border: 0; border-top: 1px solid var(--wb-line); scroll-padding-top: 0; }
+  /* На узком экране список прокручивается в собственном окне под переключателем, поэтому полоса не липнет. */
+  .wb-rail__head { position: static; margin: 0; padding: 0; border: 0; background: none; }
   .wb-leads, .wb-clusters { max-height: 420px; overflow: auto; }
   .wb-map { height: auto; padding: 14px 16px 10px; }
   .wb-map__viewport { flex: none; height: min(62dvh, 520px); }
@@ -19,7 +21,7 @@
 }
 @media (max-width: 560px) {
   .wb-button, .wb-segmented button, .wb-iconbutton { min-height: 44px; }
-  .wb-disclosure > summary, .wb-about summary, .wb-tx summary, .wb-role-filter button { min-height: 44px; }
+  .wb-disclosure > summary, .wb-about summary, .wb-tx__toggle, .wb-role-filter button { min-height: 44px; }
   .wb-clusterview .wb-map__viewport { height: 60dvh; }
   .wb-iconbutton { width: 44px; }
   .wb-zoom button { width: 44px; height: 44px; }

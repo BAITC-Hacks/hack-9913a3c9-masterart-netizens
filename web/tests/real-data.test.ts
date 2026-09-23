@@ -19,7 +19,7 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
     if (!result.ok) throw new Error(result.errors.join('\n'));
     const index = buildIndex(result.data);
     const loadMs = performance.now() - started;
-    let maxNeighbours = 0, cycles = 0, layoutMs = 0, terminals = 0, alternativesChecked = 0;
+    let maxNeighbours = 0, cycles = 0, layoutMs = 0, terminals = 0, alternativesChecked = 0, smallOutflow = 0;
     for (const gid of index.gids) {
       expect(searchAccounts(index, gid)).toEqual({kind: 'exact', gid});
       const hood = compileNeighborhood(index, gid)!;
@@ -30,8 +30,23 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
       layoutMs = Math.max(layoutMs, performance.now() - t);
       expect(layout.cards.filter(card => card.kind !== 'note').length).toBeLessThanOrEqual(1 + 11 + 11 + 5);
       const node = index.byGid.get(gid)!;
-      const facts = roleFacts(node, result.data.policy.rules.find(rule => rule.role === node.role), hood.payers.length + hood.recipients.length + hood.mutual.length);
+      const facts = roleFacts(node, result.data.policy.rules.find(rule => rule.role === node.role), hood.payers.length + hood.recipients.length + hood.mutual.length,
+        result.data.policy.rules.find(rule => rule.role === 'transit'));
       expect(facts.length).toBeGreaterThanOrEqual(2);
+      expect(facts.every(fact => fact.value !== '' && fact.label !== ''), `факты ${gid}`).toBe(true);
+      // Факты роли подтверждают условие, по которому конвейер её назначил: каждый порог, кроме второй ветки «или», выполнен.
+      if (node.role !== 'peripheral') {
+        const unmet = facts.filter(fact => fact.met === false && !fact.threshold?.startsWith('или'));
+        expect(unmet, `${node.role} ${gid}: невыполненный порог у назначенной роли`).toEqual([]);
+      }
+      if (node.metrics.counterparties !== undefined) {
+        const partners = facts.find(fact => fact.label === 'разных контрагентов');
+        if (partners) expect(partners.value, `контрагенты ${gid}`).toBe(String(node.metrics.counterparties));
+      }
+      if (node.role === 'terminal' && node.metrics.out_degree > 0) {
+        expect(facts.map(fact => fact.label), `терминал ${gid} с исходящими`).not.toContain('дней без исходящих после последнего поступления');
+        smallOutflow += 1;
+      }
       if (node.role === 'terminal') {
         const branches = facts.filter(fact => fact.label === 'разных плательщиков' || fact.label === 'получено');
         expect(branches, `терминал ${gid}`).toHaveLength(2);
@@ -57,6 +72,6 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
       clusterMs = Math.max(clusterMs, performance.now() - t);
       expect(layout.cards.length + layout.hidden, `кластер ${id}`).toBe(members.length);
     }
-    console.info(`[WEB-REAL] ${index.gids.length} счетов, загрузка+индекс ${loadMs.toFixed(0)} мс, макс. соседей ${maxNeighbours}, счетов с циклами ${cycles}, худшая раскладка ${layoutMs.toFixed(1)} мс, худшая карта кластера ${clusterMs.toFixed(1)} мс, терминалов с веткой «или» ${terminals}, альтернатив сверено ${alternativesChecked}`);
+    console.info(`[WEB-REAL] ${index.gids.length} счетов, загрузка+индекс ${loadMs.toFixed(0)} мс, макс. соседей ${maxNeighbours}, счетов с циклами ${cycles}, худшая раскладка ${layoutMs.toFixed(1)} мс, худшая карта кластера ${clusterMs.toFixed(1)} мс, терминалов с веткой «или» ${terminals}, альтернатив сверено ${alternativesChecked}, конечных с небольшими исходящими ${smallOutflow}`);
   });
 });
