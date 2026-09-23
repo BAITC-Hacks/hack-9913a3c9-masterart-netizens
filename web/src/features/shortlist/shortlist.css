@@ -1,0 +1,65 @@
+/*
+ * Сохранённые счета. Те же токены, что у всего рабочего места: волосяные линии, пилюли, золото — только
+ * у выбора (сохранённый счёт, открытая строка, галочка). Все нажимаемые цели не меньше 44 px.
+ */
+.wb-save { position: relative; display: inline-flex; }
+.wb-save__button { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 44px; min-height: 44px; padding: 0 14px 0 12px; border: 1px solid var(--wb-line-strong); border-radius: 999px; background: var(--wb-card); color: var(--wb-soft); font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color var(--wb-normal) var(--wb-ease), border-color var(--wb-fast) ease, background-color var(--wb-fast) ease; }
+.wb-save__button--compact { padding: 0; }
+.wb-save__button svg { flex: none; animation: wb-save-in 360ms var(--wb-ease); }
+@media (hover: hover) and (pointer: fine) { .wb-save__button:hover { color: var(--wb-fg); border-color: var(--wb-gold-line); } }
+.wb-save__button:active svg { transform: scale(.88); }
+.wb-save__button[data-saved] { color: var(--wb-gold); border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
+@keyframes wb-save-in {
+  0% { opacity: .3; transform: scale(.72); }
+  62% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.wb-shortlist { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.wb-shortlist__head { display: flex; align-items: center; gap: 10px; }
+.wb-shortlist__title { margin: 0; font: 600 15px/1.3 var(--wb-display); letter-spacing: -.005em; color: var(--wb-fg); }
+.wb-shortlist__notice { align-items: flex-start; }
+.wb-shortlist__issue { display: block; }
+.wb-shortlist__issue + .wb-shortlist__issue { margin-top: 4px; }
+.wb-shortlist__dismiss { flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: -12px -12px -12px 0; border: 0; border-radius: 999px; background: transparent; color: var(--wb-muted); cursor: pointer; }
+.wb-shortlist__dismiss:hover { color: var(--wb-fg); }
+
+.wb-shortlist__empty { display: grid; justify-items: start; gap: 6px; padding: 18px 16px; border: 1px dashed var(--wb-line-strong); border-radius: 14px; }
+.wb-shortlist__empty p { margin: 0; }
+.wb-shortlist__empty-glyph { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 4px; border: 1px solid var(--wb-line); border-radius: 12px; color: var(--wb-muted); }
+.wb-shortlist__empty-title { font-size: 14px; font-weight: 500; color: var(--wb-fg); }
+
+.wb-shortlist__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wb-shortlist__all, .wb-shortlist__undo-button { min-height: 44px; padding: 0 2px; border: 0; background: none; color: var(--wb-fg); font-size: 13px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--wb-line-strong); text-underline-offset: 3px; transition: color var(--wb-fast) var(--wb-ease), text-decoration-color var(--wb-fast) var(--wb-ease); }
+.wb-shortlist__all:hover, .wb-shortlist__undo-button:hover { color: var(--wb-gold); text-decoration-color: currentColor; }
+
+.wb-shortlist__list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.wb-shortlist__row { display: flex; align-items: center; gap: 2px; min-height: 52px; padding: 0 2px; border: 1px solid transparent; border-radius: 12px; transition: background-color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
+.wb-shortlist__row:hover { background: var(--wb-sunken); }
+.wb-shortlist__row.is-current { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
+.wb-shortlist__check { flex: none; display: grid; place-items: center; width: 44px; height: 44px; cursor: pointer; }
+.wb-shortlist__check input { width: 17px; height: 17px; margin: 0; accent-color: var(--wb-gold); cursor: pointer; }
+.wb-shortlist__open { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; min-height: 44px; padding: 6px 4px; border: 0; border-radius: 8px; background: none; color: var(--wb-fg); text-align: left; cursor: pointer; }
+.wb-shortlist__gid { font-size: 13.5px; }
+.wb-shortlist__open:hover .wb-shortlist__gid { color: var(--wb-gold); }
+.wb-shortlist__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.wb-shortlist__rank { font: 400 11.5px/1.2 var(--wb-mono); color: var(--wb-muted); }
+.wb-shortlist__remove { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--wb-muted); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease); }
+.wb-shortlist__remove:hover { color: var(--wb-fg); background: var(--wb-card); }
+
+.wb-shortlist__undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding: 0 6px 0 14px; border: 1px solid var(--wb-line); border-radius: 12px; background: var(--wb-card); box-shadow: var(--wb-shadow-sm); font-size: 13px; color: var(--wb-soft); animation: wb-shortlist-in var(--wb-normal) var(--wb-ease); }
+@keyframes wb-shortlist-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.wb-shortlist__report { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--wb-line); }
+.wb-shortlist__download { justify-content: center; min-height: 44px; }
+.wb-shortlist__download:disabled { opacity: .45; cursor: default; }
+.wb-shortlist__download:disabled:hover { border-color: var(--wb-line-strong); }
+.wb-shortlist__download[aria-busy] { opacity: .8; cursor: progress; }
+.wb-shortlist__hint, .wb-shortlist__done, .wb-shortlist__error { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.wb-shortlist__hint { color: var(--wb-muted); }
+.wb-shortlist__done { color: var(--wb-soft); }
+.wb-shortlist__error { color: var(--wb-alert); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-save__button svg, .wb-shortlist__undo { animation: none; }
+}
