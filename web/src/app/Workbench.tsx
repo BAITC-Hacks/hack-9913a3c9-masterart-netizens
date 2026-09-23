@@ -69,7 +69,8 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
             : <p className="wb-empty">Выберите счёт в очереди или найдите его по gid.</p>}
       </section>
       {selected && hood
-        ? <EvidencePanel key={selected} index={index} hood={hood} mode={mode} onMode={setMode} onSelect={select} onOpenCluster={openCluster} openCluster={cluster} />
+        // Без key: панель помощника внутри не должна терять историю при переходе к другому счёту.
+        ? <EvidencePanel index={index} hood={hood} mode={mode} onMode={setMode} onSelect={select} onOpenCluster={openCluster} openCluster={cluster} />
         : <aside className="wb-inspector" aria-label="Основания" />}
     </div>
   </div>;
