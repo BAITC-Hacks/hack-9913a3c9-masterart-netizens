@@ -76,6 +76,12 @@
 .wb-report__close:hover { color: var(--wb-fg); background: var(--wb-sunken); }
 .wb-report__body { flex: 1; min-height: 0; display: flex; background: var(--wb-sunken); }
 .wb-report__frame { flex: 1; width: 100%; height: 100%; border: 0; }
+/* Просмотр PDF на canvas: страница по ширине окна, листание внизу. */
+.wb-pdf { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.wb-pdf__frame { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; padding: 16px; }
+.wb-pdf__page { display: block; max-width: 100%; height: auto; border-radius: 4px; background: #fff; box-shadow: var(--wb-shadow-md); }
+.wb-pdf__pager { flex: none; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 16px; border-top: 1px solid var(--wb-line); background: var(--wb-card); color: var(--wb-soft); font-size: 13px; font-variant-numeric: tabular-nums; }
+.wb-pdf__pager .wb-button { min-height: 44px; }
 .wb-report__status { box-sizing: border-box; max-width: 460px; margin: auto; padding: 24px; text-align: center; font-size: 14px; line-height: 1.5; color: var(--wb-soft); }
 .wb-report__status p { margin: 0 0 12px; }
 .wb-report__status a { color: var(--wb-fg); text-underline-offset: 3px; }

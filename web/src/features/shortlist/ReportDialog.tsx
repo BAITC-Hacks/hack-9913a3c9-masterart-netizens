@@ -4,6 +4,7 @@ import {countLabel} from '../../data/format';
 import {Gid} from '../../ui/Gid';
 import {Icon} from '../../map/icons';
 import type {ReportSession, ReportSessionState} from './reportSession';
+import {PdfCanvasViewer} from './PdfCanvasViewer';
 
 export const ReportSessionContext = createContext<ReportSession | null>(null);
 
@@ -26,9 +27,9 @@ function Title({state}: {state: ReportSessionState}) {
 }
 
 /**
- * Просмотр PDF поверх рабочего места (модальный dialog: фокус внутри, Esc закрывает). Файл показывается
- * встроенным просмотрщиком браузера; если браузер его не показывает (часть телефонов), видны ссылки
- * «Открыть» и «Скачать». Закрытие освобождает временную ссылку на файл.
+ * Просмотр PDF поверх рабочего места (модальный dialog: фокус внутри, Esc закрывает). Страницы рисует
+ * PDF.js на canvas, поэтому просмотр работает и там, где у браузера нет встроенного PDF-модуля; если
+ * показать не удалось, видны ссылки «Открыть» и «Скачать». Закрытие освобождает временную ссылку на файл.
  */
 export function ReportDialog({session}: {session: ReportSession}) {
   const state = useReportState(session);
@@ -65,12 +66,7 @@ export function ReportDialog({session}: {session: ReportSession}) {
         <p className="wb-report__error">{state.message}</p>
         <button type="button" className="wb-button" onClick={() => void session.retry()}>Повторить</button>
       </div>}
-      {state.phase === 'ready' && <object className="wb-report__frame" data={state.url} type="application/pdf" aria-label={`Просмотр файла ${state.file.filename}`}>
-        <div className="wb-report__status">
-          <p>Этот браузер не показывает PDF внутри страницы.</p>
-          <p><a href={state.url} target="_blank" rel="noopener">Открыть {state.file.filename}</a> или <a href={state.url} download={state.file.filename}>скачать файл</a>.</p>
-        </div>
-      </object>}
+      {state.phase === 'ready' && <PdfCanvasViewer key={state.url} blob={state.file.blob} url={state.url} filename={state.file.filename} />}
     </div>
   </dialog>;
 }
