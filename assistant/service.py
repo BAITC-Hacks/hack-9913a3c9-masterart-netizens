@@ -8,7 +8,8 @@ import re
 from typing import Callable
 
 from . import openai
-from .config import load_config
+from .config import load_config, DEFAULT_EFFORT, MODEL_EFFORTS
+from .conversation import dataset_fingerprint as fingerprint_for, referenced_gids, validate_history
 from .queries import GraphQueries, MAX_SOURCES, QueryError, ROLES
 from .render import UNSUPPORTED, render
 
@@ -73,6 +74,8 @@ def _rules(question: str, selected: list[str], mentioned: list[str], graph: Grap
     gids = mentioned or selected
     gid = gids[0] if len(gids) == 1 else None
     limit = _limit(q)
+    if re.search(r"сравн|compare", q):
+        return "compare_nodes", {"gids": gids}
     if re.search(r"сход|схожд|достиж|пересеч|хотя бы|конверген|converg|reachable|\d+\s*(?:из|of)\s*\d+", q):
         match = re.search(r"(?:хотя бы|не менее|минимум|at least)\s+(\d+)|\b(\d+)\s*(?:из|of)\s*\d+", q)
         k = int(next(g for g in match.groups() if g is not None)) if match else 2
@@ -137,13 +140,15 @@ def _response_output(response: object) -> list[dict]:
 
 
 def _model_query(question: str, selected: list[str], mentioned: list[str], graph: GraphQueries,
-                 api_key: str, model: str, transport: Callable) -> tuple[str, dict, dict]:
+                 api_key: str, model: str, transport: Callable, history: list[dict], effort: str) -> tuple[str, dict, dict]:
     payload = {"model": model, "store": False, "include": ["reasoning.encrypted_content"],
                "instructions": openai.INSTRUCTIONS, "tools": openai.tools(), "tool_choice": "required",
-               "parallel_tool_calls": False, "max_output_tokens": 2500,
+               "parallel_tool_calls": False, "max_output_tokens": 2500, "reasoning": {"effort": effort},
                "input": [{"role": "user", "content": json.dumps({
                    "question": question, "selection": selected,
+                   "resolved_gids": mentioned,
                    "selection_clusters": sorted({graph.nodes[g]["cluster_id"] for g in selected}),
+                   "history": history,
                }, ensure_ascii=False)}]}
     first = transport(copy.deepcopy(payload), api_key=api_key, timeout=openai.TIMEOUT_SECONDS)
     output = _response_output(first)
@@ -157,13 +162,17 @@ def _model_query(question: str, selected: list[str], mentioned: list[str], graph
     if not isinstance(name, str):
         raise QueryError("Модель не указала имя операции.")
     args = _parse_arguments(call.get("arguments"))
-    allowed = set(mentioned or selected)
+    allowed = set(mentioned or (selected + [g for turn in history for g in turn["result_gids"]]))
+    if "gids" in args and (not isinstance(args["gids"], list)
+                           or any(not isinstance(g, str) or g not in allowed for g in args["gids"])):
+        raise QueryError("Сравнение содержит счёт, которого нет в вопросе или выделении.")
     if args.get("gid") is not None and args["gid"] not in allowed:
         raise QueryError("Модель указала счёт, которого нет в вопросе или выделении.")
     if "sources" in args and (not isinstance(args["sources"], list)
                               or any(not isinstance(g, str) or g not in allowed for g in args["sources"])):
         raise QueryError("Источники модели не соответствуют вопросу или выделению.")
-    if name == "find_convergence" and allowed and set(args.get("sources", [])) != allowed:
+    source_scope = set(mentioned or selected)
+    if name == "find_convergence" and source_scope and set(args.get("sources", [])) != source_scope:
         raise QueryError("Модель изменила выбранное множество источников.")
     if name == "get_clusters" and args.get("cluster_id") is not None:
         allowed_clusters = {graph.nodes[g]["cluster_id"] for g in allowed}
@@ -184,7 +193,8 @@ def _model_query(question: str, selected: list[str], mentioned: list[str], graph
     return name, args, result
 
 
-def answer(question, selection, analysis, *, api_key=None, model=None, transport=None) -> dict:
+def answer(question, selection, analysis, *, api_key=None, model=None, transport=None,
+           effort=None, history=None, dataset_fingerprint=None) -> dict:
     """Возвращает факты и их ссылки. transport(payload, *, api_key, timeout) подменяет только HTTP."""
     try:
         if not isinstance(question, str) or len(question) > 4000 or "\x00" in question:
@@ -193,13 +203,20 @@ def answer(question, selection, analysis, *, api_key=None, model=None, transport
             return _base(UNSUPPORTED, intent="unsupported")
         graph = GraphQueries(analysis)
         question, selected, mentioned = _inputs(question, selection, graph)
+        fingerprint = fingerprint_for(analysis)
+        previous = validate_history(history, dataset_fingerprint, fingerprint, graph)
+        if not mentioned:
+            mentioned = referenced_gids(question, previous)
         config = load_config()
         key = config["api_key"] if api_key is None else api_key
         chosen_model = config["model"] if model is None else model
         if not isinstance(key, str) or any(c in key for c in ("\r", "\n", "\x00")) or len(key) > 1024:
             return _base("Некорректная серверная конфигурация помощника.", intent="invalid")
-        if not isinstance(chosen_model, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,79}", chosen_model):
-            return _base("Некорректное имя модели в серверной конфигурации.", intent="invalid")
+        chosen_effort = DEFAULT_EFFORT if effort is None else effort
+        if not isinstance(chosen_model, str) or chosen_model not in MODEL_EFFORTS:
+            return _base("Эта модель недоступна в настройках помощника. Выберите модель из списка.", intent="invalid")
+        if not isinstance(chosen_effort, str) or chosen_effort not in MODEL_EFFORTS[chosen_model]:
+            return _base("Этот уровень рассуждения не поддерживается выбранной моделью.", intent="invalid")
         if key and (key in question or key == chosen_model):
             return _base("В запросе обнаружено значение серверной конфигурации. Удалите его из текста.", intent="invalid")
         warnings = []
@@ -207,7 +224,8 @@ def answer(question, selection, analysis, *, api_key=None, model=None, transport
         model_used = None
         if key:
             try:
-                name, args, result = _model_query(question, selected, mentioned, graph, key, chosen_model, transport or openai.request)
+                name, args, result = _model_query(question, selected, mentioned, graph, key, chosen_model,
+                                                  transport or openai.request, previous, chosen_effort)
                 parser = "openai"
                 model_used = chosen_model
             except Exception:
@@ -225,9 +243,11 @@ def answer(question, selection, analysis, *, api_key=None, model=None, transport
         warnings.extend(result["warnings"])
         response = {"answer_md": message, "nodes": result["nodes"], "intent": result["kind"], "args": args,
                     "parser": parser, "warnings": list(dict.fromkeys(warnings)), "citations": result["citations"],
-                    "tool_trace": [{"name": name, "args": copy.deepcopy(args), "result": result}]}
+                    "tool_trace": [{"name": name, "args": copy.deepcopy(args), "result": result}],
+                    "dataset_fingerprint": fingerprint, "history_turns_used": len(previous)}
         if model_used is not None:
             response["model"] = model_used
+            response["effort"] = chosen_effort
         return response
     except QueryError as exc:
         return _base(str(exc), intent="invalid")

@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 from urllib.error import HTTPError
 
-from assistant import answer, load_config
+from assistant import answer, assistant_options, load_config
 from assistant import openai
 from assistant.queries import GraphQueries, QueryError, gid_value
 
@@ -162,6 +162,84 @@ class AssistantTests(unittest.TestCase):
         selected = self.ask("кластер выбранного счёта", [I])
         self.assertEqual(selected["args"]["cluster_id"], 1)
         self.assertEqual(selected["nodes"], [I])
+
+    def test_F07_compare_uses_current_facts_and_explains_order(self):
+        result = self.ask(f"Сравни счета {Y} и {X}")
+        self.assertEqual(result["intent"], "comparison")
+        self.assertEqual(result["nodes"], [X, Y])
+        self.assertIn("17000 KZT", result["answer_md"])
+        self.assertIn("раньше в вычисленной очереди", result["answer_md"])
+        self.assertIn("а не большую вероятность", result["answer_md"])
+        self.assertEqual(result["tool_trace"][0]["result"]["facts"]["leaders"], [X])
+
+    def test_F07_compare_tie_boundary_and_invalid_ids(self):
+        node = next(n for n in self.data["nodes"] if n["gid"] == Y)
+        node["priority_score"] = .9
+        node["observation"]["outgoing_censored"] = True
+        result = self.ask("Сравни выбранные счета", [X, Y])
+        self.assertIn("Одинаковый максимальный приоритет", result["answer_md"])
+        self.assertIn("не подтверждает конечного получателя", result["answer_md"])
+        graph = GraphQueries(self.data)
+        for gids in ([X], [X, X], [X, "999"], [X, int(Y)], [A, B, X, Y, Z, I]):
+            with self.subTest(gids=gids), self.assertRaises(QueryError):
+                graph.execute("compare_nodes", {"gids": gids})
+
+    def test_F07_model_cannot_add_unrequested_comparison_account(self):
+        fake = FakeTransport(name="compare_nodes", args={"gids": [X, Z]})
+        result = self.ask("Сравни выбранные счета", [X, Y], api_key="test-only", transport=fake)
+        self.assertEqual(result["parser"], "rules")
+        self.assertEqual(result["nodes"], [X, Y])
+        self.assertEqual(len(fake.calls), 1)
+
+    def test_F07_followup_second_and_compare_first_two_requery_current_facts(self):
+        options = assistant_options(self.data)
+        history = [{"question": "топ 3", "selection": [], "result_gids": [X, Z, Y]}]
+        params = {"history": history, "dataset_fingerprint": options["dataset_fingerprint"]}
+        second = self.ask("Почему второй?", [A], **params)
+        self.assertEqual(second["nodes"], [Z])
+        self.assertEqual(second["history_turns_used"], 1)
+        comparison = self.ask("Сравни первые два счёта из ответа", [A], **params)
+        self.assertEqual(comparison["intent"], "comparison")
+        self.assertEqual(comparison["nodes"], [X, Z])
+        fake = FakeTransport(args={"gid": Z})
+        live = self.ask("Почему второй?", [A], api_key="test-only", transport=fake, **params)
+        self.assertEqual(live["parser"], "openai")
+        self.assertEqual(json.loads(fake.calls[0]["input"][0]["content"])["history"], history)
+        self.assertEqual(self.ask(f"Объясни счёт {Y}", [A], **params)["nodes"], [Y])
+
+    def test_F07_stale_or_fabricated_history_rejected_before_model(self):
+        options = assistant_options(self.data)
+        good = {"question": "топ 2", "selection": [], "result_gids": [X, Z]}
+        invalid = [([good], "old-dataset"), ([good], None), ([good] * 7, options["dataset_fingerprint"]),
+                   ([dict(good, result_gids=[X, "999"])], options["dataset_fingerprint"]),
+                   ([dict(good, result_gids=[int(X)])], options["dataset_fingerprint"]),
+                   ([dict(good, question="x" * 1001)], options["dataset_fingerprint"]),
+                   ([dict(good, answer_md="invented facts")], options["dataset_fingerprint"])]
+        for history, fingerprint in invalid:
+            fake = FakeTransport()
+            result = self.ask("Почему второй?", [A], history=history, dataset_fingerprint=fingerprint,
+                              api_key="test-only", transport=fake)
+            self.assertEqual(result["intent"], "invalid")
+            self.assertEqual(fake.calls, [])
+        changed = copy.deepcopy(self.data)
+        changed["nodes"][0]["priority_score"] = .5
+        self.assertNotEqual(assistant_options(changed)["dataset_fingerprint"], options["dataset_fingerprint"])
+
+    def test_F07_model_effort_allowlist_is_shared_with_options(self):
+        options = assistant_options(self.data)
+        for choice in options["models"]:
+            for effort in choice["efforts"]:
+                fake = FakeTransport()
+                result = self.ask("Объясни счёт", [X], model=choice["id"], effort=effort,
+                                  api_key="test-only", transport=fake)
+                self.assertEqual(result["parser"], "openai")
+                self.assertEqual(fake.calls[0]["reasoning"], {"effort": effort})
+                self.assertEqual(result["effort"], effort)
+        for model, effort in [("gpt-6-astra", "none"), ("gpt-6-sol", "ultra"), ("arbitrary", "low"), ([], "low")]:
+            fake = FakeTransport()
+            result = self.ask("Объясни счёт", [X], model=model, effort=effort, api_key="test-only", transport=fake)
+            self.assertEqual(result["intent"], "invalid")
+            self.assertEqual(fake.calls, [])
 
     def test_F07_k_of_n_is_partial_not_all_sources(self):
         result = self.ask("Достижимы хотя бы от 2 выбранных счетов", [A, B, I])

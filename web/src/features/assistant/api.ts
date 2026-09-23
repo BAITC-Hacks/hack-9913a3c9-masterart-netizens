@@ -1,4 +1,4 @@
-import type { AssistantCitation, AssistantRequest, AssistantResponse, JsonObject, JsonValue } from './types';
+import type { AssistantCitation, AssistantOptions, AssistantRequest, AssistantResponse, JsonObject, JsonValue } from './types';
 
 export const MAX_QUESTION_LENGTH = 2000;
 export const REQUEST_TIMEOUT_MS = 60000;
@@ -88,7 +88,34 @@ export function parseAssistantResponse(value: unknown): AssistantResponse {
     citations: value.citations.map(citation),
     tool_trace: value.tool_trace.map((item) => json(item)),
     ...(typeof value.model === 'string' ? { model: value.model } : {}),
+    ...(typeof value.effort === 'string' ? { effort: value.effort } : {}),
+    ...(typeof value.dataset_fingerprint === 'string' ? { dataset_fingerprint: value.dataset_fingerprint } : {}),
+    ...(typeof value.history_turns_used === 'number' ? { history_turns_used: value.history_turns_used } : {}),
   };
+}
+
+export async function loadAssistantOptions(signal?: AbortSignal): Promise<AssistantOptions> {
+  let response: Response;
+  try { response = await fetch('/api/assistant/options', { credentials: 'same-origin', signal }); }
+  catch { throw new AssistantError('Не удалось загрузить настройки помощника. Проверьте локальный сервер.'); }
+  if (!response.ok) throw new AssistantError('Настройки помощника пока недоступны на этом сервере.');
+  const value: unknown = await response.json();
+  if (!object(value) || typeof value.dataset_fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(value.dataset_fingerprint)
+    || !Array.isArray(value.models) || !value.models.length || !object(value.defaults) || !object(value.history_limits)) return malformed();
+  const models = value.models.map((model) => {
+    if (!object(model) || typeof model.id !== 'string' || typeof model.label !== 'string'
+      || typeof model.default_effort !== 'string') return malformed();
+    const efforts = strings(model.efforts);
+    if (!efforts.length || !efforts.includes(model.default_effort)) return malformed();
+    return { id: model.id, label: model.label, efforts, default_effort: model.default_effort };
+  });
+  const { model, effort } = value.defaults;
+  if (typeof model !== 'string' || typeof effort !== 'string'
+    || !models.some((choice) => choice.id === model && choice.efforts.includes(effort))) return malformed();
+  const { turns, question_chars, gids } = value.history_limits;
+  if (![turns, question_chars, gids].every((limit) => typeof limit === 'number' && Number.isInteger(limit) && limit > 0)) return malformed();
+  return { dataset_fingerprint: value.dataset_fingerprint, models, defaults: { model, effort },
+    history_limits: { turns: turns as number, question_chars: question_chars as number, gids: gids as number } };
 }
 
 export function parserLabel(response: Pick<AssistantResponse, 'parser' | 'model'>): string {
@@ -107,7 +134,15 @@ export async function askAssistant(request: AssistantRequest, signal: AbortSigna
   try {
     response = await fetch('/api/assistant', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      credentials: 'same-origin', signal, body: JSON.stringify({ question, selection }),
+      credentials: 'same-origin', signal, body: JSON.stringify({
+        question, selection,
+        ...(request.model !== undefined ? { model: request.model } : {}),
+        ...(request.effort !== undefined ? { effort: request.effort } : {}),
+        ...(request.dataset_fingerprint !== undefined ? { dataset_fingerprint: request.dataset_fingerprint } : {}),
+        ...(request.history !== undefined ? { history: request.history.map((turn) => ({
+          question: turn.question, selection: exactSelection(turn.selection), result_gids: exactSelection(turn.result_gids),
+        })) } : {}),
+      }),
     });
   } catch (error) {
     if (signal.aborted) throw error;

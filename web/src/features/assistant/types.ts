@@ -25,9 +25,29 @@ export interface AssistantResponse {
   citations: AssistantCitation[];
   tool_trace: JsonValue[];
   model?: string;
+  effort?: string;
+  dataset_fingerprint?: string;
+  history_turns_used?: number;
+}
+
+export interface AssistantHistoryTurn {
+  question: string;
+  selection: string[];
+  result_gids: string[];
+}
+
+export interface AssistantOptions {
+  dataset_fingerprint: string;
+  models: { id: string; label: string; efforts: string[]; default_effort: string }[];
+  defaults: { model: string; effort: string };
+  history_limits: { turns: number; question_chars: number; gids: number };
 }
 
 export interface AssistantRequest {
   question: string;
   selection: string[];
+  model?: string;
+  effort?: string;
+  dataset_fingerprint?: string;
+  history?: AssistantHistoryTurn[];
 }
