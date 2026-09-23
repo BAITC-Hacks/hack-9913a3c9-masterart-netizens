@@ -8,6 +8,13 @@ from typing import Mapping
 
 DEFAULT_MODEL = "gpt-6-astra"
 KNOWN_NAMES = ("OPENAI_API_KEY", "OPENAI_MODEL")
+# Допустимые пары Responses API; расширяются только после проверки поддержки сервером.
+MODEL_EFFORTS = {
+    "gpt-6-astra": ("low", "medium", "high", "xhigh", "max"),
+    "gpt-6-sol": ("none", "low", "medium", "high", "xhigh", "max"),
+    "gpt-6-luna": ("none", "low", "medium", "high", "xhigh", "max"),
+}
+DEFAULT_EFFORT = "medium"
 
 
 def load_config(env_file: str | Path | None = None, *, environ: Mapping[str, str] | None = None) -> dict:

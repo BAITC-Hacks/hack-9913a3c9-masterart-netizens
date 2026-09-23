@@ -23,6 +23,7 @@ MODES = {"static": "без учёта дат", "strict": "только боле�
 LIMITATION = "Достижимость не доказывает движение одних и тех же денег; роль — гипотеза, а не вывод о виновности."
 MAX_RESULTS = 30
 MAX_SOURCES = 100
+MAX_COMPARE = 5
 
 
 class QueryError(ValueError):
@@ -175,6 +176,16 @@ class GraphQueries:
                                      "priority_description": self.analysis["policy"]["priority_description"]}, gids,
                             [citation("/policy/priority_description", "Правило приоритета")] + [self.node_citation(g) for g in gids])
 
+    def compare(self, gids: list[str]) -> dict:
+        rows = [self.node(gid)["facts"] for gid in gids]
+        rows.sort(key=lambda node: (-amount(node["priority_score"]), int(node["gid"])))
+        leaders = [node["gid"] for node in rows if node["priority_score"] == rows[0]["priority_score"]]
+        return self._result("comparison", {
+            "rows": rows, "leaders": leaders,
+            "priority_description": self.analysis["policy"]["priority_description"],
+        }, [node["gid"] for node in rows],
+            [self.node_citation(gid) for gid in gids] + [citation("/policy/priority_description", "Правило приоритета")])
+
     def cluster_query(self, cluster_id: int | None, limit: int) -> dict:
         if cluster_id is not None and cluster_id not in self.clusters:
             raise QueryError("Кластер с таким номером отсутствует в выборке.")
@@ -280,7 +291,7 @@ class GraphQueries:
         validate_args(name, args, self)
         methods = {"get_node": self.node, "get_neighbors": self.neighbors, "rank_nodes": self.rank,
                    "get_clusters": self.cluster_query, "find_convergence": self.convergence,
-                   "get_temporal": self.temporal, "get_gaps": self.gaps}
+                   "get_temporal": self.temporal, "get_gaps": self.gaps, "compare_nodes": self.compare}
         if name == "help":
             return self._result("help", {"topic": args["topic"]}, [], [])
         try:
@@ -298,6 +309,8 @@ def _schema(properties: dict) -> dict:
 GID_SCHEMA = {"type": "string", "pattern": r"^(0|-?[1-9][0-9]{0,18})$"}
 LIMIT_SCHEMA = {"type": "integer", "minimum": 1, "maximum": MAX_RESULTS}
 TOOL_SCHEMAS = {
+    "compare_nodes": ("Сравнить 2–5 явно указанных счетов: порядок проверки, наблюдаемые потоки, основания и пробелы. Это не оценка вины.",
+                      _schema({"gids": {"type": "array", "items": GID_SCHEMA, "minItems": 2, "maxItems": MAX_COMPARE}})),
     "get_node": ("Карточка точного счёта: роль-гипотеза, альтернатива, метрики и следующий запрос.", _schema({"gid": GID_SCHEMA})),
     "get_neighbors": ("Наблюдаемые входящие/исходящие рёбра одного счёта; лимит не меняет общее число.",
                       _schema({"gid": GID_SCHEMA, "direction": {"type": "string", "enum": ["in", "out", "both"]}, "limit": LIMIT_SCHEMA})),
@@ -330,9 +343,10 @@ def validate_args(name: str, args: dict, graph: GraphQueries) -> None:
             continue
         if key == "gid":
             graph.require_gid(value)
-        elif key == "sources":
-            if not isinstance(value, list) or len(value) > MAX_SOURCES:
-                raise QueryError("Список источников должен содержать не больше 100 точных идентификаторов.")
+        elif key in ("sources", "gids"):
+            low, high = (2, MAX_COMPARE) if key == "gids" else (0, MAX_SOURCES)
+            if not isinstance(value, list) or not low <= len(value) <= high:
+                raise QueryError(f"Список должен содержать от {low} до {high} точных идентификаторов.")
             for gid in value:
                 graph.require_gid(gid)
             if len(set(value)) != len(value):
