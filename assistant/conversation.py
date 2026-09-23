@@ -22,7 +22,7 @@ def dataset_fingerprint(analysis: dict) -> str:
 def assistant_options(analysis: dict, *, model: str | None = None) -> dict:
     return {
         "dataset_fingerprint": dataset_fingerprint(analysis),
-        "models": [{"id": name, "label": name.replace("gpt-6-", "GPT-6 ").title().replace("Gpt", "GPT"),
+        "models": [{"id": name, "label": "GPT-" + name.removeprefix("gpt-").rsplit("-", 1)[0] + " " + name.rsplit("-", 1)[1].title(),
                     "efforts": list(efforts), "default_effort": DEFAULT_EFFORT}
                    for name, efforts in MODEL_EFFORTS.items()],
         "defaults": {"model": model if model in MODEL_EFFORTS else DEFAULT_MODEL, "effort": DEFAULT_EFFORT},

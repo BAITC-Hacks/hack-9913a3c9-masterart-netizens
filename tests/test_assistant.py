@@ -270,6 +270,8 @@ class AssistantTests(unittest.TestCase):
 
     def test_F07_model_effort_allowlist_is_shared_with_options(self):
         options = assistant_options(self.data)
+        self.assertEqual([item["id"] for item in options["models"]], ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna"])
+        self.assertEqual([item["label"] for item in options["models"]], ["GPT-6 Astra", "GPT-5.6 Sol", "GPT-5.6 Luna"])
         for choice in options["models"]:
             for effort in choice["efforts"]:
                 fake = FakeTransport()
@@ -278,7 +280,7 @@ class AssistantTests(unittest.TestCase):
                 self.assertEqual(result["parser"], "openai")
                 self.assertEqual(fake.calls[0]["reasoning"], {"effort": effort})
                 self.assertEqual(result["effort"], effort)
-        for model, effort in [("gpt-6-astra", "none"), ("gpt-6-sol", "ultra"), ("arbitrary", "low"), ([], "low")]:
+        for model, effort in [("gpt-6-astra", "none"), ("gpt-5.6-sol", "ultra"), ("gpt-6-sol", "low"), ("arbitrary", "low"), ([], "low")]:
             fake = FakeTransport()
             result = self.ask("Объясни счёт", [X], model=model, effort=effort, api_key="test-only", transport=fake)
             self.assertEqual(result["intent"], "invalid")
