@@ -14,7 +14,7 @@
 .wb-cluster__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; }
 .wb-cluster__head strong { font: 400 13.5px var(--wb-sans); }
 .wb-cluster__head span { font-size: 12px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
-.wb-cluster__hypothesis { display: -webkit-box; overflow: hidden; font-size: 12px; line-height: 1.45; color: var(--wb-muted); -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wb-cluster__meta { font-size: 12px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
 
 .wb-outline { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 4px 2px 24px; }
 .wb-outline__section { margin-bottom: 28px; scroll-margin-top: 12px; }
@@ -42,7 +42,16 @@
 .wb-clusterview .wb-map__viewport { flex: none; height: min(64dvh, 640px); }
 .wb-clusterview .wb-map.is-fullscreen { padding: 18px 24px; }
 .wb-clusterview .wb-map.is-fullscreen .wb-map__viewport { flex: 1; height: auto; }
-.wb-role-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.wb-cluster-summary { margin: 0; font-size: 14px; color: var(--wb-fg); font-variant-numeric: tabular-nums; }
+.wb-cluster-caveat { margin: 6px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--wb-muted); }
+.wb-role-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
+.wb-role-filter__count:empty { display: none; }
+.wb-cluster-about { margin-top: 10px; }
+.wb-cluster-exact { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 4px 0 0; font-size: 12.5px; }
+.wb-cluster-exact dt { color: var(--wb-muted); }
+.wb-cluster-exact dd { margin: 2px 0 0; font-family: var(--wb-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wb-cluster-keys__title { margin: 14px 0 2px; font-size: 12px; color: var(--wb-muted); }
+.wb-cluster-keys { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; font-size: 13px; }
 .wb-role-filter button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--wb-line); border-radius: 999px; background: transparent; font-size: 12.5px; color: var(--wb-soft); cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease), color var(--wb-fast) var(--wb-ease); }
 .wb-role-filter button:hover { border-color: var(--wb-line-strong); color: var(--wb-fg); }
 .wb-role-filter button.is-active { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); color: var(--wb-fg); }

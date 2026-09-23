@@ -22,6 +22,13 @@ describe('[WEB-BRIEF] справка для проверки', () => {
     expect(brief).toMatch(/гипотеза для проверки/i);
     expect(brief.toLowerCase()).not.toMatch(/виновен|преступн|мошенни|отмыв/);
   });
+  it('[WEB-BRIEF] на границе выборки исходящие «не наблюдаются», а не ноль', () => {
+    const boundary = analysis.nodes.find(node => node.observation.outgoing_censored && node.metrics.out_degree === 0)!;
+    const text = buildReviewBrief(index, boundary.gid, 'structural')!;
+    expect(text).toMatch(/\| Сумма \| .+ \| не наблюдаются \|/);
+    expect(text).toContain('Исходящие переводы не наблюдаются: граница сбора данных.');
+    expect(brief).not.toMatch(/\| не наблюдаются \|/);
+  });
   it('[WEB-BRIEF] путь только «в тот же день» показан честно', () => {
     const sameDayOnly = analysis.nodes.find(node => node.temporal.same_day_witness && !node.temporal.strict_witness && node.temporal.same_day_witness.hops.length === 3)!;
     const text = buildReviewBrief(index, sameDayOnly.gid, 'same_day')!;

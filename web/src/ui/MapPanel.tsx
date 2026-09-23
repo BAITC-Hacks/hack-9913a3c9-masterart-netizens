@@ -118,10 +118,10 @@ function MapCard({card, index, witnessPayer, onSelect, onOpenFold}: {
   const flag = node?.observation.outgoing_censored ? 'граница выборки' : node?.is_seed ? 'исходный клиент'
     : m && m.in_degree + m.out_degree === 0 ? 'нет переводов' : rank ? `№ ${rank} в очереди` : null;
   const content = <>
-    <span className="wb-card__role">{node ? <><RoleTag role={node.role} /><span className="wb-card__score">{formatScore(node.role_score)}</span></> : <span className="wb-card__missing">нет в списке узлов</span>}</span>
+    <span className="wb-card__role">{node ? <RoleTag role={node.role} /> : <span className="wb-card__missing">нет в списке узлов</span>}</span>
     <Gid gid={link.gid} className="wb-card__gid" />
     {relation && <span className="wb-card__relation">{relation}</span>}
-    {flag && <span className="wb-card__flag">{flag}</span>}
+    {node && <span className="wb-card__meta"><span>приоритет <span className="wb-mono">{formatScore(node.priority_score)}</span></span>{flag && <span>{flag}</span>}</span>}
   </>;
   const className = `wb-card wb-card--${card.kind}${link.gid === witnessPayer ? ' is-witness' : ''}`;
   const side = card.kind === 'payer' ? 'плательщик' : card.kind === 'recipient' ? 'получатель' : card.kind === 'mutual' ? 'встречный поток' : '';

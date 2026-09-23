@@ -7,7 +7,7 @@ import {searchAccounts} from '../src/data/search';
 import {buildReviewBrief} from '../src/data/brief';
 import {layoutEgo} from '../src/map/egoLayout';
 import {layoutCluster} from '../src/map/clusterLayout';
-import {roleFacts} from '../src/data/roleFacts';
+import {roleAlternatives, roleFacts} from '../src/data/roleFacts';
 import {incrementDecimal} from './helpers';
 
 // Проверка на настоящем out/analysis.json. Запуск: WORKBENCH_REAL=../out/analysis.json npm test
@@ -19,7 +19,7 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
     if (!result.ok) throw new Error(result.errors.join('\n'));
     const index = buildIndex(result.data);
     const loadMs = performance.now() - started;
-    let maxNeighbours = 0, cycles = 0, layoutMs = 0;
+    let maxNeighbours = 0, cycles = 0, layoutMs = 0, terminals = 0, alternativesChecked = 0;
     for (const gid of index.gids) {
       expect(searchAccounts(index, gid)).toEqual({kind: 'exact', gid});
       const hood = compileNeighborhood(index, gid)!;
@@ -30,7 +30,21 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
       layoutMs = Math.max(layoutMs, performance.now() - t);
       expect(layout.cards.filter(card => card.kind !== 'note').length).toBeLessThanOrEqual(1 + 11 + 11 + 5);
       const node = index.byGid.get(gid)!;
-      expect(roleFacts(node, result.data.policy.rules.find(rule => rule.role === node.role)).length).toBeGreaterThanOrEqual(2);
+      const facts = roleFacts(node, result.data.policy.rules.find(rule => rule.role === node.role), hood.payers.length + hood.recipients.length + hood.mutual.length);
+      expect(facts.length).toBeGreaterThanOrEqual(2);
+      if (node.role === 'terminal') {
+        const branches = facts.filter(fact => fact.label === 'разных плательщиков' || fact.label === 'получено');
+        expect(branches, `терминал ${gid}`).toHaveLength(2);
+        expect(branches[0]!.met, `терминал ${gid}: первой идёт выполненная ветка «или»`).toBe(true);
+        terminals += 1;
+      }
+      const named = /Альтернатива: ([^0-9]+?) \d/.exec(node.evidence)?.[1]?.trim();
+      if (named) {
+        const first = roleAlternatives(node)[0]!;
+        const label = (result.data.policy.rules.find(rule => rule.role === first.role) as unknown as {label?: string} | undefined)?.label;
+        expect(label, `альтернатива ${gid}`).toBe(named);
+        alternativesChecked += 1;
+      }
     }
     let falseHits = 0;
     for (const gid of index.gids.slice(0, 200)) { const next = incrementDecimal(gid); if (!index.byGid.has(next) && searchAccounts(index, next).kind === 'exact') falseHits++; }
@@ -43,6 +57,6 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
       clusterMs = Math.max(clusterMs, performance.now() - t);
       expect(layout.cards.length + layout.hidden, `кластер ${id}`).toBe(members.length);
     }
-    console.info(`[WEB-REAL] ${index.gids.length} счетов, загрузка+индекс ${loadMs.toFixed(0)} мс, макс. соседей ${maxNeighbours}, счетов с циклами ${cycles}, худшая раскладка ${layoutMs.toFixed(1)} мс, худшая карта кластера ${clusterMs.toFixed(1)} мс`);
+    console.info(`[WEB-REAL] ${index.gids.length} счетов, загрузка+индекс ${loadMs.toFixed(0)} мс, макс. соседей ${maxNeighbours}, счетов с циклами ${cycles}, худшая раскладка ${layoutMs.toFixed(1)} мс, худшая карта кластера ${clusterMs.toFixed(1)} мс, терминалов с веткой «или» ${terminals}, альтернатив сверено ${alternativesChecked}`);
   });
 });

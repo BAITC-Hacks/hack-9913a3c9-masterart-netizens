@@ -3,13 +3,14 @@ import type {GraphIndex} from '../data/graph';
 import type {AccountNode, Mode, Witness} from '../data/schema';
 import type {Neighborhood} from '../data/neighborhood';
 import {buildReviewBrief, briefFileName} from '../data/brief';
-import {roleFacts} from '../data/roleFacts';
+import {roleAlternatives, roleFacts} from '../data/roleFacts';
 import {MODE_HINT, MODE_LABEL, REACH_CAVEAT, ROLE_HINT, countLabel, formatDate, formatInt, formatKzt, formatScore, roleLabel} from '../data/format';
 import {Gid} from './Gid';
 import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
 import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
+import {CompactKzt} from './Amount';
 
 /**
  * Основания по выбранному счёту — от главного к подробностям: роль, два-три факта с порогами,
@@ -32,10 +33,11 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const {policy} = index.analysis;
   const m = node.metrics;
   const t = node.temporal;
-  const alternatives = useMemo(() => [...node.role_alternatives].filter(a => a.role !== node.role).sort((a, b) => b.score - a.score), [node]);
+  const alternatives = useMemo(() => roleAlternatives(node), [node]);
   const alt = alternatives[0];
   const rule = policy.rules.find(r => r.role === node.role);
-  const facts = useMemo(() => roleFacts(node, rule), [node, rule]);
+  const counterparties = hood.payers.length + hood.recipients.length + hood.mutual.length;
+  const facts = useMemo(() => roleFacts(node, rule, counterparties), [node, rule, counterparties]);
   const rank = index.topRank.get(node.gid);
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');
@@ -114,7 +116,9 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <h3 id="wb-flow-title" className="wb-section__title">Наблюдаемые потоки</h3>
       <dl className="wb-flows">
         <div><dt><Icon name="arrow-down" size={13} />Входящие</dt><dd><strong>{formatKzt(m.in_kzt)}</strong><span>{countLabel(m.in_degree, 'плательщик', 'плательщика', 'плательщиков')} · {countLabel(m.in_tx, 'перевод', 'перевода', 'переводов')}</span></dd></div>
-        <div><dt><Icon name="arrow-up" size={13} />Исходящие</dt><dd><strong>{formatKzt(m.out_kzt)}</strong><span>{countLabel(m.out_degree, 'получатель', 'получателя', 'получателей')} · {countLabel(m.out_tx, 'перевод', 'перевода', 'переводов')}</span></dd></div>
+        <div><dt><Icon name="arrow-up" size={13} />Исходящие</dt>{node.observation.outgoing_censored && m.out_degree === 0
+          ? <dd className="is-unobserved"><strong>не наблюдаются</strong><span>граница сбора данных — это не ноль</span></dd>
+          : <dd><strong>{formatKzt(m.out_kzt)}</strong><span>{countLabel(m.out_degree, 'получатель', 'получателя', 'получателей')} · {countLabel(m.out_tx, 'перевод', 'перевода', 'переводов')}</span></dd>}</div>
       </dl>
       <p className="wb-flows__meta">
         <span>Отдано / получено <span className="wb-mono">{m.pass_through === null ? '—' : formatScore(m.pass_through)}</span></span>
@@ -147,8 +151,8 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
 
     {cluster && <section className="wb-section" aria-labelledby="wb-cluster-title">
       <h3 id="wb-cluster-title" className="wb-section__title">Кластер {cluster.cluster_id}</h3>
-      <p className="wb-cluster-line">{countLabel(cluster.n_nodes, 'счёт', 'счёта', 'счетов')} · исходных {formatInt(cluster.n_seed)} · внутри {formatKzt(cluster.sum_kzt_internal)}</p>
-      <p className="wb-hypothesis">{cluster.hypothesis}</p>
+      <p className="wb-cluster-line">{countLabel(cluster.n_nodes, 'счёт', 'счёта', 'счетов')} · исходных {formatInt(cluster.n_seed)} · внутри <CompactKzt value={cluster.sum_kzt_internal} /></p>
+      <details className="wb-disclosure"><summary>О кластере</summary><p className="wb-hypothesis">{cluster.hypothesis}</p></details>
       <button type="button" className="wb-button wb-button--quiet" onClick={() => onOpenCluster(cluster.cluster_id)}>Открыть кластер<Icon name="chevron" size={14} /></button>
     </section>}
 
