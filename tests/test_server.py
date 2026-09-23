@@ -40,6 +40,7 @@ class HandlerTests(unittest.TestCase):
         self.private = self.root / "private-marker.txt"
         self.private.write_text("НЕ_ПУБЛИКОВАТЬ", encoding="utf-8")
         self.assistant = None
+        self.report = None
         self.server = SimpleNamespace(server_address=("127.0.0.1", 8765), server_port=8765)
 
     def stop(self):
@@ -64,7 +65,7 @@ class HandlerTests(unittest.TestCase):
                 pass
 
         connection = MemoryConnection()
-        SERVER.make_handler(self.web, self.out, self.assistant)(connection, ("127.0.0.1", 1), self.server)
+        SERVER.make_handler(self.web, self.out, self.assistant, self.report)(connection, ("127.0.0.1", 1), self.server)
         head, response_body = bytes(connection.response).split(b"\r\n\r\n", 1)
         lines = head.decode().split("\r\n")
         return int(lines[0].split()[1]), dict(line.split(": ", 1) for line in lines[1:]), response_body
@@ -166,6 +167,42 @@ class HandlerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["received"]["gid"], "9007199254740993")
         self.assertEqual(self.request("/api/assistant", "POST", "{}", {"Content-Type": "application/json", "Origin": "https://foreign.example"})[0], 403)
+
+    def post_report(self, body):
+        return self.request("/api/report", "POST", body, {"Content-Type": "application/json"})
+
+    def test_F08_report_without_module_is_503_json(self):
+        status, _, body = self.post_report('{"gids":["9007199254740993"]}')
+        self.assertEqual(status, 503)
+        self.assertIn("модуль отчётов", json.loads(body)["error"])
+
+    def test_F08_report_returns_pdf_with_ascii_filename(self):
+        seen = []
+        self.report = lambda payload: seen.append(payload) or {"status": 200, "pdf": b"%PDF-1.7 test", "filename": "spravka-9007199254740993.pdf"}
+        status, headers, body = self.post_report('{"gids":["9007199254740993"],"mode":"strict"}')
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["Content-Type"], "application/pdf")
+        self.assertEqual(headers["Content-Disposition"], 'attachment; filename="spravka-9007199254740993.pdf"')
+        self.assertTrue(body.startswith(b"%PDF-"))
+        self.assertEqual(seen, [{"gids": ["9007199254740993"], "mode": "strict"}])
+
+    def test_F08_report_module_errors_pass_status_and_russian_text(self):
+        for status in (400, 404, 413, 503):
+            with self.subTest(status=status):
+                self.report = lambda payload, s=status: {"status": s, "error": "Выбрано 30 счетов; в одной справке не больше 25"}
+                code, _, body = self.post_report('{"gids":["9007199254740993"]}')
+                self.assertEqual(code, status)
+                self.assertIn("не больше 25", json.loads(body)["error"])
+
+    def test_F08_report_rejects_numeric_ids_bad_mode_and_non_pdf(self):
+        self.report = lambda payload: {"status": 200, "pdf": b"%PDF-1.7", "filename": "a.pdf"}
+        for body in ('{"gids":[9007199254740993]}', '{"gids":[]}', '{"gids":["1"],"mode":"x"}', '{"gids":["1"],"extra":1}'):
+            with self.subTest(body=body):
+                self.assertEqual(self.post_report(body)[0], 400)
+        self.report = lambda payload: {"status": 200, "pdf": b"not a pdf", "filename": "a.pdf"}
+        self.assertEqual(self.post_report('{"gids":["1"]}')[0], 500)
+        self.report = lambda payload: {"status": 200, "pdf": b"%PDF-1.7", "filename": "../../etc/x.pdf"}
+        self.assertEqual(self.post_report('{"gids":["1"]}')[1]["Content-Disposition"], 'attachment; filename="spravka.pdf"')
 
     def test_F07_cli_missing_build_fails_without_path_leak(self):
         result = subprocess.run([sys.executable, "-B", str(ROOT / "serve.py"), "--web-dir", str(self.root / "missing"), "--out", str(self.out)], capture_output=True, text=True, timeout=5)
