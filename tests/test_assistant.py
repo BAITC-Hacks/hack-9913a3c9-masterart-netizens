@@ -198,6 +198,14 @@ class AssistantTests(unittest.TestCase):
         self.assertIn("**Альтернатива:** кандидат в координаторы", result["answer_rich_md"])
         self.assertNotIn("KZT", result["answer_md"])
 
+    def test_F07_priority_explanation_uses_five_source_weights(self):
+        self.data["policy"]["priority_weights"] = {"role_signal": .3, "flow": .25, "seed_links": .2, "chronology": .15, "breadth": .1}
+        result = self.ask("Почему этот счёт в очереди?", [X])
+        self.assertIn("- Признаки роли — 30%", result["answer_md"])
+        self.assertIn("- Разные контрагенты — 10%", result["answer_md"])
+        self.assertNotIn("priority_score", result["answer_md"])
+        self.assertIn("| Признаки роли | 30% |", result["answer_rich_md"])
+
     def test_F07_compare_uses_current_facts_and_explains_order(self):
         result = self.ask(f"Сравни счета {Y} и {X}")
         self.assertEqual(result["intent"], "comparison")

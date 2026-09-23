@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from .queries import LIMITATION, ROLES
-from .render import link, number, render, text, sentence
+from .render import link, number, render, text, sentence, priority_rows
 
 MAX_DIAGRAM_HOPS = 12
 
@@ -51,6 +51,9 @@ def render_rich(result: dict) -> str:
             if node["observation"].get("outgoing_censored"):
                 lines.append("  Исходящие ограничены границей сбора; ноль не подтверждает конечного получателя.")
             lines.extend("  " + text(w) for w in node["observation"].get("warnings", []))
+        weights = priority_rows(facts)
+        if weights:
+            lines.extend(["### Вес признаков", table(["Фактор", "Вес"], [list(row) for row in weights])])
         lines.extend(["Порядок задаёт вычисленный приоритет, а не вероятность виновности.", LIMITATION])
         return "\n\n".join(lines)
     if kind == "rank":
@@ -75,6 +78,9 @@ def render_rich(result: dict) -> str:
                 ["Плательщиков / получателей", f"{metrics['in_degree']} / {metrics['out_degree']}"]]
         lines = ["### Счёт " + link(facts["gid"]), table(["Показатель", "Наблюдаемое значение"], rows),
                  "**Основание:** " + text(facts["evidence"])]
+        weights = priority_rows(facts)
+        if weights:
+            lines.extend(["### Вес признаков", table(["Фактор", "Вес"], [list(row) for row in weights])])
         alternatives = facts["role_alternatives"]
         if alternatives:
             alt = alternatives[0]
