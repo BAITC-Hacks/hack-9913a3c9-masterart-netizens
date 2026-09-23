@@ -1,0 +1,86 @@
+/*
+ * Рабочая область разговоров. Материалы панели (.fa-panel): бумага, волосяные линии, пилюли. Золото — только
+ * у выбранного разговора и фокуса. Поле вопроса внизу, 16 px текста, чтобы телефон не увеличивал страницу.
+ */
+.fa-ws { box-sizing: border-box; width: min(1120px, calc(100vw - 32px)); height: min(90vh, 920px); max-width: none; max-height: none; margin: auto; padding: 0; border: 1px solid var(--wb-line); border-radius: 20px; background: var(--wb-paper); color: var(--wb-fg); box-shadow: var(--wb-shadow-md); overflow: hidden; }
+.fa-ws[open] { display: block; animation: fa-ws-in var(--wb-normal) var(--wb-ease); }
+.fa-ws::backdrop { background: rgba(20, 16, 10, .34); }
+@keyframes fa-ws-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.fa-ws-frame.fa-panel { display: grid; grid-template-columns: 288px minmax(0, 1fr); height: 100%; padding: 0; }
+.fa-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+.fa-ws-side { display: flex; flex-direction: column; gap: 16px; min-height: 0; padding: 20px 14px; border-right: 1px solid var(--wb-line); background: var(--wb-bg); overflow-y: auto; }
+.fa-ws-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 6px; }
+.fa-ws-side-empty { padding: 0 6px; }
+.fa-ws-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.fa-ws-row { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; min-height: 56px; padding: 10px 12px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--wb-fg); text-align: left; cursor: pointer; transition: background-color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
+.fa-ws-row:hover { background: var(--wb-card); }
+.fa-ws-row.is-active { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
+.fa-ws-row-title { max-width: 100%; overflow: hidden; font-size: 14px; font-weight: 500; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; }
+.fa-ws-row-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; line-height: 1.3; color: var(--wb-muted); }
+.fa-ws-row-meta .fa-gid { font-size: 11.5px; }
+.fa-ws-foreign { display: grid; gap: 8px; padding: 12px 6px 0; border-top: 1px solid var(--wb-line); }
+.fa-ws-foreign-row { position: relative; display: grid; gap: 3px; padding: 8px 44px 8px 6px; opacity: .75; }
+.fa-ws-foreign-row .fa-ws-icon { position: absolute; top: 50%; right: 0; transform: translateY(-50%); }
+
+.fa-ws-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.fa-ws-head { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px 10px 28px; border-bottom: 1px solid var(--wb-line); }
+.fa-ws-title { flex: 1; min-width: 0; overflow: hidden; font: 500 17px/1.3 var(--wb-display); letter-spacing: -.01em; white-space: nowrap; text-overflow: ellipsis; }
+.fa-ws-actions { display: flex; align-items: center; gap: 8px; }
+.fa-ws-icon { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--wb-muted); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease); }
+.fa-ws-icon:hover:not(:disabled) { color: var(--wb-fg); background: var(--wb-sunken); }
+.fa-ws-icon:disabled { opacity: .4; cursor: default; }
+.fa-ws-list-toggle { display: none; }
+.fa-ws-rename { display: flex; flex: 1; gap: 8px; min-width: 0; }
+.fa-ws-rename input { flex: 1; min-width: 0; min-height: 44px; padding: 8px 14px; border: 1px solid var(--wb-line-strong); border-radius: 12px; background: var(--wb-card); color: var(--wb-fg); font: 400 16px/1.3 var(--wb-sans); }
+.fa-ws-rename input:focus { outline: 0; border-color: var(--wb-gold-line); box-shadow: 0 0 0 4px var(--wb-gold-wash); }
+
+.fa-ws-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 28px 0; padding: 6px 6px 6px 14px; border: 1px solid var(--wb-line); border-radius: 12px; background: var(--wb-card); font-size: 13px; line-height: 1.45; animation: fa-ws-in var(--wb-normal) var(--wb-ease); }
+.fa-ws-issue { display: block; }
+
+.fa-ws-scroll { flex: 1; min-height: 0; padding: 28px 32px 32px; overflow-y: auto; overscroll-behavior: contain; }
+.fa-ws-origin { max-width: 760px; margin: 0 auto 20px !important; text-align: center; }
+.fa-ws-empty { display: grid; justify-items: center; gap: 12px; max-width: 560px; margin: 8vh auto 0; text-align: center; }
+.fa-ws-empty-title { font: 300 24px/1.3 var(--wb-display); letter-spacing: -.02em; }
+.fa-ws-empty .fa-suggestions { justify-content: center; }
+.fa-ws-feed { display: grid; gap: 32px; max-width: 760px; margin: 0 auto; padding: 0; list-style: none; }
+.fa-ws-turn { display: grid; gap: 14px; }
+.fa-ws-question { display: grid; justify-items: end; gap: 4px; margin-left: auto; max-width: min(85%, 560px); }
+.fa-ws-question > p { padding: 12px 16px; border-radius: 18px 18px 6px 18px; background: var(--wb-sunken); font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
+
+.fa-ws-composer { padding: 12px 28px 16px; border-top: 1px solid var(--wb-line); background: var(--wb-paper); }
+.fa-ws-composer > * { max-width: 760px; margin-left: auto; margin-right: auto; }
+.fa-ws-context { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.fa-ws-model { margin-left: auto; }
+.fa-ws-field { display: flex; align-items: flex-end; gap: 8px; padding: 4px 4px 4px 18px; border: 1px solid var(--wb-line-strong); border-radius: 26px; background: var(--wb-card); transition: border-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease); }
+.fa-ws-field:focus-within { border-color: var(--wb-gold-line); box-shadow: 0 0 0 4px var(--wb-gold-wash); }
+.fa-ws-field textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 200px; padding: 10px 0; border: 0; outline: 0; resize: none; background: transparent; color: var(--wb-fg); font: 400 16px/1.5 var(--wb-sans); field-sizing: content; }
+.fa-ws-field textarea::placeholder { color: var(--wb-muted); }
+/* Фокус показывает вся капсула поля; отдельная рамка вокруг текста внутри неё была бы второй рамкой. */
+.fa-ws-field textarea:focus-visible { outline: none; }
+.fa-ws-send { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 0; border-radius: 999px; background: var(--wb-fg); color: var(--wb-paper); cursor: pointer; transition: opacity var(--wb-fast) var(--wb-ease), transform var(--wb-fast) var(--wb-ease); }
+.fa-ws-send:not(:disabled):active { transform: scale(.94); }
+.fa-ws-send:disabled { background: var(--wb-sunken); color: var(--wb-faint); cursor: default; }
+.fa-ws-hint { margin-top: 8px !important; }
+
+.fa-launcher { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border: 1px solid var(--wb-line-strong); border-radius: 999px; background: var(--wb-card); color: var(--wb-soft); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
+.fa-launcher:hover { color: var(--wb-fg); border-color: var(--wb-gold-line); }
+.fa-launcher[aria-expanded="true"] { color: var(--wb-gold); border-color: var(--wb-gold-line); }
+
+@media (max-width: 760px) {
+  .fa-ws { width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; }
+  .fa-ws-frame.fa-panel { position: relative; grid-template-columns: minmax(0, 1fr); }
+  .fa-ws-side { display: none; }
+  .fa-ws-frame.is-list-open .fa-ws-side { display: flex; position: absolute; inset: 64px 0 0; z-index: 2; border-right: 0; }
+  .fa-ws-list-toggle { display: grid; }
+  .fa-ws-head { padding: 10px 8px 10px 4px; gap: 4px; }
+  .fa-ws-actions .fa-button { padding-inline: 12px; }
+  .fa-ws-scroll { padding: 20px 16px 24px; }
+  .fa-ws-notice { margin: 10px 16px 0; }
+  .fa-ws-composer { padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); }
+  .fa-ws-question { max-width: 92%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fa-ws[open], .fa-ws-notice { animation: none; }
+}
