@@ -43,7 +43,7 @@ def _node(gid, role, basis, metrics, *, censored=False, warnings=(), witness=Non
         "cluster_id": 7, "priority_score": 0.61, "evidence": f"Основание для {gid} < порога & выше нуля",
         "metrics": base, "observation": {"outgoing_censored": censored, "warnings": list(warnings)},
         "role_alternatives": alternatives if alternatives is not None else [
-            {"role": "consolidator", "score": 0.0714, "reason": "разных плательщиков: 1 (порог 7)", "basis": "consolidator.payers"},
+            {"role": "consolidator", "score": 0.0714, "reason": "разных плательщиков: 1 (порог 7); окно после 90% суммы — 15 дн.", "basis": "consolidator.payers"},
             {"role": "distributor", "score": 0.0, "reason": "получателей нет", "basis": "distributor.recipients"},
             {"role": "peripheral", "score": 0.15, "reason": "1 минус сильнейший признак", "basis": "peripheral.below_threshold"},
         ],
@@ -107,6 +107,22 @@ def pdf_text(data: bytes) -> str:
 
 def one_line(text: str) -> str:
     return " ".join(text.split())
+
+
+def page_texts(data: bytes) -> list:
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    return [one_line(page.extract_text() or "") for page in PdfReader(BytesIO(data)).pages]
+
+
+def basis_codes(analysis: dict) -> set:
+    """Машинные коды оснований (peripheral.below_threshold и т. п.): в тексте справки их быть не должно."""
+    codes = {n["role_basis"] for n in analysis["nodes"]}
+    for node in analysis["nodes"]:
+        codes |= {alt["basis"] for alt in node.get("role_alternatives", [])}
+    return codes
 
 
 class FormattingTests(unittest.TestCase):
@@ -177,8 +193,32 @@ class RenderTests(unittest.TestCase):
         text = one_line(self.single_text)
         self.assertTrue(self.single.startswith(b"%PDF-"))
         for expected in (A, B, SEED, "12 345 678,91 ₸", "57 500 ₸", "248 500 ₸", "finance-policy/2", "finance-workbench/v1", SHA,
-                         "Справка для проверки".upper(), "Конечный получатель", "terminal.small_outflow", "consolidator.payers"):
+                         "Справка для проверки".upper(), "Конечный получатель"):
             self.assertIn(expected, text, expected)
+
+    def test_pdf_copy_no_machine_codes_or_double_periods(self):
+        # Решение владельца 17:01: машинные коды оснований читателю не показываются.
+        for text in (one_line(self.single_text), one_line(self.multi_text)):
+            for code in basis_codes(self.analysis):
+                self.assertNotIn(code, text)
+            self.assertNotIn("дн..", text)
+        self.assertIn("окно после 90% суммы — 15 дн.", one_line(self.single_text))
+
+    def test_pdf_copy_one_concise_caution_and_request_first(self):
+        from reports.pdf import CAUTION
+
+        single, multi = one_line(self.single_text), one_line(self.multi_text)
+        self.assertEqual(single.count(CAUTION), 1)
+        self.assertEqual(multi.count(CAUTION), 1)
+        self.assertNotIn("Опора правила показывает", single + multi)
+        # Следующий запрос — на первой странице счёта: в одиночной справке это стр. 1, в сводной — стр. 2.
+        self.assertIn("Запросить снятия наличных", page_texts(self.single)[0])
+        self.assertIn("Запросить снятия наличных", page_texts(self.multi)[1])
+
+    def test_pdf_copy_ninety_percent_is_a_cumulative_threshold(self):
+        text = one_line(self.single_text)
+        self.assertIn("90% входящей суммы набралось за 23 дня до конца периода", text)
+        self.assertNotIn("основной суммы", text)
 
     def test_pdf_single_separates_support_from_priority(self):
         text = one_line(self.single_text)
@@ -249,6 +289,10 @@ class RealAnalysisTests(unittest.TestCase):
         for gid in picks:
             self.assertIn(gid, text)
             self.assertIn(kzt(by[gid]["metrics"]["in_kzt"]).replace(" ", " "), text)
+        flat = one_line(text)
+        for code in basis_codes(analysis):
+            self.assertNotIn(code, flat)
+        self.assertNotIn("дн..", flat)
         self.assertIn(analysis["summary"]["input_sha256"], text)
         self.assertIn(analysis["policy"]["version"], text)
 
