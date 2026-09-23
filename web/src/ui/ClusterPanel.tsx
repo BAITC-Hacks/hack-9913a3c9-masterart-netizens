@@ -58,14 +58,21 @@ export function ClusterPanel({index, clusterId, selected, onSelect, onClose}: {
         {roles.map(([name, n]) => <button key={name} type="button" aria-pressed={role === name} className={`wb-role--${name}${role === name ? ' is-active' : ''}`}
           onClick={() => setRole(role === name ? null : name)}><RoleGlyph role={name} /><span>{roleLabel(name)}</span><strong>{formatInt(n)}</strong></button>)}
       </div>
-      <p className="wb-role-filter__count" aria-live="polite">Показано {formatInt(shown.length)} из {formatInt(members.length)}{role && <> · <button type="button" className="wb-linklike wb-reset" onClick={() => setRole(null)}>сбросить фильтр</button></>}</p>
+      <p className="wb-role-filter__count" aria-live="polite">{role
+        ? <>В фильтре {formatInt(shown.length)} из {formatInt(members.length)} · <button type="button" className="wb-linklike wb-reset" onClick={() => setRole(null)}>сбросить фильтр</button></>
+        : <>Все участники: {formatInt(members.length)}</>}</p>
+      {selected && !members.some(node => node.gid === selected) && members[0] && <p className="wb-context" role="note">
+        <Icon name="link" size={15} />
+        <span>Справа — счёт из другого кластера. Нажмите участника этого кластера или <button type="button" className="wb-linklike wb-reset" onClick={() => onSelect(members[0]!.gid)}>откройте первого по приоритету</button>.</span>
+      </p>}
     </header>
 
     <MapFrame view={view} label={`Кластер ${clusterId}`}>
       <header className="wb-map__head">
         <p className="wb-map__title">{view.mode === 'map' && layout.hidden > 0
-          ? <span>На карте {formatInt(layout.cards.length)} с наибольшим приоритетом · <button type="button" className="wb-linklike wb-reset" onClick={() => view.setMode('outline')}>все {formatInt(shown.length)} в списке</button></span>
-          : <span>{view.mode === 'map' ? 'Ряды — шаги от исходных клиентов' : 'По приоритету проверки'}</span>}</p>
+          ? <span>На карте {formatInt(layout.cards.length)} из {formatInt(shown.length)} — с наибольшим приоритетом · <button type="button" className="wb-linklike wb-reset" onClick={() => view.setMode('outline')}>все в списке</button></span>
+          : <span>{view.mode === 'map' ? 'Ряды — шаги от исходных клиентов' : 'По приоритету проверки'}</span>}
+          {view.mode === 'map' && (role || layout.hidden > 0) && <span className="wb-map__note">Связи со счетами вне карты не показаны.</span>}</p>
         <MapTools view={view} />
       </header>
       {view.mode === 'map'

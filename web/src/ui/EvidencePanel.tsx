@@ -23,8 +23,10 @@ const FAMILY_LABEL: Record<string, string> = {
   role_signal: 'Опора роли', flow: 'Оборот', seed_links: 'Связи с исходными клиентами', chronology: 'Хронология путей', breadth: 'Охват',
 };
 
-export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluster}: {
+export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluster, openCluster = null}: {
   index: GraphIndex; hood: Neighborhood; mode: Mode; onMode: (mode: Mode) => void; onSelect: (gid: string) => void; onOpenCluster: (id: number) => void;
+  /** Кластер, открытый в центре; если выбранный счёт из другого кластера, это сказано явно. */
+  openCluster?: number | null;
 }) {
   const node = hood.focus;
   const {policy} = index.analysis;
@@ -57,6 +59,10 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const lastIn = typeof extra.last_in_date === 'string' ? extra.last_in_date : null;
 
   return <aside className="wb-inspector" aria-label="Основания по счёту">
+    {openCluster !== null && openCluster !== node.cluster_id && <p className="wb-context" role="note">
+      <Icon name="link" size={15} />
+      <span>Здесь по-прежнему счёт из кластера {node.cluster_id}. В центре открыт кластер {openCluster}: выберите его участника на карте или в списке.</span>
+    </p>}
     <header className="wb-account">
       <p className="wb-account__kind">{node.is_seed ? 'Исходный клиент' : 'Счёт'} · {countLabel(node.depth, 'шаг', 'шага', 'шагов')} от исходных</p>
       <h2 className="wb-account__gid"><Gid gid={node.gid} /></h2>
