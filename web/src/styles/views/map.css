@@ -17,9 +17,10 @@
 .wb-edge--fold { stroke-dasharray: 2 6; opacity: .55; }
 .wb-edge.is-cycle { stroke: var(--wb-cycle); }
 .wb-edge.is-witness { stroke: var(--wb-gold-line); }
-.wb-arrowhead--plain { fill: var(--wb-edge); }
-.wb-arrowhead--cycle { fill: var(--wb-cycle); }
-.wb-arrowhead--witness { fill: var(--wb-gold-line); }
+.wb-arrowhead { stroke-width: 1.1; stroke-linejoin: round; }
+.wb-arrowhead--plain { fill: var(--wb-edge); stroke: var(--wb-edge); }
+.wb-arrowhead--cycle { fill: var(--wb-cycle); stroke: var(--wb-cycle); }
+.wb-arrowhead--witness { fill: var(--wb-gold-line); stroke: var(--wb-gold-line); }
 .wb-map__band { position: absolute; transform: translateX(-50%); font-size: 12.5px; color: var(--wb-muted); white-space: nowrap; }
 .wb-map__band--left { transform: none; }
 .wb-map__note { color: var(--wb-muted); }

@@ -12,6 +12,7 @@ import {EvidencePanel} from '../ui/EvidencePanel';
 import {ClusterPanel} from '../ui/ClusterPanel';
 import {ShortlistPanel, ShortlistProvider} from '../features/shortlist';
 import {InsightsPanel} from '../features/insights';
+import type {AssistantNavigation} from '../features/assistant/types';
 
 /**
  * Рабочее место: очередь и кластеры слева, направленная окрестность счёта в центре, основания справа.
@@ -59,9 +60,19 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
   const hood = useMemo(() => (selected ? compileNeighborhood(index, selected) : null), [index, selected]);
   const openCluster = useCallback((id: number) => { setCluster(id); setRailTab('clusters'); }, []);
 
+  // Переход из свежего ответа помощника: выбрать счёт и открыть нужное место рабочего места.
+  const [mapRequest, setMapRequest] = useState(0);
+  const navigate = useCallback((to: AssistantNavigation) => {
+    if (to.gid) select(to.gid);
+    if (to.view === 'cluster' && to.cluster_id !== null) openCluster(to.cluster_id);
+    else if (to.view === 'queue') setRailTab('leads');
+    else if (to.view === 'saved') setRailTab('saved');
+    else if (to.view === 'map') { setCluster(null); setMapRequest(n => n + 1); }
+  }, [select, openCluster]);
+
   // Один список сохранённых и одно окно просмотра PDF на всё рабочее место.
   return <ShortlistProvider index={index}><div className="wb-app">
-    <TopBar index={index} warnings={warnings} onSelect={select} notice={notice} onDismissNotice={() => setNotice(null)} selected={selected} />
+    <TopBar index={index} warnings={warnings} onSelect={select} notice={notice} onDismissNotice={() => setNotice(null)} selected={selected} onNavigate={navigate} />
     <div className="wb-main">
       <LeadsRail index={index} selected={selected} tab={railTab} onTab={setRailTab} onSelect={select} openCluster={cluster} onOpenCluster={openCluster}
         insights={<InsightsPanel index={index} onSelect={select} />}
@@ -70,7 +81,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
         {cluster !== null
           ? <ClusterPanel key={cluster} index={index} clusterId={cluster} selected={selected} onSelect={select} onClose={() => setCluster(null)} />
           : hood
-            ? <MapPanel index={index} hood={hood} mode={mode} onSelect={select} history={history} />
+            ? <MapPanel index={index} hood={hood} mode={mode} onSelect={select} history={history} mapRequest={mapRequest} />
             : <p className="wb-empty">Выберите счёт в очереди или найдите его по gid.</p>}
       </section>
       {selected && hood

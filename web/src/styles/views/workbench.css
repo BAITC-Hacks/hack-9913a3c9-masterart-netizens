@@ -58,9 +58,18 @@
 @media (prefers-reduced-motion: reduce) { .wb-status__bar i { width: 100%; animation: none; opacity: .5; } }
 
 /* Четыре вкладки левой панели: прокручивается только полоса вкладок, строки очереди не сдвигаются. */
+.wb-rail { overflow-x: hidden; }
 .wb-rail__head { min-width: 0; }
 .wb-rail__tabs { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; flex-wrap: nowrap; }
 .wb-rail__tabs::-webkit-scrollbar { display: none; }
 .wb-rail__tabs > button { flex: none; white-space: nowrap; }
 /* Действия по счёту: PDF-справка, сохранение и текстовая версия в одну строку с переносом. */
-.wb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; }
+.wb-actions > .wb-button, .wb-actions .wb-save__button { box-sizing: border-box; min-height: 44px; margin: 0; }
+
+/* На узком экране окно «О данных» открывается во всю ширину шапки с полями 16 px: справа от кнопки
+   теперь стоит помощник, и привязка к правому краю кнопки уводила окно за левый край экрана. */
+@media (max-width: 560px) {
+  .wb-about { position: static; }
+  .wb-about__panel { left: 16px; right: 16px; width: auto; }
+}

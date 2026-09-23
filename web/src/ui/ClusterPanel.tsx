@@ -93,8 +93,8 @@ export function ClusterPanel({index, clusterId, selected, onSelect, onClose}: {
       {view.mode === 'map'
         ? <MapViewport view={view} width={layout.width} height={layout.height} label="Карта кластера по шагам от исходных клиентов">
           <svg className="wb-map__edges" width={layout.width} height={layout.height} aria-hidden="true">
-            <defs><marker id="wb-arrow-cluster" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M1 1.4 8.8 5 1 8.6Z" className="wb-arrowhead wb-arrowhead--plain" /></marker></defs>
+            <defs><marker id="wb-arrow-cluster" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+              <path d="M1.6 1.9 8.6 5 1.6 8.1 3.1 5Z" className="wb-arrowhead wb-arrowhead--plain" /></marker></defs>
             {layout.edges.map(edge => <path key={edge.key} d={edge.d} className={`wb-edge wb-edge--cluster${edge.src === selected || edge.dst === selected ? ' is-witness' : ''}`} markerEnd="url(#wb-arrow-cluster)" />)}
           </svg>
           {layout.bands.map(band => <span key={band.depth} className="wb-map__band wb-map__band--left" style={{left: 40, top: band.y + 4}}>

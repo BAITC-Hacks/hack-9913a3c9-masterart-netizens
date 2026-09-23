@@ -15,7 +15,9 @@ import type {AccountHistory} from '../app/useAccountHistory';
  * Центр рабочего места: направленная окрестность выбранного счёта. Карточка соседа открывает его,
  * свёрнутая карточка ведёт в список, где видны все участники без исключения.
  */
-export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void; history: AccountHistory}) {
+export function MapPanel({index, hood, mode, onSelect, history, mapRequest = 0}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void; history: AccountHistory;
+  /** Счётчик запросов «показать карту» (переход из ответа помощника): каждый новый номер включает карту вместо списка. */
+  mapRequest?: number}) {
   const focus = hood.focus;
   // Пояснение нужно только там, где денег в эту сторону нет совсем; встречный поток — тоже поток.
   const notes = useMemo(() => ({
@@ -31,6 +33,8 @@ export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIn
   const outlineTarget = useRef<string | null>(null);
 
   const view = useMapView({width: layout.width, height: layout.height, onEscape: () => false});
+  const {setMode: setViewMode} = view;
+  useEffect(() => { if (mapRequest > 0) setViewMode('map'); }, [mapRequest, setViewMode]);
   useLayoutEffect(() => {
     const el = view.viewport.current;
     if (!el) return;
@@ -70,8 +74,8 @@ export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIn
       ? <MapViewport view={view} width={layout.width} height={layout.height} label="Карта: плательщики сверху, получатели снизу">
         <svg className="wb-map__edges" width={layout.width} height={layout.height} aria-hidden="true">
           <defs>
-            {(['plain', 'witness', 'cycle'] as const).map(kind => <marker key={kind} id={`wb-arrow-${kind}`} viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M1 1.4 8.8 5 1 8.6Z" className={`wb-arrowhead wb-arrowhead--${kind}`} /></marker>)}
+            {(['plain', 'witness', 'cycle'] as const).map(kind => <marker key={kind} id={`wb-arrow-${kind}`} viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
+              <path d="M1.6 1.9 8.6 5 1.6 8.1 3.1 5Z" className={`wb-arrowhead wb-arrowhead--${kind}`} /></marker>)}
           </defs>
           {layout.edges.map(edge => {
             const isWitness = witnessPayer !== null && edge.kind === 'in' && edge.src === witnessPayer;

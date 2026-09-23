@@ -18,6 +18,7 @@
     "fixture": "node fixtures/build-fixture.mjs"
   },
   "dependencies": {
+    "pdfjs-dist": "6.3.289",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },

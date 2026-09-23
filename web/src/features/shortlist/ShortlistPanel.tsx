@@ -71,7 +71,7 @@ export function ShortlistPanel({index, mode, current = null, onOpen, controller,
       ? <div className="wb-shortlist__empty">
           <span className="wb-shortlist__empty-glyph"><BookmarkGlyph size={22} /></span>
           <p className="wb-shortlist__empty-title">Сохранённых счетов пока нет</p>
-          <p className="wb-muted">Откройте счёт и нажмите «Сохранить» рядом с его gid. Счёт появится здесь и останется после перезагрузки страницы.</p>
+          <p className="wb-muted">Откройте счёт и нажмите «Сохранить» рядом со справкой для проверки. Счёт появится здесь и останется после перезагрузки страницы.</p>
         </div>
       : <>
           <div className="wb-shortlist__bar">

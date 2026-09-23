@@ -9,6 +9,8 @@ import {ShortlistPanel, issueText} from './ShortlistPanel';
 import {ShortlistProvider, type ShortlistController} from './useShortlist';
 import {createReportSession} from './reportSession';
 import {AccountReportButton, ReportDialog} from './ReportDialog';
+import {PdfFallback} from './PdfCanvasViewer';
+import {pageCssWidth} from './pdfEngine';
 
 /** Хранилище в памяти с подсчётом записей: как localStorage, но видно, что и сколько раз записано. */
 class MemoryStorage implements ShortlistStorage {
@@ -388,16 +390,23 @@ describe('Сохранённые счета — просмотр PDF', () => {
     expect(createUrl).toHaveBeenCalledTimes(1);
   });
 
-  it('[SHORTLIST-PREVIEW] окно просмотра: встроенный PDF, «Открыть» и «Скачать», загрузка и ошибка видны', async () => {
+  it('[SHORTLIST-PREVIEW] окно просмотра: страницы на canvas без встроенного модуля, «Открыть» и «Скачать», загрузка и ошибка видны', async () => {
     const session = createReportSession({fetcher: async () => pdf(), createUrl: () => 'blob:test-view', revokeUrl: () => {}});
     await session.request([A, B], 'strict');
     const ready = renderToStaticMarkup(<ReportDialog session={session} />);
     expect(ready).toContain('Отчёт PDF по 2 счетам');
-    expect(ready).toContain('data="blob:test-view"');
-    expect(ready).toContain('type="application/pdf"');
+    expect(ready).not.toContain('<object');
+    expect(ready).toContain('<canvas');
+    expect(ready).toContain('Открываем страницы');
     expect(ready).toContain('download="spravka-2-schetov.pdf"');
     expect(ready).toContain('Открыть в новой вкладке');
-    expect(ready).toContain('не показывает PDF внутри страницы');
+    const fallback = renderToStaticMarkup(<PdfFallback url="blob:test-view" filename="spravka-2-schetov.pdf" />);
+    expect(fallback).toContain('не показывает PDF внутри страницы');
+    expect(fallback).toContain('href="blob:test-view"');
+    expect(fallback).toContain('download="spravka-2-schetov.pdf"');
+    expect(pageCssWidth(390)).toBe(358);
+    expect(pageCssWidth(200)).toBe(240);
+    expect(pageCssWidth(2000)).toBe(900);
 
     const waiting = createReportSession({fetcher: () => new Promise<Response>(() => {}), createUrl: () => 'blob:never', revokeUrl: () => {}});
     void waiting.request([A], 'strict');

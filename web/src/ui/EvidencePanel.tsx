@@ -1,14 +1,12 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import type {GraphIndex} from '../data/graph';
 import type {AccountNode, Mode, Witness} from '../data/schema';
 import type {Neighborhood} from '../data/neighborhood';
-import {buildReviewBrief, briefFileName} from '../data/brief';
 import {roleAlternatives, roleFacts} from '../data/roleFacts';
 import {MODE_HINT, MODE_LABEL, REACH_CAVEAT, ROLE_HINT, countLabel, formatDate, formatInt, formatKzt, formatScore, roleLabel} from '../data/format';
 import {Gid} from './Gid';
 import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
-import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
 import {SaveAccountButton, useReportSession} from '../features/shortlist';
 import {AccountInsights} from '../features/insights';
@@ -46,21 +44,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');
   const weights = ((policy as unknown as {priority_weights?: Record<string, number>}).priority_weights) ?? {};
-  const [status, setStatus] = useState<string | null>(null);
   const reportSession = useReportSession();
-  // Панель больше не пересоздаётся при смене счёта, поэтому сообщение сбрасывается явно.
-  useEffect(() => { setStatus(null); }, [node.gid]);
-
-  const download = () => {
-    const brief = buildReviewBrief(index, node.gid, mode, new Date().toLocaleString('ru-RU'));
-    if (!brief) return;
-    const url = URL.createObjectURL(new Blob([brief], {type: 'text/markdown;charset=utf-8'}));
-    const a = document.createElement('a');
-    a.href = url; a.download = briefFileName(node.gid);
-    document.body.appendChild(a); a.click(); a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setStatus(`Справка сохранена: ${briefFileName(node.gid)}`);
-  };
 
   const counts: Record<Mode, number> = {structural: t.static_seed_count, strict: t.strict_seed_count, same_day: t.same_day_seed_count};
   const witness = mode === 'strict' ? t.strict_witness : mode === 'same_day' ? t.same_day_witness : null;
@@ -105,12 +89,10 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       </div>
       <p className="wb-compare__note">Опора правила: эвристика от 0 до 1, не вероятность. Приоритет считается отдельно.</p>
       <div className="wb-actions">
-        {/* Главное действие — PDF-справка в окне просмотра; сохранение счёта — отдельной кнопкой рядом. */}
+        {/* Два действия на одной линии: PDF-справка в окне просмотра и сохранение счёта в список. */}
         <button type="button" className="wb-button wb-button--primary wb-brief" onClick={() => void reportSession.request([node.gid], mode)}><Icon name="download" size={15} />Справка для проверки</button>
         <SaveAccountButton gid={node.gid} />
-        <button type="button" className="wb-button wb-button--quiet" onClick={download}>Текст .md</button>
       </div>
-      <p className="wb-live" role="status" aria-live="polite">{status}</p>
       <details className="wb-disclosure">
         <summary>Основание и правило</summary>
         <p className="wb-evidence">{node.evidence}</p>
@@ -171,8 +153,6 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <details className="wb-disclosure"><summary>О кластере</summary><p className="wb-hypothesis">{cluster.hypothesis}</p></details>
       <button type="button" className="wb-button wb-button--quiet" onClick={() => onOpenCluster(cluster.cluster_id)}>Открыть кластер<Icon name="chevron" size={14} /></button>
     </section>}
-
-    <AssistantSlot focusGid={node.gid} onSelectGid={onSelect} />
 
     <div className="wb-section wb-more-details">
       <details className="wb-disclosure">
