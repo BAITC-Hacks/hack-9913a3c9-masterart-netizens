@@ -1,0 +1,11 @@
+{
+  "started_at_utc": "2026-09-23T11:49:33+00:00",
+  "pipeline_seconds": 0.789,
+  "input_sha256": "6954195a8b57281ec0593ae619daac3bf882bf95ea8c669500c8d6656ef99972",
+  "outputs": [
+    "analysis.json",
+    "clusters.csv",
+    "nodes_roles.csv",
+    "top_nodes.csv"
+  ]
+}
