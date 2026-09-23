@@ -259,9 +259,11 @@ def _evidence_body(m: NodeMetrics, primary: Candidate, runner_up: Candidate, hea
     elif primary.role == "peripheral":
         text = f"{head}: признаки ниже порога. Ближайший — {alt} {score_ru(runner_up.score)}: {runner_up.reason}."
     elif runner_up.score > primary.score:
+        # При одинаковом округлении «сильнее» читалось бы как противоречие «0,58 сильнее 0,58».
+        stronger = "сильнее" if score_ru(runner_up.score) != score_ru(primary.score) else "не слабее"
         text = (
             f"Гипотеза {head}: {primary.reason}. "
-            f"{alt.capitalize()} {score_ru(runner_up.score)} сильнее, но признаки веера приоритетнее."
+            f"{alt.capitalize()} {score_ru(runner_up.score)} {stronger}, но признаки веера приоритетнее."
         )
     else:
         text = f"Гипотеза {head}: {primary.reason}. Альтернатива: {alt} {score_ru(runner_up.score)}."
