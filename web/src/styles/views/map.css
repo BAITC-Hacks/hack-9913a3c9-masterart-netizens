@@ -21,6 +21,11 @@
 .wb-arrowhead--cycle { fill: var(--wb-cycle); }
 .wb-arrowhead--witness { fill: var(--wb-gold-line); }
 .wb-map__band { position: absolute; transform: translateX(-50%); font-size: 12.5px; color: var(--wb-muted); white-space: nowrap; }
+.wb-map__band--left { transform: none; }
+.wb-edge--cluster { stroke-width: 1; opacity: .55; }
+.wb-edge--cluster.is-witness { stroke-width: 1.6; opacity: 1; }
+.wb-card--compact { gap: 4px; padding: 10px 12px; }
+.wb-card--compact .wb-card__gid { font-size: 12px; }
 
 .wb-card { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 14px; overflow: hidden; border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-card); color: var(--wb-fg); text-align: left; box-shadow: var(--wb-shadow-sm); }
 button.wb-card { cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease), transform var(--wb-normal) var(--wb-ease); }

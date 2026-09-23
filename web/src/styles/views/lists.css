@@ -37,8 +37,16 @@
 .wb-clusterview { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 22px 26px 40px; }
 .wb-clusterview__head { max-width: 72ch; margin-bottom: 20px; }
 .wb-clusterview__head > .wb-button { margin-bottom: 18px; }
-.wb-clusterview__title { margin: 0 0 6px; font: 270 40px/1 var(--wb-display); letter-spacing: -0.02em; }
-.wb-role-mix { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.wb-role-mix li { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--wb-line); border-radius: 999px; font-size: 12px; color: var(--wb-soft); }
-.wb-role-mix strong { font: 400 12px var(--wb-mono); color: var(--wb-fg); }
+.wb-clusterview__title { margin: 0 0 8px; font: 270 34px/1.1 var(--wb-display); letter-spacing: -0.02em; }
+.wb-clusterview .wb-map { height: auto; padding: 0; }
+.wb-clusterview .wb-map__viewport { flex: none; height: min(64dvh, 640px); }
+.wb-clusterview .wb-map.is-fullscreen { padding: 18px 24px; }
+.wb-clusterview .wb-map.is-fullscreen .wb-map__viewport { flex: 1; height: auto; }
+.wb-role-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.wb-role-filter button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--wb-line); border-radius: 999px; background: transparent; font-size: 12.5px; color: var(--wb-soft); cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease), color var(--wb-fast) var(--wb-ease); }
+.wb-role-filter button:hover { border-color: var(--wb-line-strong); color: var(--wb-fg); }
+.wb-role-filter button.is-active { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); color: var(--wb-fg); }
+.wb-role-filter strong { font: 400 12px var(--wb-mono); color: var(--wb-fg); }
+.wb-role-filter__count { margin: 10px 0 0; font-size: 12.5px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
+.wb-reset { padding: 0; color: var(--wb-gold); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
 .wb-more { display: flex; margin: 16px auto 0; }

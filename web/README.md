@@ -29,7 +29,8 @@ WORKBENCH_REAL=../out/analysis.json npm test   # те же проверки на
 
 ## Что умеет экран
 
-- Очередь проверки (`top_nodes`) и список кластеров с гипотезами.
+- Очередь проверки (`top_nodes`) и список кластеров с гипотезами. Кластер открывается картой по шагам от
+  исходных клиентов или списком по приоритету; фильтр по ролям общий для обоих видов.
 - Поиск по точному `gid`. Счёт открывается только при полном совпадении строки цифр. Частичное совпадение
   предлагается списком. Соседнее число (например, `gid + 1`) сообщает «не найден» и не подменяет счёт.
   Ссылка `#gid=…&mode=…` открывает счёт напрямую.
@@ -59,6 +60,7 @@ WORKBENCH_REAL=../out/analysis.json npm test   # те же проверки на
 | `WEB-MAP-ISOLATE` | Счёт без переводов показан с пояснением, а не пустым | `tests/neighborhood.test.ts` |
 | `WEB-MAP-BOUNDARY` | У счёта на границе выборки нет получателей и есть отметка о границе | `tests/neighborhood.test.ts` |
 | `WEB-BRIEF` | Справка содержит точный gid, роль, альтернативу, даты пути, оговорку и не содержит слов о виновности | `tests/brief.test.ts` |
+| `WEB-CLUSTER-MAP` | Карта кластера по шагам от исходных клиентов показывает самых приоритетных, остальные посчитаны и доступны в списке; фильтр ролей общий | `tests/cluster.test.ts` |
 | `WEB-LINK` | Ссылка `#gid=…&mode=…` читается и пишется без потерь; без режима — режим по умолчанию | `tests/hash.test.ts` |
 | `WEB-REAL` | На настоящем файле: каждый из 2 248 счетов ищется точно, окрестность и справка строятся | `tests/real-data.test.ts` |
 
@@ -114,6 +116,7 @@ WORKBENCH_REAL=../out/analysis.json npm test   # те же проверки на
 | `src/map/useMapFullscreen.ts` | `useSessionMapFullscreen.ts` | Переименование, русские комментарии |
 | `src/map/MapFrame.tsx` | `ProjectDagView.tsx` | Вписывание по обеим осям, русские подписи, центрирование; убраны зависимости от Fleet |
 | `src/map/egoLayout.ts` (`cardToCard`, размер карточки) | `projectDagIslands.ts` | Кривые связей и размер 224×118 перенесены; раскладка по направлению написана заново |
+| `src/map/clusterLayout.ts` | `projectDagIslands.ts` (`placeIslandMembers`) | Правило «ряд по шагу, карточка под своими плательщиками» перенесено; компактные карточки и ограничение карты — новые |
 | `src/map/icons.tsx` | `CommandCenterIcons.tsx` | Взяты 17 контуров; добавлены `copy` и `cycle` |
 | `src/ui/CopyGid.tsx` и стили `.wb-copy` в `src/styles/components/identity.css` | `CommandNodeIdentity.tsx`; `components/MarkdownRenderer.css:824–901, 1051–1059` (кнопка `CodeBlockCopyButton` из библиотеки streamdown) | Поведение и анимация кнопки перенесены без библиотеки streamdown; подписи на русском; успех засчитывается только для счёта, выбранного в момент копирования |
 | `src/styles/core/tokens.css` | `command-center.css` | Цвета ролей из палитры; для светлой темы подобраны заново |

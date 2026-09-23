@@ -19,7 +19,8 @@
 }
 @media (max-width: 560px) {
   .wb-button, .wb-segmented button, .wb-iconbutton { min-height: 44px; }
-  .wb-disclosure > summary, .wb-about summary, .wb-tx summary { min-height: 44px; }
+  .wb-disclosure > summary, .wb-about summary, .wb-tx summary, .wb-role-filter button { min-height: 44px; }
+  .wb-clusterview .wb-map__viewport { height: 60dvh; }
   .wb-iconbutton { width: 44px; }
   .wb-zoom button { width: 44px; height: 44px; }
   .wb-account__gid { font-size: 19px; }

@@ -6,6 +6,7 @@ import {compileNeighborhood} from '../src/data/neighborhood';
 import {searchAccounts} from '../src/data/search';
 import {buildReviewBrief} from '../src/data/brief';
 import {layoutEgo} from '../src/map/egoLayout';
+import {layoutCluster} from '../src/map/clusterLayout';
 import {incrementDecimal} from './helpers';
 
 // Проверка на настоящем out/analysis.json. Запуск: WORKBENCH_REAL=../out/analysis.json npm test
@@ -32,6 +33,13 @@ describe.skipIf(!file)('[WEB-REAL] настоящий файл анализа', 
     for (const gid of index.gids.slice(0, 200)) { const next = incrementDecimal(gid); if (!index.byGid.has(next) && searchAccounts(index, next).kind === 'exact') falseHits++; }
     expect(falseHits).toBe(0);
     for (const top of result.data.top_nodes.slice(0, 3)) expect(buildReviewBrief(index, top.gid, 'strict')).toContain(top.gid);
-    console.info(`[WEB-REAL] ${index.gids.length} счетов, загрузка+индекс ${loadMs.toFixed(0)} мс, макс. соседей ${maxNeighbours}, счетов с циклами ${cycles}, худшая раскладка ${layoutMs.toFixed(1)} мс`);
+    let clusterMs = 0;
+    for (const [id, members] of index.clusterMembers) {
+      const t = performance.now();
+      const layout = layoutCluster(members, index.outgoing);
+      clusterMs = Math.max(clusterMs, performance.now() - t);
+      expect(layout.cards.length + layout.hidden, `кластер ${id}`).toBe(members.length);
+    }
+    console.info(`[WEB-REAL] ${index.gids.length} счетов, загрузка+индекс ${loadMs.toFixed(0)} мс, макс. соседей ${maxNeighbours}, счетов с циклами ${cycles}, худшая раскладка ${layoutMs.toFixed(1)} мс, худшая карта кластера ${clusterMs.toFixed(1)} мс`);
   });
 });

@@ -63,7 +63,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
       <LeadsRail index={index} selected={selected} tab={railTab} onTab={setRailTab} onSelect={select} openCluster={cluster} onOpenCluster={openCluster} />
       <section className="wb-center" aria-label={cluster !== null ? 'Кластер' : 'Связи счёта'}>
         {cluster !== null
-          ? <ClusterPanel index={index} clusterId={cluster} selected={selected} onSelect={select} onClose={() => setCluster(null)} />
+          ? <ClusterPanel key={cluster} index={index} clusterId={cluster} selected={selected} onSelect={select} onClose={() => setCluster(null)} />
           : hood
             ? <MapPanel index={index} hood={hood} mode={mode} onSelect={select} history={history} />
             : <p className="wb-empty">Выберите счёт в очереди или найдите его по gid.</p>}
