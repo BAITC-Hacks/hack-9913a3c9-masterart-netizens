@@ -121,7 +121,7 @@ export async function fetchReport(request: ReportRequest, options: ReportOptions
       const detail = await refusalDetail(response);
       const suffix = detail.text ? `: ${detail.text}` : '.';
       // 404 с причиной от обработчика отчёта — неизвестный счёт; иначе на сервере просто нет такого адреса.
-      if (response.status === 404 && detail.fromHandler) throw new ReportError('rejected', `Сервер не нашёл счёт для отчёта (ответ 404)${suffix}`);
+      if (response.status === 404 && detail.fromHandler) throw new ReportError('rejected', `${detail.text.replace(/[.\s]+$/, '')} (ответ 404).`);
       if ([404, 405, 501].includes(response.status)) throw new ReportError('unavailable', `PDF-отчёт на этом сервере не подключён (ответ ${response.status})${suffix}`);
       if (response.status === 503) throw new ReportError('unavailable', `PDF-отчёт временно недоступен (ответ 503)${suffix}`);
       if (response.status === 413) throw new ReportError('rejected', `Слишком много счетов для одного отчёта (ответ 413)${suffix}`);
