@@ -1,9 +1,11 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {parseAssistantResponse} from './api';
 import {AssistantLauncher, AssistantWorkspace} from './AssistantWorkspace';
 import {CONVERSATIONS_KEY, createConversationStore, type ConversationStorage} from './conversationStore';
 import {OPTIONS} from './model.test';
+import {dispatchNavigation} from './navigation';
+import type {AssistantNavigation} from './types';
 
 class MemoryStorage implements ConversationStorage {
   readonly map = new Map<string, string>();
@@ -33,7 +35,8 @@ describe('Рабочая область разговоров — интерфе�
     expect(html).toContain('Вопрос о счёте');
     expect(html).toContain('GPT-6 Astra');
     expect(html).toContain('Среднее');
-    expect(html).toContain('учитывает до 6 последних вопросов этого разговора');
+    expect(html).not.toContain('Enter — отправить');
+    expect(html).not.toContain('учитывает до');
     expect(html).not.toContain('прежние ответы в запрос не передаются');
     expect(html).toContain('aria-label="Отправить вопрос"');
     expect(html).toContain('Здесь появятся разговоры по этому набору данных');
@@ -84,5 +87,31 @@ describe('Рабочая область разговоров — интерфе�
     expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain('aria-label="Разговоры с помощником"');
     expect(html).toContain('aria-expanded="false"');
+  });
+
+  it('[CHAT-NAV] свежий переход использует точный счёт и проверяет набор данных', () => {
+    const select = vi.fn(), navigate = vi.fn();
+    const response = {...answer, intent: 'navigation', dataset_fingerprint: SCOPE,
+      navigation: {view: 'map', gid: GID, cluster_id: null} as AssistantNavigation};
+    expect(dispatchNavigation(response, SCOPE, select, navigate)).toBe(true);
+    expect(navigate).toHaveBeenCalledExactlyOnceWith(response.navigation);
+    expect(select).not.toHaveBeenCalled();
+    navigate.mockClear();
+    expect(() => dispatchNavigation(response, OTHER, select, navigate)).toThrow('Данные изменились');
+    expect(navigate).not.toHaveBeenCalled();
+    expect(dispatchNavigation(response, SCOPE, select)).toBe(false);
+  });
+
+  it('[CHAT-NAV] чтение сохранённого ответа не повторяет переход', () => {
+    const mem = new MemoryStorage();
+    const store = createConversationStore({scope: SCOPE, storage: mem});
+    const id = store.create(GID), turn = store.ask(id, 'Открой счёт', [GID])!;
+    store.answer(id, turn, {...answer, intent: 'navigation', dataset_fingerprint: SCOPE,
+      navigation: {view: 'account', gid: GID, cluster_id: null}});
+    const select = vi.fn(), navigate = vi.fn();
+    renderToStaticMarkup(<AssistantWorkspace scope={SCOPE} selection={[GID]} onSelectNode={select}
+      onNavigate={navigate} open={false} onClose={() => {}} storage={mem} initialOptions={OPTIONS} />);
+    expect(select).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
