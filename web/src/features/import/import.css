@@ -17,3 +17,7 @@
 .fi-done { display: grid; gap: 8px; justify-items: start; }
 .fi-errors { margin: 0; padding: 8px 12px 8px 28px; border: 1px solid var(--wb-alert, #9a4636); border-radius: 10px; color: var(--wb-alert, #9a4636); font-size: 13px; }
 @media (max-width: 640px) { .fi-files li { grid-template-columns: 1fr; gap: 2px; } }
+/* Внизу окна «О данных»: тот же импорт, отделённый линией; строки файлов в одну колонку. */
+.wb-about__import { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--wb-line); }
+.wb-about__import .fi-files li { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+.wb-about__import .fi-columns { grid-column: 1 / -1; grid-row: 2; }

@@ -25,7 +25,7 @@ function sizeText(bytes: number): string {
   return bytes < 1024 ? `${bytes} Б` : bytes < MIB ? `${Math.ceil(bytes / 1024)} КБ` : `${(bytes / MIB).toFixed(1)} МБ`;
 }
 
-/** Загрузка нового набора данных по схеме кейса: три parquet-файла → проверка → новый анализ. */
+/** Загрузка нового набора данных по схеме кейса: три файла parquet или CSV → проверка → новый анализ. */
 export function ImportPanel({onImported, onReload, className}: ImportPanelProps) {
   const inputId = useId();
   const [selection, setSelection] = useState<Selection<File> | null>(null);
@@ -56,15 +56,16 @@ export function ImportPanel({onImported, onReload, className}: ImportPanelProps)
   return <section className={['fi-panel', className].filter(Boolean).join(' ')} aria-label="Импорт данных">
     <h2 className="fi-title">Новые данные</h2>
     <p className="fi-note">
-      Три файла той же схемы, что и данные кейса. Идентификаторы — целые числа int64, суммы в тенге,
-      даты в формате ГГГГ-ММ-ДД. До {MAX_FILE_BYTES / MIB} МиБ на файл и {MAX_TOTAL_BYTES / MIB} МиБ всего.
-      Другие форматы и подключение произвольной базы данных не поддерживаются.
+      Три файла той же схемы, что и данные кейса, — в формате parquet или CSV с именами столбцов в
+      первой строке. Идентификаторы — целые числа int64, суммы в тенге, даты в формате ГГГГ-ММ-ДД.
+      До {MAX_FILE_BYTES / MIB} МиБ на файл и {MAX_TOTAL_BYTES / MIB} МиБ всего. После проверки сервер
+      заново строит роли, кластеры, приоритеты и три выгрузки.
     </p>
     <ul className="fi-files">
       {REQUIRED_FILES.map((name) => {
         const file = found[name];
         return <li key={name} className={file ? 'is-chosen' : undefined}>
-          <span className="fi-name">{name}</span>
+          <span className="fi-name">{file ? file.name : name.replace('.parquet', '.parquet / .csv')}</span>
           <span className="fi-columns">{FILE_COLUMNS[name]}</span>
           <span className="fi-state">{file ? sizeText(file.size) : 'не выбран'}</span>
         </li>;
@@ -72,7 +73,7 @@ export function ImportPanel({onImported, onReload, className}: ImportPanelProps)
     </ul>
     <div className="fi-actions">
       <label className="wb-button fi-choose" htmlFor={inputId}>Выбрать три файла</label>
-      <input id={inputId} className="fi-input" type="file" accept=".parquet" multiple disabled={busy} onChange={choose} />
+      <input id={inputId} className="fi-input" type="file" accept=".parquet,.csv" multiple disabled={busy} onChange={choose} />
       <button type="button" className="wb-button wb-button--primary" disabled={!selection?.ok || busy} onClick={submit}>
         Проверить и проанализировать
       </button>

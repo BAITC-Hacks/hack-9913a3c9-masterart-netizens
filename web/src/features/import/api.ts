@@ -1,5 +1,5 @@
 /**
- * Импорт нового набора данных: ровно три parquet-файла по схеме кейса.
+ * Импорт нового набора данных: три файла по схеме кейса, каждый в формате parquet или CSV.
  * Пределы совпадают с серверными (imports/ingest.py); сервер всё равно проверяет всё заново.
  */
 export const REQUIRED_FILES = ['nodes.parquet', 'edges.parquet', 'transactions.parquet'] as const;
@@ -28,8 +28,10 @@ export type Selection<T extends PickedFile> =
   | {ok: true; files: Record<RequiredFile, T>}
   | {ok: false; errors: string[]; found: Partial<Record<RequiredFile, T>>};
 
-function isRequired(name: string): name is RequiredFile {
-  return (REQUIRED_FILES as readonly string[]).includes(name);
+/** Слот таблицы для имени файла: nodes.parquet и nodes.csv занимают один слот nodes.parquet. */
+export function slotOf(name: string): RequiredFile | null {
+  const slot = name.replace(/\.csv$/, '.parquet');
+  return (REQUIRED_FILES as readonly string[]).includes(slot) && /\.(parquet|csv)$/.test(name) ? slot as RequiredFile : null;
 }
 
 function shown(name: string): string {
@@ -42,17 +44,19 @@ export function selectFiles<T extends PickedFile>(picked: readonly T[]): Selecti
   const found: Partial<Record<RequiredFile, T>> = {};
   let total = 0;
   for (const file of picked) {
-    if (!isRequired(file.name)) {
-      errors.push(`Файл «${shown(file.name)}» не поддерживается: нужны ровно ${REQUIRED_FILES.join(', ')}.`);
+    const slot = slotOf(file.name);
+    if (!slot) {
+      errors.push(`Файл «${shown(file.name)}» не поддерживается: нужны nodes, edges и transactions в формате .parquet или .csv.`);
       continue;
     }
-    if (found[file.name]) {
-      errors.push(`Файл ${file.name} выбран дважды.`);
+    const taken = found[slot];
+    if (taken) {
+      errors.push(taken.name === file.name ? `Файл ${file.name} выбран дважды.` : `Для ${slot.replace('.parquet', '')} выбрано два файла: ${taken.name} и ${file.name}.`);
       continue;
     }
     if (file.size === 0) errors.push(`Файл ${file.name} пуст.`);
     else if (file.size > MAX_FILE_BYTES) errors.push(`Файл ${file.name} больше ${MAX_FILE_BYTES / MIB} МиБ.`);
-    found[file.name] = file;
+    found[slot] = file;
     total += file.size;
   }
   const missing = REQUIRED_FILES.filter((name) => !found[name]);
@@ -127,7 +131,12 @@ export async function uploadDataset(
   timeoutMs = REQUEST_TIMEOUT_MS,
 ): Promise<ImportedDataset> {
   const encoded: Record<string, string> = {};
-  for (const name of REQUIRED_FILES) encoded[name] = toBase64(new Uint8Array(await files[name].arrayBuffer()));
+  for (const slot of REQUIRED_FILES) {
+    const blob = files[slot];
+    // Имя файла сообщает серверу формат: nodes.csv или nodes.parquet.
+    const name = 'name' in blob && typeof blob.name === 'string' && slotOf(blob.name) === slot ? blob.name : slot;
+    encoded[name] = toBase64(new Uint8Array(await blob.arrayBuffer()));
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
