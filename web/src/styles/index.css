@@ -1,0 +1,10 @@
+/* Единая точка входа стилей: сначала токены, в конце адаптивный слой. */
+@import './core/tokens.css';
+@import './core/base.css';
+@import './components/controls.css';
+@import './components/identity.css';
+@import './views/workbench.css';
+@import './views/map.css';
+@import './views/inspector.css';
+@import './views/lists.css';
+@import './responsive/mobile.css';

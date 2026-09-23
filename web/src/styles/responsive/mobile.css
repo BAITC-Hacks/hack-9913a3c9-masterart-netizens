@@ -1,0 +1,35 @@
+/* От 1180 px — три колонки. Уже — одна колонка: карта во всю ширину, затем основания и очередь. */
+@media (max-width: 1280px) {
+  .wb-main { grid-template-columns: minmax(248px, 280px) minmax(0, 1fr) minmax(320px, 372px); }
+  .wb-inspector { padding: 22px 22px 56px; }
+}
+@media (max-width: 1179px) {
+  .wb-app { height: auto; min-height: 100dvh; }
+  .wb-main { display: flex; flex-direction: column; }
+  .wb-center { order: 1; }
+  .wb-inspector { order: 2; overflow: visible; padding: 24px 18px 40px; border: 0; border-top: 1px solid var(--wb-line); }
+  .wb-rail { order: 3; overflow: visible; padding: 20px 14px 48px; border: 0; border-top: 1px solid var(--wb-line); }
+  .wb-leads, .wb-clusters { max-height: 420px; overflow: auto; }
+  .wb-map { height: auto; padding: 14px 16px 10px; }
+  .wb-map__viewport { flex: none; height: min(62dvh, 520px); }
+  .wb-top { padding: 10px 16px; }
+  .wb-top__search { flex-basis: 100%; max-width: none; order: 3; }
+  .wb-clusterview { overflow-x: auto; overflow-y: visible; padding: 16px; }
+  .wb-outline { overflow-x: auto; }
+}
+@media (max-width: 560px) {
+  .wb-button, .wb-segmented button, .wb-iconbutton { min-height: 44px; }
+  .wb-disclosure > summary, .wb-about summary, .wb-tx summary, .wb-role-filter button { min-height: 44px; }
+  .wb-clusterview .wb-map__viewport { height: 60dvh; }
+  .wb-iconbutton { width: 44px; }
+  .wb-zoom button { width: 44px; height: 44px; }
+  .wb-account__gid { font-size: 19px; }
+  .wb-role__name { font-size: 26px; }
+  .wb-flows { grid-template-columns: minmax(0, 1fr); }
+  .wb-compare__row { grid-template-columns: minmax(0, 1fr) minmax(60px, 1fr) 40px; }
+  .wb-compare__who { display: none; }
+  .wb-modes { grid-template-columns: minmax(0, 1fr); }
+  .wb-modes button { grid-template-columns: 48px 1fr; align-items: center; min-height: 48px; }
+  .wb-table--members th:nth-child(n + 4), .wb-table--members td:nth-child(n + 4) { display: none; }
+  .wb-map__legend { font-size: 11px; }
+}

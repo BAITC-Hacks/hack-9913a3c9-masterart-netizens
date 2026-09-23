@@ -1,0 +1,53 @@
+/* Каркас: одна тихая строка сверху, три колонки на широком экране; колонки прокручиваются независимо. */
+.wb-app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+/* Ширину страницы задаёт окно, а не содержимое: карта и таблицы прокручиваются внутри своих рамок. */
+.wb-main, .wb-main > *, .wb-map, .wb-map__viewport { min-width: 0; }
+.wb-main { display: grid; grid-template-columns: minmax(280px, 316px) minmax(0, 1fr) minmax(360px, 420px); min-height: 0; }
+.wb-rail { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: auto; padding: 18px 14px 40px 18px; border-right: 1px solid var(--wb-line); }
+.wb-center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.wb-inspector { min-height: 0; overflow: auto; padding: 26px 30px 64px; border-left: 1px solid var(--wb-line); }
+.wb-empty { margin: auto; max-width: 30ch; text-align: center; color: var(--wb-muted); }
+
+.wb-top { position: relative; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; min-height: 64px; padding: 10px 24px; border-bottom: 1px solid var(--wb-line); }
+.wb-top__brand { display: flex; flex: none; align-items: center; gap: 10px; }
+.wb-top__mark { position: relative; width: 20px; height: 20px; border: 1px solid var(--wb-gold-line); border-radius: 50%; }
+.wb-top__mark::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--wb-gold-line); }
+.wb-top__title { margin: 0; font: 300 18px/1 var(--wb-display); letter-spacing: -0.01em; white-space: nowrap; }
+.wb-top__search { position: relative; flex: 1 1 360px; max-width: 520px; }
+.wb-top__search .wb-notice { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 30; box-shadow: var(--wb-shadow-md); background: var(--wb-card); }
+.wb-fixture { flex-basis: 100%; margin: 0 0 2px; padding: 7px 14px; border: 1px solid color-mix(in srgb, var(--wb-cycle) 40%, transparent); border-radius: 10px; background: var(--wb-cycle-wash); color: var(--wb-cycle); font-size: 12.5px; }
+.wb-fixture strong { font-weight: 500; }
+
+.wb-about { position: relative; margin-left: auto; }
+.wb-about summary { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 999px; list-style: none; font-size: 12.5px; color: var(--wb-muted); cursor: pointer; white-space: nowrap; transition: color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease); }
+.wb-about summary::-webkit-details-marker { display: none; }
+.wb-about summary:hover, .wb-about[open] summary { color: var(--wb-fg); background: var(--wb-sunken); }
+.wb-about__warn { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font-size: 11px; color: var(--wb-card); background: var(--wb-alert); }
+.wb-about__panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: min(380px, calc(100vw - 32px)); padding: 18px 20px; border: 1px solid var(--wb-line); border-radius: 16px; background: var(--wb-card); box-shadow: var(--wb-shadow-md); }
+.wb-about__title { margin: 0 0 12px; font-size: 13px; color: var(--wb-fg); }
+.wb-about__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 0 0 14px; }
+.wb-about__facts > div { display: grid; gap: 1px; }
+.wb-about__facts dt { font-size: 11px; color: var(--wb-muted); }
+.wb-about__facts dd { margin: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.wb-about__roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 0 0 14px; padding: 0; list-style: none; font-size: 12.5px; }
+.wb-about__roles li { display: flex; align-items: center; gap: 6px; }
+.wb-about__roles strong { margin-left: auto; font: 400 12.5px var(--wb-mono); }
+.wb-about__reach { width: 100%; margin: 0 0 14px; border-collapse: collapse; font-size: 12.5px; }
+.wb-about__reach th, .wb-about__reach td { padding: 5px 0; border-bottom: 1px solid var(--wb-line); font-weight: 400; text-align: left; }
+.wb-about__reach thead th { font-size: 11px; color: var(--wb-muted); }
+.wb-about__reach .is-num { padding-left: 12px; text-align: right; font-family: var(--wb-mono); }
+.wb-about__panel { max-height: min(78dvh, 640px); overflow: auto; }
+.wb-about__line { margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--wb-soft); }
+.wb-about__hash { display: block; word-break: break-all; font-size: 11px; color: var(--wb-muted); }
+.wb-about__warnings { margin: 10px 0 0; padding-left: 16px; font-size: 12px; color: var(--wb-alert); }
+
+.wb-status { display: grid; place-items: center; min-height: 100dvh; padding: 24px; }
+.wb-status__card { width: min(560px, 100%); }
+.wb-status__title { margin: 0 0 12px; font: 270 34px/1.15 var(--wb-display); letter-spacing: -0.02em; }
+.wb-status__text { margin: 0 0 10px; font-size: 15px; line-height: 1.6; color: var(--wb-soft); }
+.wb-status__hint { margin: 12px 0 0; font-size: 13px; color: var(--wb-muted); }
+.wb-status__code { margin: 8px 0; padding: 12px 16px; border: 1px solid var(--wb-line); border-radius: 12px; background: var(--wb-card); font-size: 14px; }
+.wb-status__errors { margin: 8px 0; padding-left: 18px; font: 400 12.5px/1.6 var(--wb-mono); color: var(--wb-alert); }
+.wb-status__bar { height: 2px; margin-top: 24px; overflow: hidden; border-radius: 2px; background: var(--wb-line); }
+.wb-status__bar i { display: block; width: 40%; height: 100%; background: var(--wb-gold-line); animation: wb-progress 1.2s var(--wb-ease) infinite; }
+@keyframes wb-progress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }

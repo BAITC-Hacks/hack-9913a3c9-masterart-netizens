@@ -1,0 +1,33 @@
+{
+  "name": "finance-evidence-workbench-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Рабочее место проверки «Граф денег»: локальный просмотрщик out/analysis.json",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:fixture": "WORKBENCH_OUT=fixtures vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "preview:fixture": "WORKBENCH_OUT=fixtures vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "NODE_ENV=test vitest run",
+    "fixture": "node fixtures/build-fixture.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.2.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "4.1.10"
+  }
+}

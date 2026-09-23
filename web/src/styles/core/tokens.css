@@ -1,0 +1,80 @@
+/*
+ * Токены рабочего места. Светлая тема — тёплая бумага; тёмная — почти чёрное поле, где колонки
+ * разделены линиями, а не графитовыми плитами. Золото — только выбор и фокус. Цвета ролей взяты из
+ * палитры Command Center (ревизия 77e1b9b0) и затемнены для светлой темы ради контраста.
+ */
+:root {
+  color-scheme: light;
+  --wb-bg: #f5f2ec;
+  --wb-paper: #fbf9f5;
+  --wb-card: #fffefb;
+  --wb-sunken: #efebe4;
+  --wb-line: rgba(40, 32, 22, 0.1);
+  --wb-line-strong: rgba(40, 32, 22, 0.19);
+  --wb-fg: #1c1a16;
+  --wb-soft: rgba(28, 26, 22, 0.78);
+  --wb-muted: rgba(28, 26, 22, 0.66);
+  --wb-faint: rgba(28, 26, 22, 0.42);
+  --wb-gold: #8a6128;
+  --wb-gold-line: #b48540;
+  --wb-gold-wash: rgba(180, 133, 64, 0.12);
+  /* Кольцо фокуса темнее декоративного золота: не ниже 3:1 и на бумаге, и на поле карты. */
+  --wb-focus: #8f6629;
+  --wb-edge: rgba(40, 32, 22, 0.38);
+  --wb-cycle: #9d5039;
+  --wb-cycle-wash: rgba(157, 80, 57, 0.08);
+  --wb-alert: #9a4636;
+  --wb-role-consolidator: #85517c;
+  --wb-role-transit: #0b746d;
+  --wb-role-distributor: #5b6f2c;
+  --wb-role-terminal: #9a5151;
+  --wb-role-coordinator: #6b4d91;
+  --wb-role-peripheral: rgba(28, 26, 22, 0.52);
+  --wb-shadow-sm: 0 1px 1px rgba(42, 30, 12, 0.04), 0 6px 16px rgba(42, 30, 12, 0.06);
+  --wb-shadow-md: 0 3px 6px rgba(42, 30, 12, 0.06), 0 12px 28px rgba(42, 30, 12, 0.1);
+  --wb-ease: cubic-bezier(.16, 1, .3, 1);
+  --wb-fast: 150ms;
+  --wb-normal: 200ms;
+  --wb-slow: 300ms;
+  --wb-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --wb-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --wb-serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --wb-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --wb-bg: #0a0b0c;
+  --wb-paper: #0a0b0c;
+  --wb-card: #111214;
+  --wb-sunken: #060707;
+  --wb-line: rgba(255, 255, 255, 0.085);
+  --wb-line-strong: rgba(255, 255, 255, 0.16);
+  --wb-fg: rgba(248, 246, 242, 0.94);
+  --wb-soft: rgba(238, 235, 229, 0.8);
+  --wb-muted: rgba(226, 222, 214, 0.64);
+  --wb-faint: rgba(226, 222, 214, 0.38);
+  --wb-gold: #dcbd8f;
+  --wb-gold-line: #d4af6e;
+  --wb-gold-wash: rgba(212, 175, 110, 0.12);
+  --wb-focus: #e0c18a;
+  --wb-edge: rgba(236, 232, 224, 0.38);
+  --wb-cycle: #d9967f;
+  --wb-cycle-wash: rgba(217, 150, 127, 0.09);
+  --wb-alert: #e3a595;
+  --wb-role-consolidator: #cb91bd;
+  --wb-role-transit: #81d8d0;
+  --wb-role-distributor: #b5c781;
+  --wb-role-terminal: #d4a0a0;
+  --wb-role-coordinator: #b69bd7;
+  --wb-role-peripheral: rgba(226, 222, 214, 0.52);
+  --wb-shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 6px 18px rgba(0, 0, 0, 0.32);
+  --wb-shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.wb-role--consolidator { --role: var(--wb-role-consolidator); }
+.wb-role--transit { --role: var(--wb-role-transit); }
+.wb-role--distributor { --role: var(--wb-role-distributor); }
+.wb-role--terminal { --role: var(--wb-role-terminal); }
+.wb-role--coordinator { --role: var(--wb-role-coordinator); }
+.wb-role--peripheral, .wb-role--unknown { --role: var(--wb-role-peripheral); }

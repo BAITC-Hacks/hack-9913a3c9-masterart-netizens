@@ -1,0 +1,52 @@
+/* Очередь, кластеры, список окрестности и таблица участников кластера. Строка очереди — две линии. */
+.wb-rail__tabs { align-self: flex-start; }
+.wb-leads, .wb-clusters { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.wb-lead, .wb-cluster { width: 100%; border: 0; border-radius: 12px; background: transparent; text-align: left; cursor: pointer; transition: background-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease); }
+.wb-lead { display: grid; grid-template-columns: 22px 16px minmax(0, 1fr) auto; grid-template-areas: "rank glyph gid score" ". . why why"; align-items: center; column-gap: 8px; row-gap: 3px; padding: 10px 10px 10px 4px; }
+.wb-lead:hover, .wb-cluster:hover { background: var(--wb-sunken); }
+.wb-lead.is-selected, .wb-cluster.is-selected { background: var(--wb-gold-wash); box-shadow: inset 2px 0 0 var(--wb-gold-line); }
+.wb-lead__rank { grid-area: rank; font: 400 12px/1 var(--wb-mono); color: var(--wb-muted); text-align: right; }
+.wb-lead__glyph { grid-area: glyph; display: grid; place-items: center; }
+.wb-lead__gid { grid-area: gid; min-width: 0; overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; }
+.wb-lead__score { grid-area: score; font: 400 12px/1 var(--wb-mono); color: var(--wb-soft); }
+.wb-lead__why { grid-area: why; overflow: hidden; font-size: 12px; line-height: 1.4; color: var(--wb-muted); white-space: nowrap; text-overflow: ellipsis; }
+.wb-cluster { display: grid; gap: 3px; padding: 10px 12px; }
+.wb-cluster__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; }
+.wb-cluster__head strong { font: 400 13.5px var(--wb-sans); }
+.wb-cluster__head span { font-size: 12px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
+.wb-cluster__hypothesis { display: -webkit-box; overflow: hidden; font-size: 12px; line-height: 1.45; color: var(--wb-muted); -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+.wb-outline { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 4px 2px 24px; }
+.wb-outline__section { margin-bottom: 28px; scroll-margin-top: 12px; }
+.wb-outline__section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 400 14px/1.3 var(--wb-sans); }
+.wb-outline__note { margin: 0 0 10px; font-size: 12.5px; color: var(--wb-muted); }
+.wb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wb-table th { padding: 8px 10px; border-bottom: 1px solid var(--wb-line); font-weight: 400; font-size: 11.5px; color: var(--wb-muted); text-align: left; white-space: nowrap; }
+.wb-table td { padding: 9px 10px; border-bottom: 1px solid var(--wb-line); vertical-align: top; }
+.wb-table .is-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wb-table tr.is-selected td { background: var(--wb-gold-wash); }
+.wb-table .wb-flag { margin-left: 8px; }
+.wb-tx summary { color: var(--wb-soft); cursor: pointer; white-space: nowrap; }
+.wb-tx ul { display: grid; gap: 2px; margin: 6px 0 0; padding: 0; list-style: none; }
+.wb-tx li { display: grid; grid-template-columns: 72px 14px auto; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.wb-cycles { display: grid; gap: 8px; margin: 0; padding-left: 18px; font-size: 13px; }
+.wb-cycles li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.wb-cycles__arrow { margin-right: 6px; color: var(--wb-cycle); }
+.wb-cycles__focus { color: var(--wb-gold); }
+
+.wb-clusterview { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 22px 26px 40px; }
+.wb-clusterview__head { max-width: 72ch; margin-bottom: 20px; }
+.wb-clusterview__head > .wb-button { margin-bottom: 18px; }
+.wb-clusterview__title { margin: 0 0 8px; font: 270 34px/1.1 var(--wb-display); letter-spacing: -0.02em; }
+.wb-clusterview .wb-map { height: auto; padding: 0; }
+.wb-clusterview .wb-map__viewport { flex: none; height: min(64dvh, 640px); }
+.wb-clusterview .wb-map.is-fullscreen { padding: 18px 24px; }
+.wb-clusterview .wb-map.is-fullscreen .wb-map__viewport { flex: 1; height: auto; }
+.wb-role-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.wb-role-filter button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--wb-line); border-radius: 999px; background: transparent; font-size: 12.5px; color: var(--wb-soft); cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease), color var(--wb-fast) var(--wb-ease); }
+.wb-role-filter button:hover { border-color: var(--wb-line-strong); color: var(--wb-fg); }
+.wb-role-filter button.is-active { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); color: var(--wb-fg); }
+.wb-role-filter strong { font: 400 12px var(--wb-mono); color: var(--wb-fg); }
+.wb-role-filter__count { margin: 10px 0 0; font-size: 12.5px; color: var(--wb-muted); font-variant-numeric: tabular-nums; }
+.wb-reset { padding: 0; color: var(--wb-gold); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+.wb-more { display: flex; margin: 16px auto 0; }
