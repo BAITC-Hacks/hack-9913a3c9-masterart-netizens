@@ -2,19 +2,20 @@ import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {GraphIndex} from '../data/graph';
 import type {Mode} from '../data/schema';
 import type {Neighborhood} from '../data/neighborhood';
-import {countLabel, formatInt, formatKzt, formatScore} from '../data/format';
+import {countLabel, formatInt, formatKzt, formatScore, roleLabel} from '../data/format';
 import {CARD_H, CARD_W, layoutEgo, type PlacedCard} from '../map/egoLayout';
 import {MapFrame, MapTools, MapViewport, useMapView} from '../map/MapFrame';
 import {Icon} from '../map/icons';
 import {Gid} from './Gid';
 import {RoleTag} from './RoleGlyph';
 import {Outline} from './Outline';
+import type {AccountHistory} from '../app/useAccountHistory';
 
 /**
  * Центр рабочего места: направленная окрестность выбранного счёта. Карточка соседа открывает его,
  * свёрнутая карточка ведёт в список, где видны все участники без исключения.
  */
-export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void}) {
+export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIndex; hood: Neighborhood; mode: Mode; onSelect: (gid: string) => void; history: AccountHistory}) {
   const focus = hood.focus;
   // Пояснение нужно только там, где денег в эту сторону нет совсем; встречный поток — тоже поток.
   const notes = useMemo(() => ({
@@ -39,7 +40,9 @@ export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood
     observer.observe(el);
     return () => observer.disconnect();
   }, [view.viewport, view.mode]);
-  useLayoutEffect(() => { view.focusMap({x: layout.focus.x, y: layout.focus.y, w: CARD_W, h: CARD_H}); }, [layout]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    if (view.mode === 'map') view.focusMap({x: layout.focus.x, y: layout.focus.y, w: CARD_W, h: CARD_H});
+  }, [layout, view.mode]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (view.mode !== 'outline' || !outlineTarget.current) return;
     document.getElementById(outlineTarget.current)?.scrollIntoView({block: 'start'});
@@ -51,6 +54,10 @@ export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood
 
   return <MapFrame view={view} label="Связи счёта">
     <header className="wb-map__head">
+      <div className="wb-history" role="group" aria-label="История переходов">
+        <button type="button" className="wb-iconbutton" onClick={history.back} disabled={!history.canBack} aria-label="Назад к предыдущему счёту" title="Назад к предыдущему счёту"><Icon name="back" size={16} /></button>
+        <button type="button" className="wb-iconbutton" onClick={history.forward} disabled={!history.canForward} aria-label="Вперёд к следующему счёту" title="Вперёд к следующему счёту"><Icon name="chevron" size={16} /></button>
+      </div>
       <p className="wb-map__title">
         <span>{countLabel(hood.payers.length + hood.mutual.length, 'плательщик', 'плательщика', 'плательщиков')}</span>
         <span>{countLabel(hood.recipients.length + hood.mutual.length, 'получатель', 'получателя', 'получателей')}</span>
@@ -116,7 +123,9 @@ function MapCard({card, index, witnessPayer, onSelect, onOpenFold}: {
     {flag && <span className="wb-card__flag">{flag}</span>}
   </>;
   const className = `wb-card wb-card--${card.kind}${link.gid === witnessPayer ? ' is-witness' : ''}`;
-  if (isFocus) return <div className={className} style={style} aria-label={`Выбранный счёт ${link.gid}`}>{content}</div>;
-  return <button type="button" className={className} style={style} onClick={() => onSelect(link.gid)} aria-label={`Открыть счёт ${link.gid}`}>{content}</button>;
+  const side = card.kind === 'payer' ? 'плательщик' : card.kind === 'recipient' ? 'получатель' : card.kind === 'mutual' ? 'встречный поток' : '';
+  const spoken = [`Счёт ${link.gid}`, side, node ? roleLabel(node.role) : '', edgeLine ? `${formatKzt(edgeLine.sum_kzt)}, ${countLabel(edgeLine.n_tx, 'перевод', 'перевода', 'переводов')}` : '', flag ?? ''].filter(Boolean).join(', ');
+  if (isFocus) return <div className={className} style={style} role="group" aria-label={`Выбранный счёт. ${spoken}`}>{content}</div>;
+  return <button type="button" className={className} style={style} onClick={() => onSelect(link.gid)} aria-label={`Открыть: ${spoken}`}>{content}</button>;
 }
 

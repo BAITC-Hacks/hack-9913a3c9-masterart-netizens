@@ -25,11 +25,11 @@ export function LeadsRail({index, selected, tab, onTab, onSelect, openCluster, o
       ? <ol className="wb-leads" aria-label="Очередь проверки по приоритету">
         {top_nodes.map(top => <li key={`${top.rank}-${top.gid}`}>
           <button type="button" className={`wb-lead${top.gid === selected ? ' is-selected' : ''}`} aria-current={top.gid === selected ? 'true' : undefined}
-            title={top.why} aria-label={`№ ${top.rank}, ${roleLabel(top.role)}, счёт ${top.gid}, приоритет ${formatScore(top.priority_score)}`} onClick={() => onSelect(top.gid)}>
-            <span className="wb-lead__rank">{top.rank}</span>
-            <span className={`wb-lead__glyph wb-role--${top.role}`}><RoleGlyph role={top.role} /></span>
+            title={top.why} onClick={() => onSelect(top.gid)}>
+            <span className="wb-lead__rank"><span className="wb-visually-hidden">№ </span>{top.rank}</span>
+            <span className={`wb-lead__glyph wb-role--${top.role}`}><RoleGlyph role={top.role} /><span className="wb-visually-hidden">{roleLabel(top.role)}, счёт</span></span>
             <Gid gid={top.gid} className="wb-lead__gid" />
-            <span className="wb-lead__score">{formatScore(top.priority_score)}</span>
+            <span className="wb-lead__score"><span className="wb-visually-hidden">приоритет </span>{formatScore(top.priority_score)}</span>
             <span className="wb-lead__why">{top.why}</span>
           </button>
         </li>)}

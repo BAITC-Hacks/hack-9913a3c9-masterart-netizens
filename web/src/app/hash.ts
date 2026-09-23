@@ -22,10 +22,3 @@ export function formatHash(state: {gid: string | null; mode: Mode}): string {
   if (state.mode !== 'structural') params.set('mode', state.mode);
   return `#${params.toString()}`;
 }
-
-export function writeHash(state: {gid: string | null; mode: Mode}, push: boolean) {
-  const next = formatHash(state);
-  if (next === window.location.hash) return;
-  if (push) window.history.pushState(null, '', next);
-  else window.history.replaceState(null, '', next);
-}

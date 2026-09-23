@@ -18,6 +18,8 @@
   --wb-gold: #8a6128;
   --wb-gold-line: #b48540;
   --wb-gold-wash: rgba(180, 133, 64, 0.12);
+  /* Кольцо фокуса темнее декоративного золота: не ниже 3:1 и на бумаге, и на поле карты. */
+  --wb-focus: #8f6629;
   --wb-edge: rgba(40, 32, 22, 0.38);
   --wb-cycle: #9d5039;
   --wb-cycle-wash: rgba(157, 80, 57, 0.08);
@@ -55,6 +57,7 @@
   --wb-gold: #dcbd8f;
   --wb-gold-line: #d4af6e;
   --wb-gold-wash: rgba(212, 175, 110, 0.12);
+  --wb-focus: #e0c18a;
   --wb-edge: rgba(236, 232, 224, 0.38);
   --wb-cycle: #d9967f;
   --wb-cycle-wash: rgba(217, 150, 127, 0.09);

@@ -3,7 +3,8 @@ import type {GraphIndex} from '../data/graph';
 import type {Mode} from '../data/schema';
 import {compileNeighborhood} from '../data/neighborhood';
 import {countLabel} from '../data/format';
-import {readHash, writeHash} from './hash';
+import {readHash} from './hash';
+import {useAccountHistory, type AccountEntry} from './useAccountHistory';
 import {TopBar} from '../ui/TopBar';
 import {LeadsRail} from '../ui/LeadsRail';
 import {MapPanel} from '../ui/MapPanel';
@@ -33,28 +34,25 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
   const [cluster, setCluster] = useState<number | null>(null);
   const [railTab, setRailTab] = useState<RailTab>('leads');
 
-  useEffect(() => { writeHash({gid: selected, mode}, false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const applyEntry = useCallback((entry: AccountEntry) => {
+    setModeState(entry.mode);
+    if (!entry.gid) return;
+    if (index.byGid.has(entry.gid)) { setSelected(entry.gid); setNotice(null); setCluster(null); }
+    else setNotice(unknownGid(entry.gid, index));
+  }, [index]);
+  const history = useAccountHistory(applyEntry);
+
+  useEffect(() => { history.replace({gid: selected, mode}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const select = useCallback((gid: string) => {
     if (!index.byGid.has(gid)) { setNotice(unknownGid(gid, index)); return; }
-    setSelected(gid); setCluster(null); setNotice(null);
-    writeHash({gid, mode}, true);
-  }, [index, mode]);
+    setCluster(null); setNotice(null);
+    if (gid === selected) return;
+    setSelected(gid);
+    history.push({gid, mode});
+  }, [index, mode, selected, history]);
 
-  const setMode = useCallback((next: Mode) => { setModeState(next); writeHash({gid: selected, mode: next}, false); }, [selected]);
-
-  useEffect(() => {
-    const onHash = () => {
-      const hash = readHash();
-      setModeState(hash.mode);
-      if (!hash.gid) return;
-      if (index.byGid.has(hash.gid)) { setSelected(hash.gid); setNotice(null); setCluster(null); }
-      else setNotice(unknownGid(hash.gid, index));
-    };
-    window.addEventListener('hashchange', onHash);
-    window.addEventListener('popstate', onHash);
-    return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('popstate', onHash); };
-  }, [index]);
+  const setMode = useCallback((next: Mode) => { setModeState(next); history.replace({gid: selected, mode: next}); }, [selected, history]);
 
   const hood = useMemo(() => (selected ? compileNeighborhood(index, selected) : null), [index, selected]);
   const openCluster = useCallback((id: number) => { setCluster(id); setRailTab('clusters'); }, []);
@@ -67,7 +65,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
         {cluster !== null
           ? <ClusterPanel index={index} clusterId={cluster} selected={selected} onSelect={select} onClose={() => setCluster(null)} />
           : hood
-            ? <MapPanel index={index} hood={hood} mode={mode} onSelect={select} />
+            ? <MapPanel index={index} hood={hood} mode={mode} onSelect={select} history={history} />
             : <p className="wb-empty">Выберите счёт в очереди или найдите его по gid.</p>}
       </section>
       {selected && hood

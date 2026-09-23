@@ -1,3 +1,4 @@
+import {useEffect, useRef} from 'react';
 import type {GraphIndex} from '../data/graph';
 import {countLabel, formatDate, formatInt, formatKzt} from '../data/format';
 import {SearchBox} from './SearchBox';
@@ -11,6 +12,21 @@ export function TopBar({index, warnings, onSelect, notice, onDismissNotice}: {
   index: GraphIndex; warnings: string[]; onSelect: (gid: string) => void; notice: string | null; onDismissNotice: () => void;
 }) {
   const {summary, fixture, policy} = index.analysis;
+  const about = useRef<HTMLDetailsElement>(null);
+  // Сведения о данных закрываются щелчком вне панели и клавишей Escape, как обычное всплывающее окно.
+  useEffect(() => {
+    const close = (event: Event) => {
+      const el = about.current;
+      if (!el?.open) return;
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !el.contains(event.target as Node)) {
+        el.open = false;
+        if (event instanceof KeyboardEvent) el.querySelector('summary')?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', close); };
+  }, []);
   return <header className="wb-top">
     <div className="wb-top__brand">
       <span className="wb-top__mark" aria-hidden="true" />
@@ -21,7 +37,7 @@ export function TopBar({index, warnings, onSelect, notice, onDismissNotice}: {
       {notice && <p className="wb-notice" role="alert"><Icon name="alert" size={15} /><span>{notice}</span>
         <button type="button" className="wb-notice__close" aria-label="Скрыть сообщение" onClick={onDismissNotice}><Icon name="close" size={14} /></button></p>}
     </div>
-    <details className="wb-about">
+    <details className="wb-about" ref={about}>
       <summary>
         <span>{countLabel(summary.n_nodes, 'счёт', 'счёта', 'счетов')} · {formatDate(summary.period_start)} — {formatDate(summary.period_end)}</span>
         {warnings.length > 0 && <span className="wb-about__warn" aria-label={`Предупреждений: ${warnings.length}`}>!</span>}

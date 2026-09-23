@@ -12,7 +12,7 @@ body {
 button, input { font: inherit; color: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 code, pre { font-family: var(--wb-mono); font-size: .92em; }
-:focus-visible { outline: 2px solid var(--wb-gold-line); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--wb-focus); outline-offset: 3px; }
 ::selection { background: var(--wb-gold-wash); }
 .wb-visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .wb-muted { color: var(--wb-muted); font-size: 13px; line-height: 1.5; }
