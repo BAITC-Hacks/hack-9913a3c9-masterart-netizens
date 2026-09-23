@@ -149,7 +149,9 @@ def build_analysis(data: Dataset, temporal_fn=None) -> dict:
             }
         )
 
-    ranking = rank(priority)
+    # Очередь проверки — счета вне списка исходных клиентов: их роль уже известна банку, а задача —
+    # найти точки консолидации за ними. Приоритет исходных клиентов остаётся в nodes_roles.csv.
+    ranking = [g for g in rank(priority) if not (policy.TOP_EXCLUDES_SEEDS and metrics[g].is_seed)]
     top_nodes = [
         {
             "rank": position,

@@ -216,6 +216,25 @@ class EvidenceFitTests(unittest.TestCase):
         self.assertEqual(clipped, [])
 
 
+class TopListTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get("FINANCE_DATA"), "FINANCE_DATA не задан")
+    def test_top_list_starts_with_accounts_beyond_known_clients(self):
+        from backend.analysis import build_analysis
+        from backend.io import load_dataset
+
+        a = build_analysis(load_dataset(os.environ["FINANCE_DATA"]))
+        seeds = {n["gid"] for n in a["nodes"] if n["is_seed"]}
+        top = a["top_nodes"]
+        self.assertEqual(len(top), 30)
+        self.assertFalse(seeds & {t["gid"] for t in top})
+        self.assertEqual([t["rank"] for t in top], list(range(1, 31)))
+        scores = [t["priority_score"] for t in top]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+        best = max((n for n in a["nodes"] if not n["is_seed"]), key=lambda n: (n["priority_score"], -int(n["gid"])))
+        self.assertEqual(top[0]["gid"], best["gid"])
+        self.assertTrue(a["policy"]["top_excludes_seeds"])
+
+
 class FailedRunTests(unittest.TestCase):
     def test_failed_run_keeps_prior_outputs_and_marks_the_attempt(self):
         with tempfile.TemporaryDirectory() as tmp:
