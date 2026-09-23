@@ -171,10 +171,15 @@ class GraphQueries:
         return self._result("neighbors", facts, gids, citations)
 
     def rank(self, limit: int, role: str | None) -> dict:
-        ordered = sorted((n for n in self.nodes.values() if role is None or n["role"] == role),
+        exclude_seeds = self.analysis["policy"].get("top_excludes_seeds", False)
+        if type(exclude_seeds) is not bool:
+            raise QueryError("Правило очереди проверки повреждено: ожидается логический флаг исключения исходных клиентов.")
+        ordered = sorted((n for n in self.nodes.values() if (role is None or n["role"] == role)
+                          and not (exclude_seeds and n["is_seed"])),
                          key=lambda n: (-amount(n["priority_score"]), int(n["gid"])))
         gids = [n["gid"] for n in ordered[:limit]]
         return self._result("rank", {"rows": [self.brief(gid) for gid in gids], "total": len(ordered), "role": role,
+                                     "top_excludes_seeds": exclude_seeds,
                                      "priority_description": self.analysis["policy"]["priority_description"]}, gids,
                             [citation("/policy/priority_description", "Правило приоритета")] + [self.node_citation(g) for g in gids])
 

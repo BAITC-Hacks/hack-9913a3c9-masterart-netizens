@@ -16,10 +16,15 @@ def text(value: object) -> str:
 
 
 def number(value: object) -> str:
-    result = format(Decimal(str(value)), "f")
+    result = format(Decimal(str(value)), ",f")
     if "." in result:
         result = result.rstrip("0").rstrip(".")
-    return result
+    return result.replace(",", "\u202f").replace(".", ",")
+
+
+def sentence(value: object) -> str:
+    value = str(value)
+    return text(value[:1].upper() + value[1:])
 
 
 def link(gid: str) -> str:
@@ -58,14 +63,15 @@ def render(result: dict) -> str:
         lines.append("Основание приоритета: " + text(facts["priority_description"]))
         metrics = facts["metrics"]
         lines.append(f"Плательщиков: {number(metrics['in_degree'])}; получателей: {number(metrics['out_degree'])}. "
-                     f"Наблюдаемые входящие: {number(metrics['in_kzt'])} KZT ({number(metrics['in_tx'])} операций); "
-                     f"исходящие: {number(metrics['out_kzt'])} KZT ({number(metrics['out_tx'])} операций).")
+                     f"Наблюдаемые входящие: {number(metrics['in_kzt'])} ₸ ({number(metrics['in_tx'])} операций); "
+                     f"исходящие: {number(metrics['out_kzt'])} ₸ ({number(metrics['out_tx'])} операций).")
         lines.append(f"Прямых связей с исходными клиентами: входящих {number(metrics['seed_in_count'])}, "
                      f"исходящих {number(metrics['seed_out_count'])}.")
         alternatives = facts["role_alternatives"]
         if alternatives:
-            alt = sorted(alternatives, key=lambda a: (-a["score"], a["role"]))[0]
-            lines.append(f"Сильнейшая альтернатива: {ROLES[alt['role']]} ({number(alt['score'])}). {text(alt['reason'])}")
+            # Конвейер уже упорядочил альтернативы по смыслу правил; периферия не перебивает сигналы.
+            alt = alternatives[0]
+            lines.append(f"Альтернатива по правилу: {ROLES[alt['role']]} ({number(alt['score'])}). {sentence(alt['reason'])}")
         lines.extend(observation(facts["observation"]))
         lines.append("Следующий запрос данных: " + text(facts["next_request"]))
     elif kind == "comparison":
@@ -76,8 +82,8 @@ def render(result: dict) -> str:
         for node in facts["rows"]:
             metrics = node["metrics"]
             lines.append(row(node))
-            lines.append(f"- Наблюдаемые входящие: {number(metrics['in_kzt'])} KZT от {metrics['in_degree']} плательщиков; "
-                         f"исходящие: {number(metrics['out_kzt'])} KZT к {metrics['out_degree']} получателям.")
+            lines.append(f"- Наблюдаемые входящие: {number(metrics['in_kzt'])} ₸ от {metrics['in_degree']} плательщиков; "
+                         f"исходящие: {number(metrics['out_kzt'])} ₸ к {metrics['out_degree']} получателям.")
             lines.extend(observation(node["observation"]))
             lines.append("- Следующий запрос: " + text(node["next_request"]))
         lines.append("Основание очереди: " + text(facts["priority_description"]))
@@ -110,12 +116,14 @@ def render(result: dict) -> str:
         direction = {"in": "входящие", "out": "исходящие", "both": "входящие и исходящие"}[facts["direction"]]
         lines.append(f"Счёт {link(facts['gid'])}: {direction} связи. Показано {facts['shown']} из {facts['total_edges']} наблюдаемых рёбер, по убыванию суммы.")
         for edge in facts["edges"]:
-            lines.append(f"- {link(edge['src'])} → {link(edge['dst'])}: {number(edge['sum_kzt'])} KZT, операций {edge['n_tx']}.")
+            lines.append(f"- {link(edge['src'])} → {link(edge['dst'])}: {number(edge['sum_kzt'])} ₸, операций {edge['n_tx']}.")
         if not facts["edges"]:
             lines.append("Таких рёбер в наблюдаемой выборке нет.")
         lines.extend(observation(facts["observation"]))
     elif kind == "rank":
         lines.append(f"Приоритет проверки: показано {len(facts['rows'])} из {facts['total']} счетов, соответствующих фильтру.")
+        if facts.get("top_excludes_seeds"):
+            lines.append("В очереди только счета вне списка известных исходных клиентов; сами исходные клиенты доступны через поиск.")
         lines.append("Основание приоритета: " + text(facts["priority_description"]))
         lines.extend(f"{i}. {row(n)}" for i, n in enumerate(facts["rows"], 1))
         if not facts["rows"]:
@@ -124,7 +132,7 @@ def render(result: dict) -> str:
         lines.append(f"Всего кластеров в снимке: {facts['total_clusters']}; показано {len(facts['clusters'])}.")
         for c in facts["clusters"]:
             lines.append(f"Кластер {c['cluster_id']}: счетов {c['n_nodes']}, исходных клиентов {c['n_seed']}, "
-                         f"внутренний оборот {number(c['sum_kzt_internal'])} KZT. {text(c['hypothesis'])}")
+                         f"внутренний оборот {number(c['sum_kzt_internal'])} ₸. {text(c['hypothesis'])}")
             lines.append("Ключевые счета: " + (", ".join(link(g) for g in c["top_gids"][:30]) or "не указаны"))
         if facts["members"]:
             lines.append(f"Участники по приоритету (показано {len(facts['members'])}):")
@@ -148,7 +156,7 @@ def render(result: dict) -> str:
         witness = facts["witness"]
         if witness:
             for hop in witness["hops"]:
-                lines.append(f"- {text(hop['date'])}: {link(hop['src'])} → {link(hop['dst'])}, {number(hop['sum_kzt'])} KZT.")
+                lines.append(f"- {text(hop['date'])}: {link(hop['src'])} → {link(hop['dst'])}, {number(hop['sum_kzt'])} ₸.")
         else:
             lines.append("В этом режиме пример пути отсутствует.")
     elif kind == "gaps":

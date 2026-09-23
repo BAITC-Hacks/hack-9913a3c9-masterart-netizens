@@ -51,7 +51,7 @@ def _inputs(question: object, selection: object, graph: GraphQueries) -> tuple[s
         candidate = token.group()
         is_id = (len(re.sub(r"\D", "", candidate)) >= 15 or ID_CONTEXT.search(q[:token.start()])
                  or candidate == q or (re.search(r"(?:объясни|explain|покажи)\s+$", q[:token.start()], re.IGNORECASE)
-                                          and candidate in graph.nodes))
+                                          and not q[token.end():].strip() and candidate in graph.nodes))
         if is_id:
             mentioned.append(graph.require_gid(candidate))
     return q, selected, list(dict.fromkeys(mentioned))
