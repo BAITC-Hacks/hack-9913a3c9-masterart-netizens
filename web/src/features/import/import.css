@@ -3,7 +3,7 @@
 .fi-title { margin: 0; font-size: 15px; font-weight: 600; }
 .fi-note { margin: 0; color: var(--wb-muted, #67645f); font-size: 13px; }
 .fi-files { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.fi-files li { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--wb-line, #ddd8cf); border-radius: 10px; }
+.fi-files li { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 8px 12px; border: 1px solid var(--wb-line, #ddd8cf); border-radius: 10px; }
 .fi-files li.is-chosen { border-color: var(--wb-gold-line, #b48540); }
 .fi-name, .fi-columns { font-family: var(--wb-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 12.5px; }
 .fi-columns, .fi-state { color: var(--wb-muted, #67645f); }
@@ -19,5 +19,9 @@
 @media (max-width: 640px) { .fi-files li { grid-template-columns: 1fr; gap: 2px; } }
 /* Внизу окна «О данных»: тот же импорт, отделённый линией; строки файлов в одну колонку. */
 .wb-about__import { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--wb-line); }
-.wb-about__import .fi-files li { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+.wb-about__import .fi-files li { grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 12px; }
 .wb-about__import .fi-columns { grid-column: 1 / -1; grid-row: 2; }
+/* Кнопка строки: выбрать или заменить файл только этой таблицы; цель касания не меньше 44 px. */
+.fi-panel .wb-button { min-height: 44px; }
+.fi-row-button { min-width: 44px; justify-content: center; white-space: nowrap; }
+.fi-files li:focus-within .fi-row-button { outline: 2px solid var(--wb-focus, #b48540); outline-offset: 2px; }
