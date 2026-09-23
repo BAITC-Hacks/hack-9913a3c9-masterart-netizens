@@ -1,0 +1,18 @@
+{
+  "surface": "Рабочая область разговоров с помощником",
+  "entry": "AssistantWorkspace.tsx",
+  "themes": ["light", "dark"],
+  "viewports": [{"width": 390, "height": 844}, {"width": 1280, "height": 860}],
+  "states": [
+    {"id": "rest", "reach": {"steps": [{"wait": 1500}]}, "expect": {"visible": ".fa-launcher"}},
+    {"id": "open-empty", "reach": {"steps": [{"wait": 1500}, {"click": ".fa-launcher"}, {"wait": 400}]}, "expect": {"visible": "dialog.fa-ws[open] .fa-ws-empty"}},
+    {"id": "answered", "reach": {"steps": [{"wait": 1500}, {"click": ".fa-launcher"}, {"wait": 300}, {"type": {"selector": "dialog.fa-ws[open] textarea", "text": "Какие счета проверить в первую очередь?"}}, {"press": "Enter"}, {"wait": 3000}]}, "expect": {"visible": "dialog.fa-ws[open] .fa-result"}}
+  ],
+  "transitions": [
+    {"id": "open-workspace", "from": "rest", "trigger": {"click": ".fa-launcher"},
+      "expect": {"targets": ["dialog.fa-ws"], "duration_ms": [150, 300], "easing": "ease-lux", "props": ["opacity", "transform"]}}
+  ],
+  "flows": [
+    {"id": "open-then-escape", "steps": [{"wait": 1500}, {"click": ".fa-launcher"}, {"wait": 400}, {"press": "Escape"}, {"wait": 300}], "end": {"hidden": "dialog.fa-ws[open]"}}
+  ]
+}
