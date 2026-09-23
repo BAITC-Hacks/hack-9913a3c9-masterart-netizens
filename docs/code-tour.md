@@ -179,7 +179,7 @@ flowchart LR
 «консолидатор», альтернатива «конечный получатель» и следующий запрос данных — «Запросить назначения
 входящих платежей и поступления из других банков».
 
-- **Где в коде:** поиск — [`searchAccounts`](../web/src/data/search.ts#L32-L48) в `web/src/data/search.ts`; карта — [`layoutEgo`](../web/src/map/egoLayout.ts#L37-L143) в `web/src/map/egoLayout.ts`; карточка — [`EvidencePanel`](../web/src/ui/EvidencePanel.tsx#L28-L183) в `web/src/ui/EvidencePanel.tsx`; факты роли — [`roleFacts`](../web/src/data/roleFacts.ts#L49-L160) в `web/src/data/roleFacts.ts`; PDF — [`render_pdf`](../reports/pdf.py#L428-L455) в `reports/pdf.py`; ассистент — [`answer`](../assistant/service.py#L187-L235) в `assistant/service.py`; загрузка данных — [`ingest_files`](../imports/ingest.py#L335-L348) в `imports/ingest.py`.
+- **Где в коде:** поиск — [`searchAccounts`](../web/src/data/search.ts#L32-L48) в `web/src/data/search.ts`; карта — [`layoutEgo`](../web/src/map/egoLayout.ts#L37-L143) в `web/src/map/egoLayout.ts`; карточка — [`EvidencePanel`](../web/src/ui/EvidencePanel.tsx#L29-L191) в `web/src/ui/EvidencePanel.tsx`; факты роли — [`roleFacts`](../web/src/data/roleFacts.ts#L49-L160) в `web/src/data/roleFacts.ts`; PDF — [`render_pdf`](../reports/pdf.py#L428-L455) в `reports/pdf.py`; ассистент — [`answer`](../assistant/service.py#L207-L269) в `assistant/service.py`; загрузка данных — [`ingest_files`](../imports/ingest.py#L342-L355) в `imports/ingest.py`.
 - **Тесты:** [`WEB-SEARCH`](../web/tests/search.test.ts#L9-L37) в `web/tests/search.test.ts`, [`WEB-REAL`](../web/tests/real-data.test.ts#L16-L76) в `web/tests/real-data.test.ts`.
 
 ## Почему так, а не иначе
