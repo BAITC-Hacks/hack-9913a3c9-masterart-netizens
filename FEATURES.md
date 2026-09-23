@@ -3,7 +3,8 @@
 Карта соответствия [заданию кейса](https://docs.google.com/document/d/1JPLU-G6R25Ge2hVaY2J9cqvrx7FGExj87XKwJPaMz3o/edit): каждое требование связано со строками кода, которые его
 выполняют, с тестом, который это проверяет, и со способом убедиться вручную. Ссылки ведут на
 конкретные строки файлов в этом репозитории. Общая картина простыми словами — в
-[экскурсии по коду](docs/code-tour.md): путь одного настоящего счёта через все модули.
+[экскурсии по коду](docs/code-tour.md): путь одного настоящего счёта через все модули. Как правила
+проверены без эталона — в [docs/validation.md](docs/validation.md).
 
 **Все проверки одной командой** (после `./run.sh --no-serve`, см. README, раздел 7):
 
@@ -100,16 +101,16 @@ for part in assistant shortlist import; do npx vitest run --config src/features/
 | Осторожность формулировок | Оговорки в правилах и кластерах: [`policy.py · SCORE_DESCRIPTION_RU`](backend/policy.py#L208-L211), [`clusters.py · _hypothesis`](backend/clusters.py#L70-L94) | [`brief.test.ts · WEB-BRIEF` ×5](web/tests/brief.test.ts#L10-L37), [`F07_unsupported_personal_guilt_provenance_code`](tests/test_assistant.py#L239-L247) | Гипотезы кластеров заканчиваются оговоркой | готово |
 | Производительность ≤ 5 минут на обычном ноутбуке | [`__main__.py · main`](backend/__main__.py#L29-L76) | [`F01_fresh_cli_without_model_key_under_five_minutes`](tests/test_acceptance.py#L585-L587) | Время в последней строке запуска | готово |
 | Всё локально; сеть только для внешнего LLM API | Сервер слушает только 127.0.0.1: [`serve.py · make_server`](serve.py#L345-L351); запрос к модели: [`openai.py · request`](assistant/openai.py#L25-L45) | [`F07_foreign_host_origin_and_cross_site_rejected`](tests/test_server.py#L131-L138), [`F07_http_transport_fixed_url_header_timeout_and_no_redirect`](tests/test_assistant.py#L324-L339) | Интерфейс работает с отключённой сетью | готово |
-| Масштабируемость до ~1 млн узлов — текстом | [`README · раздел 10`](README.md#L295) | — | Раздел 10 README | готово |
+| Масштабируемость до ~1 млн узлов — текстом | [`README · раздел 10`](README.md#L303) | — | Раздел 10 README | готово |
 
 ## Артефакты (раздел 10)
 
 | Артефакт | Где | Состояние |
 |---|---|---|
 | Репозиторий: код конвейера и интерфейса | [`backend/`](backend/), [`assistant/`](assistant/), [`web/`](web/), [`serve.py`](serve.py), [`run.sh`](run.sh) | готово |
-| README: одна команда, критерии и пороги, выходы, ограничения, масштабирование | [`раздел 7`](README.md#L195), [`раздел 4`](README.md#L84), [`раздел 9`](README.md#L272), [`раздел 10`](README.md#L286) | готово |
+| README: одна команда, критерии и пороги, выходы, ограничения, масштабирование | [`раздел 7`](README.md#L203), [`раздел 4`](README.md#L86), [`раздел 9`](README.md#L280), [`раздел 10`](README.md#L294) | готово |
 | Выгрузки: `nodes_roles.csv`, `clusters.csv`, `top_nodes.csv` | Готовые файлы: [`results/`](results/); заново — в `out/` командой `./run.sh --no-serve` | готово |
-| Схема решения: данные → метрики → роли → интерфейс | [`README · раздел 6`](README.md#L169), [`docs/architecture.md`](docs/architecture.md) | готово |
+| Схема решения: данные → метрики → роли → интерфейс | [`README · раздел 6`](README.md#L177), [`docs/architecture.md`](docs/architecture.md) | готово |
 | Демо на 5 минут | [`docs/demo.md`](docs/demo.md) | готово |
 | Сторонние ресурсы и лицензии | Шрифты PDF Noto Sans — [`SIL Open Font License 1.1`](reports/fonts/OFL.txt); перенесённый код интерфейса — [`web/README.md`](web/README.md#заимствованный-код) | готово |
 
