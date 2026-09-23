@@ -121,7 +121,7 @@ class ImportTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
 
     def test_rejects_unknown_and_path_names(self):
-        for name in ("../nodes.parquet", "nodes.csv", "/etc/passwd", "model.pkl"):
+        for name in ("../nodes.parquet", "nodes.xlsx", "/etc/passwd", "model.pkl"):
             files = case_files()
             files[name] = files.pop("nodes.parquet")
             status, payload = self.post(files)
@@ -223,6 +223,68 @@ class ImportTests(unittest.TestCase):
 
 
 @unittest.skipUnless(os.environ.get("FINANCE_DATA"), "FINANCE_DATA не задан: проверка на официальных данных пропущена")
+def csv_bytes(parquet_data: bytes) -> bytes:
+    """Та же таблица в CSV: так выглядят CSV-файлы, которые выдают организаторы."""
+    import pyarrow.csv as pacsv
+    buffer = io.BytesIO()
+    pacsv.write_csv(pq.read_table(pa.BufferReader(parquet_data)), buffer)
+    return buffer.getvalue()
+
+
+def case_csv_files() -> dict:
+    return {name.replace(".parquet", ".csv"): csv_bytes(data) for name, data in case_files().items()}
+
+
+class CsvImportTests(ImportTests.__base__):
+    setUp = ImportTests.setUp
+    tearDown = ImportTests.tearDown
+    post = ImportTests.post
+    assertNoStaging = ImportTests.assertNoStaging
+
+    def test_F10_csv_import_same_identity_as_parquet(self):
+        status, payload = self.post(case_csv_files())
+        self.assertEqual(status, 200, payload)
+        dataset = payload["dataset"]
+        self.assertEqual((dataset["n_nodes"], dataset["n_edges"], dataset["n_transactions"]), (3, 2, 2))
+        self.assertEqual(sorted(dataset["files"]), ["edges.csv", "nodes.csv", "transactions.csv"])
+        source = Path(self.tmp.name) / "src"
+        source.mkdir()
+        for name, data in case_files().items():
+            (source / name).write_bytes(data)
+        self.assertEqual(dataset["input_sha256"], load_dataset(source).input_sha256)
+        self.assertIn(f'"gid":"{BIG}"', (self.out / "analysis.json").read_text(encoding="utf-8"))
+        self.assertNoStaging()
+
+    def test_F10_csv_and_parquet_can_be_mixed(self):
+        files = case_files()
+        files["edges.csv"] = csv_bytes(files.pop("edges.parquet"))
+        status, payload = self.post(files)
+        self.assertEqual(status, 200, payload)
+
+    def test_F10_csv_rejects_rounded_or_exponent_ids(self):
+        for bad in ("1.0", "1e0", "9.007199254740993e15"):
+            files = case_csv_files()
+            files["nodes.csv"] = files["nodes.csv"].replace(b"\n1,", f"\n{bad},".encode(), 1)
+            status, payload = self.post(files)
+            self.assertEqual(status, 422, (bad, payload))
+            self.assertIn("nodes.csv", payload["error"])
+            self.assertIn("Прежние результаты не изменены", payload["error"]) if "Прежние" in payload["error"] else None
+        self.assertNoStaging()
+
+    def test_F10_csv_rejects_missing_column_and_both_formats(self):
+        files = case_csv_files()
+        files["edges.csv"] = files["edges.csv"].replace(b"n_tx", b"count", 1)
+        status, payload = self.post(files)
+        self.assertEqual(status, 422)
+        self.assertIn("нет столбцов: n_tx", payload["error"])
+        files = case_csv_files()
+        files["nodes.parquet"] = case_files()["nodes.parquet"]
+        status, payload = self.post(files)
+        self.assertEqual(status, 400)
+        self.assertIn("два файла", payload["error"])
+        self.assertFalse(self.out.exists())
+
+
 class OfficialImportTests(unittest.TestCase):
     def test_official_case_imports_like_cli(self):
         source = Path(os.environ["FINANCE_DATA"])

@@ -6,6 +6,7 @@ import {SearchBox} from './SearchBox';
 import {Icon} from '../map/icons';
 import {RoleGlyph} from './RoleGlyph';
 import {MODE_LABEL} from '../data/format';
+import {ImportPanel} from '../features/import';
 
 /**
  * Верхняя строка: название, поиск по gid — главное действие — и одна тихая строка о выборке.
@@ -72,6 +73,7 @@ export function TopBar({index, warnings, onSelect, notice, onDismissNotice}: {
         <p className="wb-about__line">Период {formatDate(summary.period_start, true)} — {formatDate(summary.period_end, true)} · правила {policy.version}</p>
         <p className="wb-about__line">sha256 входных данных <span className="wb-mono wb-about__hash">{summary.input_sha256}</span></p>
         {warnings.length > 0 && <ul className="wb-about__warnings">{warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
+        <ImportPanel className="wb-about__import" />
       </div>
     </details>
     {fixture?.synthetic && <p className="wb-fixture" role="note"><strong>Синтетический пример.</strong> {fixture.label}</p>}

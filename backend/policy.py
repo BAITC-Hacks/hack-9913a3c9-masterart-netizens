@@ -192,6 +192,14 @@ SEED_LINK_SATURATION = 3
 CHRONOLOGY_SATURATION = 5
 
 TOP_N = 30
+# Очередь проверки строится из счетов вне списка исходных клиентов: по заданию фокус проверки
+# смещается «с 81 „курьера“ на реальные точки консолидации». False вернёт их в очередь.
+TOP_EXCLUDES_SEEDS = True
+TOP_DESCRIPTION_RU = (
+    "Очередь проверки — 30 счетов с наибольшим приоритетом среди счетов, которых нет в списке "
+    "исходных клиентов: их банк уже знает, а искать нужно точки консолидации за ними. "
+    "Приоритет исходных клиентов виден в nodes_roles.csv."
+)
 CLUSTER_TOP_GIDS = 5
 
 LOUVAIN_SEED = 20260923
@@ -247,5 +255,7 @@ def policy_payload() -> dict:
         "score_description": SCORE_DESCRIPTION_RU,
         "trace_horizon_depth": TRACE_HORIZON_DEPTH,
         "louvain": {"seed": LOUVAIN_SEED, "resolution": LOUVAIN_RESOLUTION},
+        "top_excludes_seeds": TOP_EXCLUDES_SEEDS,
+        "top_description": TOP_DESCRIPTION_RU,
         "limitations": list(LIMITATIONS_RU),
     }
