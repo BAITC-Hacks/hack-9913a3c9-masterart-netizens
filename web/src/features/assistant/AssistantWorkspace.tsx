@@ -2,7 +2,8 @@ import {useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent} 
 import {askAssistant, AssistantError, exactSelection, loadAssistantOptions, MAX_QUESTION_LENGTH, REQUEST_TIMEOUT_MS} from './api';
 import {AnswerCard, NodeLinks} from './AnswerCard';
 import type {Conversation, ConversationIssue, ConversationStorage, ConversationStore, StoredTurn} from './conversationStore';
-import type {AssistantOptions, AssistantRequest} from './types';
+import type {AssistantNavigation, AssistantOptions, AssistantRequest} from './types';
+import {dispatchNavigation} from './navigation';
 import {buildHistory, effortLabel, modelLabel, resolveSettings} from './modelSettings';
 import {ModelEffortMenu} from './ModelEffortMenu';
 import {useConversations} from './useConversations';
@@ -15,6 +16,8 @@ export interface AssistantWorkspaceProps {
   /** Выбранные на карте счета — контекст следующего вопроса. */
   selection: string[];
   onSelectNode: (gid: string) => void;
+  /** Фиксированные переходы по приложению; родитель проверяет актуальный индекс и вид карты. */
+  onNavigate?: (navigation: AssistantNavigation) => void;
   open: boolean;
   onClose: () => void;
   /** Подмена хранилища для проверок; null — только память. */
@@ -93,7 +96,7 @@ const Icon = ({d, size = 18}: {d: string; size?: number}) =>
  * уходит с выбранной моделью и усилием и с ограниченным контекстом разговора (вопросы, выбор, счета из
  * ответов — не текст ответов). Переход к счёту из ответа закрывает окно; открытый разговор не меняется.
  */
-export function AssistantWorkspace({scope, selection, onSelectNode, open, onClose, storage, loadOptions, initialOptions}: AssistantWorkspaceProps) {
+export function AssistantWorkspace({scope, selection, onSelectNode, onNavigate, open, onClose, storage, loadOptions, initialOptions}: AssistantWorkspaceProps) {
   const prefix = useId();
   const [optionsState, setOptionsState] = useState<OptionsState>(initialOptions ? {phase: 'ready', options: initialOptions} : {phase: 'loading'});
   const options = optionsState.phase === 'ready' ? optionsState.options : null;
@@ -189,7 +192,11 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
       // Отменённый запрос не подменяет следующий, даже если сеть ответила поздно.
       if (pending.current?.turnId !== turnId) return;
       store.answer(conversationId, turnId, response);
-      setNotice('Ответ готов.');
+      if (response.navigation) {
+        const applied = dispatchNavigation(response, request.dataset_fingerprint, onSelectNode, onNavigate);
+        setNotice(applied ? 'Переход выполнен.' : 'Этот переход пока не подключён. Откройте счёт по ссылке в ответе.');
+        if (applied) onClose();
+      } else setNotice('Ответ готов.');
     } catch (error) {
       if (pending.current?.turnId !== turnId) return;
       const message = error instanceof AssistantError ? error.message : 'Не удалось получить ответ. Повторите запрос.';
@@ -220,10 +227,6 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
   const navigate = (gid: string) => { onSelectNode(gid); onClose(); };
   const startNew = () => { store.open(null); setNewDraft(''); setListOpen(false); requestAnimationFrame(() => input.current?.focus()); };
   const pendingTurn = pending.current?.turnId;
-  const keys = `Enter — отправить, Shift + Enter — новая строка · ${draft.length}/${MAX_QUESTION_LENGTH}.`;
-  const hint = options
-    ? `${keys} Помощник учитывает до ${options.history_limits.turns} последних вопросов этого разговора; текст прежних ответов не передаётся.`
-    : optionsState.phase === 'error' ? `${keys} Каждый вопрос проверяется отдельно: прежние ответы в запрос не передаются.` : keys;
 
   return <dialog ref={dialog} className="fa-ws" aria-labelledby={`${prefix}-title`} onClose={() => { store.flush(); if (open) onClose(); }}>
     <div className={`fa-ws-frame fa-panel${listOpen ? ' is-list-open' : ''}`}>
@@ -323,7 +326,7 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
           <div className="fa-ws-field">
             <textarea ref={input} id={`${prefix}-question`} value={draft} rows={2} maxLength={MAX_QUESTION_LENGTH}
               placeholder="Спросите о счёте или о графе…" aria-invalid={Boolean(validation || contextError)}
-              aria-describedby={`${prefix}-hint${validation || contextError ? ` ${prefix}-validation` : ''}`}
+              aria-describedby={validation || contextError ? `${prefix}-validation` : undefined}
               onKeyDown={onKeyDown} onChange={event => setDraft(event.target.value)} />
             <div className="fa-ws-bar">
               {options && settings
@@ -339,7 +342,6 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
             </div>
           </div>
           {validation || contextError ? <p className="fa-error" id={`${prefix}-validation`} role="alert">{contextError || validation}</p> : null}
-          <p className="fa-caption fa-ws-hint" id={`${prefix}-hint`}>{hint}</p>
           <p className="fa-sr" role="status" aria-live="polite">{notice}</p>
         </form>
       </section>
