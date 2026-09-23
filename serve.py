@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
+import threading
 import math
 import os
 import stat
@@ -30,7 +32,14 @@ ASSET_TYPES = {
 Assistant = Callable[[dict], dict]
 # Отчёт возвращает {"status": 200, "pdf": bytes, "filename": str} или {"status": код, "error": текст}.
 Report = Callable[[dict], dict]
+# Импорт получает сырое тело запроса и возвращает (код HTTP, ответ JSON).
+Importer = Callable[[bytes], tuple]
+Options = Callable[[], dict]
 MAX_BODY_BYTES = 16_384
+# Шесть прошлых вопросов с их счетами помещаются в 64 КиБ; три parquet-файла в base64 — в 12 МиБ.
+BODY_LIMITS = {"/api/report": MAX_BODY_BYTES, "/api/assistant": 65_536, "/api/import": 12 * 1024 * 1024}
+# Поля запроса помощнику, которые сервер передаёт дальше, только если модуль помощника их поддерживает.
+ASSISTANT_OPTIONAL_FIELDS = ("model", "effort", "history", "dataset_fingerprint")
 # Глубже 32 уровней запрос помощника или отчёта не бывает; глубокая вложенность — признак атаки.
 MAX_JSON_DEPTH = 32
 REPORT_MODES = frozenset({"structural", "strict", "same_day"})
@@ -101,9 +110,10 @@ def _read_regular(root: Path, parts: tuple[str, ...]) -> bytes:
 
 
 def make_handler(
-    web_dir: Path, out_dir: Path, assistant: Optional[Assistant] = None, report: Optional[Report] = None
+    web_dir: Path, out_dir: Path, assistant: Optional[Assistant] = None, report: Optional[Report] = None,
+    importer: Optional[Importer] = None, options: Optional[Options] = None,
 ):
-    """Обработчики assistant и report подключаются отдельно; без них соответствующий API возвращает 503."""
+    """Обработчики assistant, report, import и options подключаются отдельно; без них API возвращает 503."""
     web_root, out_root = _root(web_dir), _root(out_dir)
     _read_regular(web_root, ("index.html",))
 
@@ -233,6 +243,15 @@ def make_handler(
             path = self._path()
             if path is None:
                 return
+            if path == "/api/assistant/options":
+                if options is None:
+                    self._json(503, {"error": "Настройки помощника недоступны."})
+                    return
+                try:
+                    self._json(200, options())
+                except Exception:
+                    self.send_error(500)
+                return
             if path in {"/", "/index.html"}:
                 root, parts, content_type = web_root, ("index.html",), "text/html; charset=utf-8"
             elif path.startswith("/out/") and path[5:] in ARTIFACTS:
@@ -261,18 +280,19 @@ def make_handler(
             path = self._path()
             if path is None:
                 return
-            if path not in {"/api/assistant", "/api/report"}:
+            limit = BODY_LIMITS.get(path)
+            if limit is None:
                 self.send_error(404)
                 return
             lengths = self.headers.get_all("Content-Length", [])
             if self.headers.get("Transfer-Encoding") or len(lengths) != 1 or not lengths[0].isdigit():
                 self.send_error(400)
                 return
-            if len(lengths[0]) > 6:
+            if len(lengths[0]) > len(str(limit)):
                 self.send_error(413)
                 return
             length = int(lengths[0])
-            if length > MAX_BODY_BYTES:
+            if length > limit:
                 self.send_error(413)
                 return
             if len(self.headers.get_all("Content-Type", [])) != 1 or self.headers.get_content_type() != "application/json":
@@ -282,8 +302,24 @@ def make_handler(
                 data = self.rfile.read(length)
                 if len(data) != length:
                     raise ValueError
+            except (ValueError, OSError):
+                self.send_error(400)
+                return
+            if path == "/api/import":
+                # Модуль импорта сам разбирает JSON с файлами в base64 и проверяет их пределы.
+                if importer is None:
+                    self._json(503, {"ok": False, "error": "Импорт недоступен: модуль imports не установлен."})
+                    return
+                try:
+                    status, result = importer(data)
+                except Exception:
+                    self.send_error(500)
+                    return
+                self._json(status, result)
+                return
+            try:
                 payload = _decode_request(data)
-            except (ValueError, UnicodeError, OSError, RecursionError):
+            except (ValueError, UnicodeError, RecursionError):
                 self.send_error(400)
                 return
             if path == "/api/report":
@@ -297,6 +333,8 @@ def make_handler(
                 if not isinstance(answer, dict):
                     raise ValueError
                 self._json(200, answer)
+            except LookupError:
+                self._json(503, {"error": "Помощник недоступен: нет analysis.json. Запустите анализ или импорт."})
             except Exception:
                 # Текст исключения внешнего адаптера может содержать секреты.
                 self.send_error(500)
@@ -306,53 +344,118 @@ def make_handler(
 
 def make_server(
     web_dir: Path, out_dir: Path, port: int = 8765, assistant: Optional[Assistant] = None,
-    report: Optional[Report] = None,
+    report: Optional[Report] = None, importer: Optional[Importer] = None, options: Optional[Options] = None,
 ) -> ThreadingHTTPServer:
     if not 0 <= port <= 65535:
         raise ValueError("Порт должен быть от 0 до 65535.")
-    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(web_dir, out_dir, assistant, report))
+    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(web_dir, out_dir, assistant, report, importer, options))
+
+
+class Services:
+    """Помощник, отчёты PDF и импорт поверх одного снимка analysis.json.
+
+    Снимок заменяется целиком и только после успешного импорта: запрос, начатый до замены,
+    дорабатывает на прежних данных, следующий видит новые. Неудачный импорт снимок не трогает.
+    Ключ API читается только здесь и никогда не печатается.
+    """
+
+    def __init__(self, out_dir: Path, env_file: Path):
+        self.out_dir = Path(out_dir)
+        self._swap = threading.Lock()
+        self.analysis: Optional[dict] = None
+        self.reload()
+        self._answer = self._options = self._reports = self._import = None
+        self._answer_params: set = set()
+        self._key, self._model = "", None
+        self.mode = "не установлен"
+        try:
+            import assistant as assistant_module
+        except ImportError:
+            pass
+        else:
+            try:
+                config = assistant_module.load_config(env_file if env_file.is_file() else None)
+            except ValueError:
+                config = assistant_module.load_config(None)
+            self._key, self._model = config["api_key"], config["model"]
+            self._answer = assistant_module.answer
+            self._answer_params = set(inspect.signature(self._answer).parameters)
+            self._options = getattr(assistant_module, "assistant_options", None)
+            self.mode = f"OpenAI ({self._model})" if self._key else "локальный разбор без ключа OpenAI"
+        try:
+            import reports
+        except ImportError:
+            pass
+        else:
+            self._reports = reports
+        try:
+            from imports.ingest import handle_import_request
+        except ImportError:
+            pass
+        else:
+            self._import = handle_import_request
+
+    def reload(self) -> bool:
+        try:
+            analysis = json.loads(_read_regular(_root(self.out_dir), ("analysis.json",)).decode("utf-8"))
+        except (OSError, ValueError):
+            return False
+        with self._swap:
+            self.analysis = analysis
+        return True
+
+    def _snapshot(self) -> dict:
+        analysis = self.analysis
+        if analysis is None:
+            raise LookupError("нет analysis.json")
+        return analysis
+
+    def assistant(self, payload: dict) -> dict:
+        analysis = self._snapshot()
+        extra = {}
+        # Выбор модели, история и отпечаток набора передаются только модулю, у которого есть свой
+        # закрытый список моделей (assistant_options); иначе клиент не выбирает модель на ключе сервера.
+        if self._options is not None:
+            extra = {k: payload[k] for k in ASSISTANT_OPTIONAL_FIELDS if k in payload and k in self._answer_params}
+        model = extra.pop("model", None) or self._model
+        return self._answer(payload.get("question"), payload.get("selection", []), analysis, api_key=self._key, model=model, **extra)
+
+    def options(self) -> dict:
+        return self._options(self._snapshot(), model=self._model)
+
+    def report(self, payload: dict) -> dict:
+        analysis, reports = self._snapshot(), self._reports
+        try:
+            pdf = reports.render_pdf(analysis, payload["gids"], mode=payload["mode"])
+        except reports.ReportRequestError as exc:
+            status = exc.status if exc.status in REPORT_ERROR_STATUSES else 400
+            return {"status": status, "error": str(exc)}
+        except ImportError:
+            # ReportLab загружается лениво: без него проверка запроса работает, а вёрстка — нет.
+            return {"status": 503, "error": "Отчёт PDF недоступен: не установлена библиотека reportlab (см. requirements.txt)."}
+        return {"status": 200, "pdf": pdf, "filename": reports.report_filename(payload["gids"])}
+
+    def import_request(self, body: bytes) -> tuple:
+        status, result = self._import(body, self.out_dir)
+        if status == 200 and not self.reload():
+            return 500, {"ok": False, "error": "Импорт выполнен, но новый analysis.json не прочитан; перезапустите сервер."}
+        return status, result
+
+    def handlers(self) -> dict:
+        """Подключаемые обработчики для make_server; отсутствующий модуль даёт 503 на своём API."""
+        return {
+            "assistant": self.assistant if self._answer else None,
+            "report": self.report if self._reports else None,
+            "importer": self.import_request if self._import else None,
+            "options": self.options if self._options else None,
+        }
 
 
 def build_services(out_dir: Path, env_file: Path) -> tuple[Optional[Assistant], Optional[Report], str]:
-    """Помощник и отчёты поверх готового analysis.json; ключ API читается только здесь и не печатается."""
-    try:
-        analysis = json.loads(_read_regular(_root(out_dir), ("analysis.json",)).decode("utf-8"))
-    except (OSError, ValueError):
-        return None, None, "недоступен: нет out/analysis.json"
-    assistant = report = None
-    mode = "не установлен"
-    try:
-        from assistant import answer, load_config
-    except ImportError:
-        pass
-    else:
-        try:
-            config = load_config(env_file if env_file.is_file() else None)
-        except ValueError:
-            config = load_config(None)
-        key, model = config["api_key"], config["model"]
-
-        def assistant(payload: dict) -> dict:
-            return answer(payload.get("question"), payload.get("selection", []), analysis, api_key=key, model=model)
-
-        mode = f"OpenAI ({model})" if key else "локальный разбор без ключа OpenAI"
-    try:
-        import reports
-    except ImportError:
-        pass
-    else:
-        def report(payload: dict) -> dict:
-            try:
-                pdf = reports.render_pdf(analysis, payload["gids"], mode=payload["mode"])
-            except reports.ReportRequestError as exc:
-                status = exc.status if exc.status in REPORT_ERROR_STATUSES else 400
-                return {"status": status, "error": str(exc)}
-            except ImportError:
-                # ReportLab загружается лениво: без него проверка запроса работает, а вёрстка — нет.
-                return {"status": 503, "error": "Отчёт PDF недоступен: не установлена библиотека reportlab (см. requirements.txt)."}
-            return {"status": 200, "pdf": pdf, "filename": reports.report_filename(payload["gids"])}
-
-    return assistant, report, mode
+    """Совместимость: помощник, отчёт и режим поверх общего снимка Services."""
+    services = Services(out_dir, env_file)
+    handlers = services.handlers()
+    return handlers["assistant"], handlers["report"], services.mode
 
 
 def main(argv=None) -> int:
@@ -372,11 +475,16 @@ def main(argv=None) -> int:
     if not 1 <= args.port <= 65535:
         print("Ошибка: порт должен быть от 1 до 65535.", file=sys.stderr)
         return 2
-    assistant, report, mode = build_services(args.out, root / ".env")
+    services = Services(args.out, root / ".env")
+    handlers = services.handlers()
     try:
-        with make_server(args.web_dir, args.out, args.port, assistant, report) as server:
+        with make_server(args.web_dir, args.out, args.port, **handlers) as server:
             print(f"Просмотрщик: http://127.0.0.1:{args.port}", flush=True)
-            print(f"Помощник: {mode}. Отчёт PDF: {'подключён' if report else 'модуль не установлен'}.", flush=True)
+            print(
+                f"Помощник: {services.mode}. Отчёт PDF: {'подключён' if handlers['report'] else 'модуль не установлен'}. "
+                f"Импорт данных: {'подключён' if handlers['importer'] else 'модуль не установлен'}.",
+                flush=True,
+            )
             server.serve_forever()
     except KeyboardInterrupt:
         return 0

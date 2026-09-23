@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import type {GraphIndex} from '../data/graph';
 import type {RailTab} from '../app/Workbench';
 import {countLabel, formatScore, roleLabel} from '../data/format';
@@ -9,9 +10,13 @@ import {CompactKzt} from './Amount';
  * Очередь проверки и кластеры. Строка — две линии: номер, знак роли, gid и приоритет; ниже — одна
  * причина. Полный текст причины — в подсказке и в панели оснований справа.
  */
-export function LeadsRail({index, selected, tab, onTab, onSelect, openCluster, onOpenCluster}: {
+export function LeadsRail({index, selected, tab, onTab, onSelect, openCluster, onOpenCluster, saved, data}: {
   index: GraphIndex; selected: string | null; tab: RailTab; onTab: (tab: RailTab) => void; onSelect: (gid: string) => void;
   openCluster: number | null; onOpenCluster: (id: number) => void;
+  /** Вкладка «Сохранённые»: список счетов аналитика (features/shortlist); без него вкладки нет. */
+  saved?: ReactNode;
+  /** Вкладка «Данные»: загрузка нового набора из трёх parquet-файлов (features/import). */
+  data?: ReactNode;
 }) {
   const {top_nodes, clusters} = index.analysis;
   const orderedClusters = [...clusters].sort((a, b) => b.n_nodes - a.n_nodes || a.cluster_id - b.cluster_id);
@@ -21,8 +26,12 @@ export function LeadsRail({index, selected, tab, onTab, onSelect, openCluster, o
         Очередь <span className="wb-count">{top_nodes.length}</span></button>
       <button type="button" role="tab" aria-selected={tab === 'clusters'} className={tab === 'clusters' ? 'is-active' : undefined} onClick={() => onTab('clusters')}>
         Кластеры <span className="wb-count">{clusters.length}</span></button>
+      {saved && <button type="button" role="tab" aria-selected={tab === 'saved'} className={tab === 'saved' ? 'is-active' : undefined} onClick={() => onTab('saved')}>
+        Сохранённые</button>}
+      {data && <button type="button" role="tab" aria-selected={tab === 'data'} className={tab === 'data' ? 'is-active' : undefined} onClick={() => onTab('data')}>
+        Данные</button>}
     </div></div>
-    {tab === 'leads'
+    {tab === 'data' && data ? data : tab === 'saved' && saved ? saved : tab === 'leads'
       ? <ol className="wb-leads" aria-label="Очередь проверки по приоритету">
         {top_nodes.map(top => <li key={`${top.rank}-${top.gid}`}>
           <button type="button" className={`wb-lead${top.gid === selected ? ' is-selected' : ''}`} aria-current={top.gid === selected ? 'true' : undefined}

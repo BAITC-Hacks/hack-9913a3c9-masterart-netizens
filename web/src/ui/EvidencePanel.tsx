@@ -10,6 +10,7 @@ import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
 import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
+import {AccountReportButton, SaveAccountButton} from '../features/shortlist';
 import {CompactKzt} from './Amount';
 
 /**
@@ -73,6 +74,8 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <p className="wb-account__kind">{node.is_seed ? 'Исходный клиент' : 'Счёт'} · {countLabel(node.depth, 'шаг', 'шага', 'шагов')} от исходных</p>
       <h2 className="wb-account__gid"><Gid gid={node.gid} /></h2>
       <CopyGid gid={node.gid} />
+      <SaveAccountButton gid={node.gid} />
+      <AccountReportButton gid={node.gid} mode={mode} />
       <div className="wb-account__priority" title={policy.priority_description}>
         <span className="wb-account__label">Приоритет</span>
         <strong>{formatScore(node.priority_score)}</strong>
