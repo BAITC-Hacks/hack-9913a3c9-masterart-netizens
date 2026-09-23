@@ -1,0 +1,24 @@
+/* Наблюдения: тихие карточки на тех же токенах, что и всё рабочее место. Нажимаемые цели не меньше 44 px. */
+.wb-insights { display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow-y: auto; }
+.wb-insights__check, .wb-insights__card { padding: 14px 16px; border: 1px solid var(--wb-line); border-radius: 14px; background: var(--wb-card); }
+.wb-insights__check { background: var(--wb-sunken); }
+.wb-insights__check-title, .wb-insights__title { margin: 0 0 8px; font: 600 15px/1.3 var(--wb-display); letter-spacing: -.005em; color: var(--wb-fg); }
+.wb-insights__check-rows { display: grid; gap: 6px; margin: 0 0 8px; }
+.wb-insights__check-rows > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.wb-insights__check-rows dt { font-size: 13px; color: var(--wb-soft); }
+.wb-insights__check-rows dd { margin: 0; font: 500 14px/1.3 var(--wb-mono); color: var(--wb-fg); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wb-insights__headline { margin: 0 0 6px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.wb-insights__number { font: 600 22px/1.1 var(--wb-display); color: var(--wb-fg); font-variant-numeric: tabular-nums; }
+.wb-insights__unit { font-size: 13px; color: var(--wb-soft); }
+.wb-insights__meaning { margin: 0 0 8px; font-size: 13px; line-height: 1.45; color: var(--wb-fg); }
+.wb-insights__params { margin: 0 0 8px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--wb-muted); }
+.wb-insights__limit, .wb-insights__small { margin: 0 0 6px; font-size: 12px; line-height: 1.4; color: var(--wb-muted); }
+.wb-insights__limit::before { content: 'Ограничение: '; color: var(--wb-faint); }
+.wb-insights__examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.wb-insights__gid { min-height: 44px; padding: 0 12px; border: 1px solid var(--wb-line-strong); border-radius: 999px; background: transparent; color: var(--wb-soft); font: 12px/1 var(--wb-mono); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
+.wb-insights__gid:hover { color: var(--wb-fg); border-color: var(--wb-gold-line); }
+.wb-insights__gid:focus-visible { outline: 2px solid var(--wb-focus); outline-offset: 2px; }
+.wb-insights__general { padding: 4px 2px; }
+.wb-insights-account { display: grid; gap: 6px; }
+.wb-insights-account__title { margin: 0; font: 600 13px/1.3 var(--wb-display); color: var(--wb-fg); }
+.wb-insights-account__list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.45; color: var(--wb-fg); }

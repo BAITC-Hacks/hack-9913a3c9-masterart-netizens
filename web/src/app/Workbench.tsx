@@ -12,12 +12,13 @@ import {EvidencePanel} from '../ui/EvidencePanel';
 import {ClusterPanel} from '../ui/ClusterPanel';
 import {ShortlistPanel, ShortlistProvider} from '../features/shortlist';
 import {ImportPanel} from '../features/import';
+import {InsightsPanel} from '../features/insights';
 
 /**
  * Рабочее место: очередь и кластеры слева, направленная окрестность счёта в центре, основания справа.
  * Выбор счёта, режим дат и открытый кластер — единственное состояние; всё остальное выводится из файла.
  */
-export type RailTab = 'leads' | 'clusters' | 'saved' | 'data';
+export type RailTab = 'leads' | 'clusters' | 'insights' | 'saved' | 'data';
 
 const unknownGid = (gid: string, index: GraphIndex) => `Счёт ${gid} из ссылки не найден среди ${countLabel(index.byGid.size, 'счёта', 'счетов', 'счетов')} выборки.`;
 
@@ -64,6 +65,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
     <TopBar index={index} warnings={warnings} onSelect={select} notice={notice} onDismissNotice={() => setNotice(null)} />
     <div className="wb-main">
       <LeadsRail index={index} selected={selected} tab={railTab} onTab={setRailTab} onSelect={select} openCluster={cluster} onOpenCluster={openCluster}
+        insights={<InsightsPanel index={index} onSelect={select} />}
         saved={<ShortlistPanel index={index} mode={mode} current={selected} onOpen={select} />}
         data={<ImportPanel onReload={() => window.location.reload()} />} />
       <section className="wb-center" aria-label={cluster !== null ? 'Кластер' : 'Связи счёта'}>

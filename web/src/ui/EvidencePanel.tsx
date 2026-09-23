@@ -11,6 +11,7 @@ import {Icon} from '../map/icons';
 import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
 import {SaveAccountButton, useReportSession} from '../features/shortlist';
+import {AccountInsights} from '../features/insights';
 import {CompactKzt} from './Amount';
 
 /**
@@ -123,6 +124,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
         <summary>Все кандидаты роли · {alternatives.length + 1}</summary>
         <ul className="wb-candidates">{alternatives.map(c => <li key={c.role}><RoleTag role={c.role} score={formatScore(c.score)} /><span>{c.reason}</span></li>)}</ul>
       </details>}
+      <AccountInsights index={index} gid={node.gid} />
     </section>
 
     <section className="wb-section" aria-labelledby="wb-flow-title">
