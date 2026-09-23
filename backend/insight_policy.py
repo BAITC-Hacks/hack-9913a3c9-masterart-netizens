@@ -25,6 +25,7 @@ BURST_MIN_RATE_RATIO = 5.0
 ROUTE_MAX_LAG_DAYS = 2
 ROUTE_MIN_REPEATS = 2
 CYCLE_MAX_LENGTH = 4
+CYCLE_ENUMERATION_CAP = 50000
 SPLIT_WINDOW_DAYS = 2
 SPLIT_MIN_PARTS = 3
 ANOMALY_TAIL_SHARE = 0.01
@@ -88,6 +89,11 @@ PARAMETERS = {
             CYCLE_MAX_LENGTH,
             "счетов в цикле",
             "Короткие циклы проверяются вручную; длинные при глубине выборки 4 почти не наблюдаются.",
+        ),
+        "enumeration_cap": _param(
+            CYCLE_ENUMERATION_CAP,
+            "циклов",
+            "Предел защищает время расчёта на плотных графах; достижение предела отмечается в счётчиках.",
         ),
     },
     "splitting": {

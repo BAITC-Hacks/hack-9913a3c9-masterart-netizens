@@ -241,6 +241,20 @@ class RoutesAndCyclesTest(unittest.TestCase):
         self.assertEqual(dense["counts"]["by_length"], {"2": 10, "3": 20, "4": 30})
 
 
+    def test_INS_CYCLES_enumeration_cap_is_reported(self):
+        complete = [(a, b, 1 + (a * 5 + b) % 28, 10000) for a in range(5) for b in range(5) if a != b]
+        saved = ip.CYCLE_ENUMERATION_CAP
+        ip.CYCLE_ENUMERATION_CAP = 7
+        try:
+            cycles = section(compute_insights(make_analysis(complete)), "cycles")
+        finally:
+            ip.CYCLE_ENUMERATION_CAP = saved
+        self.assertEqual(cycles["counts"]["cycles"], 7)
+        self.assertTrue(cycles["counts"]["truncated"])
+        full = section(compute_insights(make_analysis(complete)), "cycles")
+        self.assertFalse(full["counts"]["truncated"])
+
+
 class AnomaliesTest(unittest.TestCase):
     def test_INS_ANOMALY_splitting_series_vs_spread(self):
         series = [(1, 2, 7, 10000), (1, 2, 7, 10000), (1, 2, 7, 10000), (1, 2, 8, 12000)]
@@ -300,6 +314,22 @@ class ResilienceTest(unittest.TestCase):
             self.assertEqual(tiyn(row["edge_kzt_removed"]), expected)
             self.assertEqual(tiyn(row["edge_kzt_removed"]) + tiyn(row["edge_kzt_remaining"]), total)
         self.assertTrue(any("не прогноз" in text for text in res["limitations"]))
+
+
+class ScaleTest(unittest.TestCase):
+    def test_INS_SCALE_dense_hub_and_sparse_graph_stay_fast(self):
+        rng = random.Random(20260923)
+        hub = [(1, 2, 1 + k % 31, 10000 + k) for k in range(3000)]  # 3 000 поступлений на один счёт
+        hub += [(2, 3 + k % 500, 1 + k % 31, 10000 + k) for k in range(3000)]  # и 3 000 исходящих
+        sparse = [(10 + rng.randrange(5000), 10 + rng.randrange(5000), 1 + rng.randrange(31), 5000 + rng.randrange(100000))
+                  for _ in range(20000)]
+        sparse = [t for t in sparse if t[0] != t[1]]
+        analysis = make_analysis(hub + sparse, {1: {"depth": 0, "is_seed": True}})
+        started = time.perf_counter()
+        result = compute_insights(analysis)
+        elapsed = time.perf_counter() - started
+        self.assertLess(elapsed, 20.0, f"{elapsed:.2f} с на {len(analysis['transactions'])} транзакций")
+        self.assertGreater(section(result, "pass_through")["counts"]["outgoing_matched"], 0)
 
 
 class ContractTest(unittest.TestCase):
@@ -404,6 +434,13 @@ class OfficialDataTest(unittest.TestCase):
         again = compute_insights(self.analysis)
         self.assertEqual(json.dumps(again, sort_keys=True), json.dumps(self.result, sort_keys=True))
         self.assertEqual(self.result["input_sha256"], self.analysis["summary"]["input_sha256"])
+
+    def test_INS_OFFICIAL_in_process_equals_json_round_trip(self):
+        from backend.analysis import build_analysis
+        from backend.io import load_dataset
+
+        direct = compute_insights(build_analysis(load_dataset(_official_dir())))
+        self.assertEqual(json.dumps(direct, sort_keys=True), json.dumps(self.result, sort_keys=True))
 
     def test_INS_OFFICIAL_counts_match_examples_and_conservation(self):
         for s in self.result["sections"]:

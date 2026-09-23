@@ -13,13 +13,27 @@
 
 Наблюдение — отбор для проверки, а не вывод: даты не доказывают движение тех же денег,
 а переводы меньше 5 000 ₸ в выгрузке отсутствуют.
+
+Подключение (делает интегратор, после build_analysis и до записи выгрузок):
+    from backend.insights import compute_insights
+    analysis["insights"] = compute_insights(analysis)
+Контракт analysis.json допускает дополнительные ключи; CSV-файлы не меняются. Функция принимает
+и словарь из build_analysis, и тот же словарь после чтения из JSON.
+
+Схема результата (finance-insights/v1):
+    sections[]: key, title, case_item, method, parameters{имя: value, unit, rationale}, counts,
+                examples[] (не более MAX_EXAMPLES, с исходными транзакциями {src, dst, date, sum_kzt}),
+                limitations[]; у bursts — daily[], у depth_profile — cohorts[],
+                у resilience — baseline, scenarios[], summary_text.
+    by_gid{gid: [{section, text}]} — короткие строки для карточки счёта;
+    case_items[], review_load, analyst_effort_hypothesis, limitations[].
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import random
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from decimal import Decimal
 from fractions import Fraction
@@ -110,6 +124,15 @@ def _times_ru(x: float) -> str:
         n = int(round(x))
         return f"в {n} {plural_ru(n, 'раз', 'раза', 'раз')}"
     return f"в {_num_ru(x)} раза"
+
+
+def _tx_ru(n: int) -> str:
+    return f"{n} {plural_ru(n, 'перевод', 'перевода', 'переводов')}"
+
+
+def _of_outgoing_ru(n: int) -> str:
+    """«из 1 исходящего перевода», «из 67 исходящих переводов»."""
+    return f"из {n} {plural_ru(n, 'исходящего перевода', 'исходящих переводов', 'исходящих переводов')}"
 
 
 def _median(values: list):
@@ -211,14 +234,16 @@ def _pass_through(g: _Graph) -> _Section:
         ins, outs = g.in_tx.get(gid), g.out_tx.get(gid)
         if not ins or not outs:
             continue
+        in_dates = [i.date for i in ins]
         pairs = []
         for o in outs:
             best = None
-            for i in ins:
+            # Только входящие за max_lag дней до исходящего: окно ищется двоичным поиском по датам.
+            first = bisect_left(in_dates, o.date - dt.timedelta(days=max_lag))
+            last = bisect_right(in_dates, o.date)
+            for i in ins[first:last]:
                 lag = (o.date - i.date).days
-                if lag < 0:
-                    break  # входящие отсортированы по дате: дальше только более поздние
-                if lag <= max_lag and lo * i.tiyn <= o.tiyn <= hi * i.tiyn:
+                if lo * i.tiyn <= o.tiyn <= hi * i.tiyn:
                     key = (lag, abs(o.tiyn - i.tiyn), i)
                     if best is None or key < best:
                         best = key
@@ -240,7 +265,7 @@ def _pass_through(g: _Graph) -> _Section:
         share = matched / out_total
         shown = sorted(pairs, key=lambda p: (-p[0].tiyn, p[2], p[0], p[1]))[:3]
         text = (
-            f"{len(pairs)} из {len(outs)} исходящих переводов — через 0–{max_lag} дня после входящего "
+            f"{len(pairs)} {_of_outgoing_ru(len(outs))} — через 0–{max_lag} дня после входящего "
             f"сопоставимой суммы; это {percent_ru(share)} исходящей суммы."
         )
         rows.append(
@@ -259,7 +284,7 @@ def _pass_through(g: _Graph) -> _Section:
                 "_sort": (-matched, int(gid)),
             }
         )
-        flags[gid] = f"Быстрый транзит: {len(pairs)} из {len(outs)} исходящих через 0–{max_lag} дня после входящего"
+        flags[gid] = f"Быстрый транзит: {len(pairs)} {_of_outgoing_ru(len(outs))} через 0–{max_lag} дня после входящего"
     rows.sort(key=lambda r: r.pop("_sort"))
     counts = {
         "accounts": len(rows),
@@ -331,7 +356,7 @@ def _convergence(g: _Graph) -> _Section:
         events.sort()
         top = max(n for _, n in events)
         flag_text[gid] = (
-            f"Схождение: до {top} плательщиков в один день ({len(events)} "
+            f"Схождение: до {top} {plural_ru(top, 'плательщика', 'плательщиков', 'плательщиков')} в один день ({len(events)} "
             f"{plural_ru(len(events), 'день', 'дня', 'дней')})"
         )
     counts = {
@@ -394,7 +419,7 @@ def _bursts(g: _Graph) -> _Section:
                 else f"от {len(parties)} {plural_ru(len(parties), 'плательщика', 'плательщиков', 'плательщиков')}"
             )
             text = (
-                f"Всплеск {what}: {k} переводов {who} за {_window_ru(window[0].date, window[-1].date)}, "
+                f"Всплеск {what}: {_tx_ru(k)} {who} за {_window_ru(window[0].date, window[-1].date)}, "
                 f"{kzt_ru(total)} — {_times_ru(ratio)} чаще собственного среднего темпа ({n} за {basis_days} дн.)."
             )
             rows.append(
@@ -543,9 +568,12 @@ def _enumerate_cycles(g: _Graph) -> list:
     """
     order = {gid: i for i, gid in enumerate(g.gids)}
     cycles = []
+    cap = ip.CYCLE_ENUMERATION_CAP
 
     def walk(start, v, path):
         for w in g.out_nbrs.get(v, []):
+            if len(cycles) >= cap:
+                return
             if w == start and len(path) >= 2:
                 cycles.append(list(path))
             elif order[w] > order[start] and w not in path and len(path) < ip.CYCLE_MAX_LENGTH:
@@ -554,6 +582,8 @@ def _enumerate_cycles(g: _Graph) -> list:
                 path.pop()
 
     for s in g.gids:
+        if len(cycles) >= cap:
+            break
         walk(s, s, [s])
     return cycles
 
@@ -591,7 +621,8 @@ def _cycle_witness(g: _Graph, cycle: list, strict: bool):
 def _cycles(g: _Graph) -> _Section:
     rank = {"strict": 0, "same_day": 1, "none": 2}
     rows, flags_n, flags_dated, same_day_members = [], Counter(), Counter(), set()
-    for cycle in _enumerate_cycles(g):
+    found = _enumerate_cycles(g)
+    for cycle in found:
         k = len(cycle)
         pairs = [(cycle[i], cycle[(i + 1) % k]) for i in range(k)]
         witness = _cycle_witness(g, cycle, strict=True)
@@ -639,6 +670,7 @@ def _cycles(g: _Graph) -> _Section:
         "dated_same_day_only": sum(1 for r in rows if r["dated_return"] == "same_day"),
         "structural_only": sum(1 for r in rows if r["dated_return"] == "none"),
         "accounts": len(flags_n),
+        "truncated": len(found) >= ip.CYCLE_ENUMERATION_CAP,
     }
     method = (
         f"Перечисляются все простые направленные циклы длиной от 2 до {ip.CYCLE_MAX_LENGTH} счетов; цикл "
@@ -649,6 +681,7 @@ def _cycles(g: _Graph) -> _Section:
     limitations = [
         "Цикл — структурный факт: переводы по кругу существуют. Он не доказывает возврат тех же денег.",
         "Цикл без подходящих дат остаётся структурным; с переводами одного дня — только возможным.",
+        f"Перечисление останавливается на {ip.CYCLE_ENUMERATION_CAP} циклах; при truncated = true счётчики — нижняя граница.",
     ]
     public = _section(
         "cycles", "Короткие циклы и возвраты", "Повторяющиеся маршруты и возвраты", method, counts,
@@ -687,7 +720,7 @@ def _splitting(g: _Graph) -> _Section:
                 "pair_sum_kzt": kzt_value(pair_total),
                 "pair_n_tx": len(txs),
                 "transactions": [_rec(t) for t in part[: ip.MAX_RECORDS]],
-                "text": f"{k} переводов одной пары за {_window_ru(part[0].date, part[-1].date)}: {kzt_ru(total)}, "
+                "text": f"{_tx_ru(k)} одной пары за {_window_ru(part[0].date, part[-1].date)}: {kzt_ru(total)}, "
                         f"от {kzt_ru(min(t.tiyn for t in part))} до {kzt_ru(max(t.tiyn for t in part))}"
                         + (f"; одинаковых сумм — {identical}" if identical > 1 else "")
                         + ". Возможны дробление или регулярные платежи.",
@@ -697,7 +730,9 @@ def _splitting(g: _Graph) -> _Section:
         members[src] += 1
         members[dst] += 1
     rows.sort(key=lambda r: r.pop("_sort"))
-    flags = {gid: f"Серии переводов одной пары ({w} дня, от {ip.SPLIT_MIN_PARTS}): {n}" for gid, n in members.items()}
+    flags = {
+        gid: f"Серии из {ip.SPLIT_MIN_PARTS} и более переводов одной пары за {w} дня: {n}" for gid, n in members.items()
+    }
     counts = {
         "pairs": len(rows),
         "with_identical_amounts": sum(1 for r in rows if r["identical_parts"]),
@@ -800,10 +835,9 @@ def _depth_profile(g: _Graph) -> _Section:
         depth = g.depth(gid)
         below_pct = f"{int(top['below_share'] * 100)}%"
         value_ru, median_ru = top["_ru"]
-        cmp = f"{_times_ru(top['ratio_to_median'])} больше медианы ({median_ru})" if top["ratio_to_median"] else "при медиане 0"
         text = (
-            f"Необычно для глубины {depth}: {top['label']} — {value_ru}, больше, чем у {below_pct} счетов "
-            f"этой глубины, {cmp}."
+            f"Необычно для глубины {depth}: {top['label']} — {value_ru}; это больше, чем у {below_pct} счетов "
+            f"той же глубины, при медиане {median_ru}."
         )
         if len(feats) > 1:
             text += f" Ещё показателей выше порога: {len(feats) - 1}."
@@ -821,7 +855,7 @@ def _depth_profile(g: _Graph) -> _Section:
                 "_sort": sort_key,
             }
         )
-        flags[gid] = f"Профиль необычен для глубины {depth}: {top['label']} больше, чем у {below_pct} счетов этой глубины"
+        flags[gid] = f"Профиль необычен для глубины {depth}: {top['label']} больше, чем у {below_pct} счетов той же глубины"
     rows.sort(key=lambda r: r.pop("_sort"))
     counts = {
         "accounts": len(rows),
@@ -977,7 +1011,7 @@ def _resilience(g: _Graph) -> _Section:
         pick = {r["strategy"]: r for r in scenarios if r["n_removed"] == n}
         lost = lambda r: 1 - r["reachable_share"]  # noqa: E731
         summary_text = (
-            f"Без {n} счетов с наибольшим приоритетом от исходных клиентов недостижимы {percent_ru(lost(pick['priority']))} "
+            f"На графе выборки: без {n} счетов с наибольшим приоритетом от исходных клиентов недостижимы {percent_ru(lost(pick['priority']))} "
             f"остальных счетов; без {n} счетов с наибольшим оборотом — {percent_ru(lost(pick['flow']))}; без {n} "
             f"случайных — в среднем {percent_ru(lost(pick['random']))}. Крупнейшая связная часть: "
             f"{percent_ru(pick['priority']['largest_component_share'])} оставшихся счетов после удаления по приоритету."
