@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -194,6 +195,25 @@ class RoleRepairTests(unittest.TestCase):
         self.assertEqual(m[b].counterparties, 3)  # A, C, D: встречные переводы с A — один контрагент
         self.assertEqual(m[a].counterparties, 1)
         self.assertEqual(node(in_degree=2, out_degree=3).counterparties, 5)  # без транзакций — прежний расчёт
+
+
+class EvidenceFitTests(unittest.TestCase):
+    def test_evidence_gap_note_never_cuts_the_explanation(self):
+        m = node(in_degree=3, in_tiyn=2_635_000_00, out_degree=1, out_tiyn=390_000_00, in_tx=3, out_tx=1,
+                 margin_days=2, value_margin_days=2)
+        primary, alternatives = primary_of(m)
+        text = evidence_text(m, primary, alternatives[0])
+        self.assertLessEqual(len(text), 200)
+        self.assertFalse(text.endswith("…"), text)
+
+    @unittest.skipUnless(os.environ.get("FINANCE_DATA"), "FINANCE_DATA не задан")
+    def test_no_official_evidence_is_clipped(self):
+        from backend.analysis import build_analysis
+        from backend.io import load_dataset
+
+        nodes = build_analysis(load_dataset(os.environ["FINANCE_DATA"]))["nodes"]
+        clipped = [n["gid"] for n in nodes if n["evidence"].endswith("…")]
+        self.assertEqual(clipped, [])
 
 
 class FailedRunTests(unittest.TestCase):
