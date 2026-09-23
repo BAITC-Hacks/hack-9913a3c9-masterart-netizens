@@ -119,3 +119,15 @@
   .fa-panel button, .fa-panel textarea { border-color: ButtonText; }
   .fa-panel :focus-visible { outline-color: Highlight; }
 }
+
+/* Таблицы и схема пути в ответе: только из проверенного результата инструмента, без внешних ссылок и HTML. */
+.fa-table-wrap { max-width: 100%; margin: 12px 0; overflow-x: auto; border: 1px solid var(--fa-line); border-radius: 12px; }
+.fa-table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.fa-table th, .fa-table td { padding: 8px 12px; border-bottom: 1px solid var(--fa-line); text-align: left; vertical-align: top; overflow-wrap: normal; }
+.fa-table th { font-weight: 500; color: var(--fa-muted); background: color-mix(in srgb, var(--fa-line) 35%, transparent); white-space: nowrap; }
+.fa-table tr:last-child td { border-bottom: 0; }
+.fa-flow { display: grid; justify-items: start; gap: 2px; margin: 12px 0; padding: 0; list-style: none; }
+.fa-flow-step { margin-left: 14px; padding: 2px 0 2px 16px; border-left: 1px solid var(--fa-focus); font-size: 12.5px; color: var(--fa-muted); font-variant-numeric: tabular-nums; }
+.fa-flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fa-flow-label { font-size: 12.5px; color: var(--fa-muted); }
+.fa-code { max-width: 100%; overflow-x: auto; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--fa-line) 40%, transparent); font: 12px/1.5 var(--fa-mono); }
