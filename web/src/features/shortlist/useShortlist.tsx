@@ -1,6 +1,9 @@
 import {createContext, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode} from 'react';
 import type {GraphIndex} from '../../data/graph';
 import {createShortlistStore, shortlistKey, type ShortlistActions, type ShortlistSnapshot, type ShortlistStorage} from './store';
+import type {ReportFetcher} from './report';
+import {createReportSession} from './reportSession';
+import {ReportDialog, ReportSessionContext} from './ReportDialog';
 
 /** Состояние списка и действия над ним одним объектом; новый объект — только когда список изменился. */
 export type ShortlistController = ShortlistSnapshot & ShortlistActions;
@@ -54,10 +57,22 @@ export function useShortlist(index: GraphIndex, storage?: ShortlistStorage | nul
 
 const ShortlistContext = createContext<ShortlistController | null>(null);
 
-/** Один список на всё рабочее место: кнопка в основаниях и панель списка видят одно и то же состояние. */
-export function ShortlistProvider({index, storage, children}: {index: GraphIndex; storage?: ShortlistStorage | null; children: ReactNode}) {
+/**
+ * Один список и один просмотр PDF на всё рабочее место: кнопка в основаниях, панель списка и справка по
+ * счёту видят одно состояние. Просмотр закрывается и освобождает файл при смене набора данных.
+ */
+export function ShortlistProvider({index, storage, fetcher, children}: {
+  index: GraphIndex; storage?: ShortlistStorage | null; fetcher?: ReportFetcher; children: ReactNode;
+}) {
   const controller = useShortlist(index, storage);
-  return <ShortlistContext.Provider value={controller}>{children}</ShortlistContext.Provider>;
+  const report = useMemo(() => createReportSession({fetcher}), [fetcher]);
+  useEffect(() => () => report.close(), [report, index]);
+  return <ShortlistContext.Provider value={controller}>
+    <ReportSessionContext.Provider value={report}>
+      {children}
+      <ReportDialog session={report} />
+    </ReportSessionContext.Provider>
+  </ShortlistContext.Provider>;
 }
 
 /** Контроллер из явного свойства или из ShortlistProvider. */

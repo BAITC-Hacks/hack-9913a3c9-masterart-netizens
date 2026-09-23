@@ -1,4 +1,3 @@
-import {useEffect, useRef, useState} from 'react';
 import type {GraphIndex} from '../../data/graph';
 import type {Mode} from '../../data/schema';
 import {MODE_LABEL, countLabel, formatInt} from '../../data/format';
@@ -6,7 +5,9 @@ import {Gid} from '../../ui/Gid';
 import {RoleTag} from '../../ui/RoleGlyph';
 import {Icon} from '../../map/icons';
 import type {ShortlistIssue} from './store';
-import {REPORT_MAX_ACCOUNTS, ReportError, downloadReport, fetchReport, type ReportFetcher, type ReportFile} from './report';
+import {REPORT_MAX_ACCOUNTS} from './report';
+import type {ReportSession} from './reportSession';
+import {useReportSession, useReportState} from './ReportDialog';
 import {useShortlistController, type ShortlistController} from './useShortlist';
 import {BookmarkGlyph} from './SaveAccountButton';
 
@@ -23,12 +24,6 @@ export function issueText(issue: ShortlistIssue): string {
   }
 }
 
-type ReportState =
-  | {phase: 'idle'}
-  | {phase: 'loading'; count: number}
-  | {phase: 'done'; count: number; filename: string}
-  | {phase: 'error'; message: string};
-
 export interface ShortlistPanelProps {
   index: GraphIndex;
   /** Режим дат рабочего места; с ним же строится отчёт. */
@@ -39,48 +34,25 @@ export interface ShortlistPanelProps {
   onOpen: (gid: string) => void;
   /** Явный контроллер; без него берётся ShortlistProvider. */
   controller?: ShortlistController;
-  /** Подмена запроса и сохранения файла — для проверок. */
-  fetcher?: ReportFetcher;
-  onReport?: (file: ReportFile) => void;
+  /** Явная сессия просмотра PDF; без неё берётся ShortlistProvider. */
+  report?: ReportSession;
 }
 
 /**
  * Сохранённые счета: отдельный вид для возврата к счетам и выбора их в PDF-отчёт. Счёт открывается нажатием
- * на строку, убирается крестиком с возможностью вернуть. Отмеченные галочкой счета уходят в отчёт.
+ * на строку, убирается крестиком с возможностью вернуть. Отмеченные галочкой счета уходят в отчёт, который
+ * открывается в общем просмотре PDF.
  */
-export function ShortlistPanel({index, mode, current = null, onOpen, controller, fetcher, onReport = downloadReport}: ShortlistPanelProps) {
+export function ShortlistPanel({index, mode, current = null, onOpen, controller, report}: ShortlistPanelProps) {
   const shortlist = useShortlistController(controller);
   const {gids, selected, issues, lastRemoved} = shortlist;
   const chosen = gids.filter(gid => selected.has(gid));
   const allChosen = gids.length > 0 && chosen.length === gids.length;
   const overLimit = chosen.length > REPORT_MAX_ACCOUNTS;
 
-  const [report, setReport] = useState<ReportState>({phase: 'idle'});
-  const inflight = useRef<AbortController | null>(null);
-  useEffect(() => () => inflight.current?.abort(), []);
-  // Выбор изменился — прежнее сообщение об отчёте больше не относится к нему.
-  const selectionKey = chosen.join(',');
-  useEffect(() => { setReport(state => (state.phase === 'loading' ? state : {phase: 'idle'})); }, [selectionKey, mode]);
-
-  const requestReport = async () => {
-    if (!chosen.length || overLimit || report.phase === 'loading') return;
-    const abort = new AbortController();
-    inflight.current = abort;
-    setReport({phase: 'loading', count: chosen.length});
-    try {
-      const file = await fetchReport({gids: chosen, mode}, {fetcher, signal: abort.signal});
-      if (abort.signal.aborted) return;
-      onReport(file);
-      setReport({phase: 'done', count: file.count, filename: file.filename});
-    } catch (error) {
-      if (abort.signal.aborted) return;
-      setReport({phase: 'error', message: error instanceof ReportError ? error.message : 'Не удалось получить отчёт. Попробуйте ещё раз.'});
-    } finally {
-      if (inflight.current === abort) inflight.current = null;
-    }
-  };
-
-  const loading = report.phase === 'loading';
+  const session = useReportSession(report);
+  const reportState = useReportState(session);
+  const loading = reportState.phase === 'loading';
   return <section className="wb-shortlist" aria-labelledby="wb-shortlist-title">
     <header className="wb-shortlist__head">
       <h2 id="wb-shortlist-title" className="wb-shortlist__title">Сохранённые счета</h2>
@@ -140,16 +112,13 @@ export function ShortlistPanel({index, mode, current = null, onOpen, controller,
     </p>}
 
     {gids.length > 0 && <footer className="wb-shortlist__report">
-      <button type="button" className="wb-button wb-shortlist__download" onClick={requestReport}
+      <button type="button" className="wb-button wb-shortlist__download" onClick={() => void session.request(chosen, mode)}
         disabled={!chosen.length || overLimit || loading} aria-busy={loading || undefined}>
-        <Icon name="download" size={16} />
-        {loading ? 'Готовим PDF…' : `Скачать отчёт PDF · ${formatInt(chosen.length)}`}
+        {loading ? 'Готовим PDF…' : `Показать отчёт PDF · ${formatInt(chosen.length)}`}
       </button>
       <p className="wb-shortlist__hint">Режим дат в отчёте: {MODE_LABEL[mode].toLowerCase()}. Не больше {REPORT_MAX_ACCOUNTS} счетов в одном отчёте.</p>
       {overLimit && <p className="wb-shortlist__error" role="alert">Выбрано {accounts(chosen.length)}; снимите галочки, чтобы осталось не больше {REPORT_MAX_ACCOUNTS}.</p>}
       {!chosen.length && <p className="wb-shortlist__hint">Отметьте счета галочками, чтобы собрать отчёт.</p>}
-      {report.phase === 'done' && <p className="wb-shortlist__done" role="status">Отчёт по {accounts(report.count)} сохранён: {report.filename}</p>}
-      {report.phase === 'error' && <p className="wb-shortlist__error" role="alert">{report.message}</p>}
     </footer>}
   </section>;
 }

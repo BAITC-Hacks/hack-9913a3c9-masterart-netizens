@@ -7,6 +7,8 @@ import {fetchReport, filenameFromDisposition, reportBody, REPORT_MAX_ACCOUNTS, R
 import {SaveAccountButton} from './SaveAccountButton';
 import {ShortlistPanel, issueText} from './ShortlistPanel';
 import {ShortlistProvider, type ShortlistController} from './useShortlist';
+import {createReportSession} from './reportSession';
+import {AccountReportButton, ReportDialog} from './ReportDialog';
 
 /** Хранилище в памяти с подсчётом записей: как localStorage, но видно, что и сколько раз записано. */
 class MemoryStorage implements ShortlistStorage {
@@ -285,12 +287,13 @@ describe('Сохранённые счета — интерфейс', () => {
 
   it('[SHORTLIST-UI] отдельный вид: пустое состояние, список, открытый счёт, выбор и отчёт', () => {
     const store = open(new MemoryStorage());
+    const report = createReportSession({fetcher: async () => pdf()});
     const render = (current: string | null = null) => renderToStaticMarkup(
-      <ShortlistPanel index={index} mode="strict" current={current} onOpen={() => {}} controller={controllerOf(store)} />);
+      <ShortlistPanel index={index} mode="strict" current={current} onOpen={() => {}} controller={controllerOf(store)} report={report} />);
 
     const empty = render();
     expect(empty).toContain('Сохранённых счетов пока нет');
-    expect(empty).not.toContain('Скачать отчёт');
+    expect(empty).not.toContain('Показать отчёт');
 
     store.save(A); store.save(B);
     const list = render(A);
@@ -298,7 +301,7 @@ describe('Сохранённые счета — интерфейс', () => {
     expect(list).toContain(`Включить счёт ${B} в отчёт`);
     expect(list).toContain(roleLabel(index.byGid.get(A)!.role));
     expect(list.match(/aria-current="true"/g)).toHaveLength(1);
-    expect(list).toContain('Скачать отчёт PDF · 2');
+    expect(list).toContain('Показать отчёт PDF · 2');
     expect(list).toContain('Режим дат в отчёте: позже по датам.');
     expect(list.match(/checked=""/g)).toHaveLength(2);
 
@@ -306,7 +309,7 @@ describe('Сохранённые счета — интерфейс', () => {
     expect(render()).toContain('В отчёт: 1 из 2');
     store.selectNone();
     const none = render();
-    expect(none).toMatch(/<button[^>]*disabled=""[^>]*>.*Скачать отчёт PDF · 0/);
+    expect(none).toMatch(/<button[^>]*disabled=""[^>]*>.*Показать отчёт PDF · 0/);
     expect(none).toContain('Отметьте счета галочками');
 
     store.remove(A);
@@ -317,14 +320,91 @@ describe('Сохранённые счета — интерфейс', () => {
     const mem = new MemoryStorage();
     mem.setItem(KEY, `{"v":1,"gids":[${X},"${A}"]}`);
     const damaged = open(mem);
-    const html = renderToStaticMarkup(<ShortlistPanel index={index} mode="structural" onOpen={() => {}} controller={controllerOf(damaged)} />);
+    const report = createReportSession();
+    const html = renderToStaticMarkup(<ShortlistPanel index={index} mode="structural" onOpen={() => {}} controller={controllerOf(damaged)} report={report} />);
     expect(html).toContain('1 счёт без точного gid пропущен');
     expect(html).toContain('Скрыть сообщение');
 
     const big = open(new MemoryStorage());
     for (const gid of index.gids.slice(0, REPORT_MAX_ACCOUNTS + 1)) big.save(gid);
-    const over = renderToStaticMarkup(<ShortlistPanel index={index} mode="structural" onOpen={() => {}} controller={controllerOf(big)} />);
+    const over = renderToStaticMarkup(<ShortlistPanel index={index} mode="structural" onOpen={() => {}} controller={controllerOf(big)} report={report} />);
     expect(over).toContain(`не больше ${REPORT_MAX_ACCOUNTS}`);
-    expect(over).toMatch(/<button[^>]*disabled=""[^>]*>.*Скачать отчёт PDF · 26/);
+    expect(over).toMatch(/<button[^>]*disabled=""[^>]*>.*Показать отчёт PDF · 26/);
+  });
+});
+
+describe('Сохранённые счета — просмотр PDF', () => {
+  it('[SHORTLIST-PREVIEW] ссылка на файл создаётся для настоящего PDF и освобождается при новом запросе и закрытии', async () => {
+    const revoked: string[] = [];
+    let n = 0;
+    const session = createReportSession({fetcher: async () => pdf(), createUrl: () => `blob:test-${++n}`, revokeUrl: url => { revoked.push(url); }});
+    const phases: string[] = [];
+    session.subscribe(() => phases.push(session.getState().phase));
+    await session.request([A], 'strict');
+    expect(session.getState()).toMatchObject({phase: 'ready', url: 'blob:test-1', gids: [A], mode: 'strict'});
+    expect(phases).toEqual(['loading', 'ready']);
+    await session.request([A, B], 'strict');
+    expect(revoked).toEqual(['blob:test-1']);
+    expect(session.getState()).toMatchObject({phase: 'ready', url: 'blob:test-2'});
+    session.close();
+    expect(revoked).toEqual(['blob:test-1', 'blob:test-2']);
+    expect(session.getState()).toEqual({phase: 'idle'});
+    session.close();
+    expect(revoked).toHaveLength(2);
+  });
+
+  it('[SHORTLIST-PREVIEW] ошибка не создаёт ссылку, «Повторить» запрашивает снова, закрытие во время загрузки отбрасывает ответ', async () => {
+    let calls = 0;
+    const createUrl = vi.fn(() => 'blob:x');
+    const session = createReportSession({
+      fetcher: async () => (++calls === 1 ? new Response('<html></html>', {status: 200, headers: {'content-type': 'text/html'}}) : pdf()),
+      createUrl, revokeUrl: () => {},
+    });
+    await session.request([A], 'structural');
+    const failed = session.getState();
+    expect(failed.phase).toBe('error');
+    expect(failed.phase === 'error' && failed.message).toContain('вместо PDF');
+    expect(createUrl).not.toHaveBeenCalled();
+    await session.retry();
+    expect(session.getState()).toMatchObject({phase: 'ready', url: 'blob:x'});
+
+    let release!: (response: Response) => void;
+    const slow = createReportSession({fetcher: () => new Promise<Response>(resolve => { release = resolve; }), createUrl, revokeUrl: () => {}});
+    const pending = slow.request([A], 'structural');
+    expect(slow.getState().phase).toBe('loading');
+    slow.close();
+    release(pdf());
+    await pending;
+    expect(slow.getState()).toEqual({phase: 'idle'});
+    expect(createUrl).toHaveBeenCalledTimes(1);
+  });
+
+  it('[SHORTLIST-PREVIEW] окно просмотра: встроенный PDF, «Открыть» и «Скачать», загрузка и ошибка видны', async () => {
+    const session = createReportSession({fetcher: async () => pdf(), createUrl: () => 'blob:test-view', revokeUrl: () => {}});
+    await session.request([A, B], 'strict');
+    const ready = renderToStaticMarkup(<ReportDialog session={session} />);
+    expect(ready).toContain('Отчёт PDF по 2 счетам');
+    expect(ready).toContain('data="blob:test-view"');
+    expect(ready).toContain('type="application/pdf"');
+    expect(ready).toContain('download="spravka-2-schetov.pdf"');
+    expect(ready).toContain('Открыть в новой вкладке');
+    expect(ready).toContain('не показывает PDF внутри страницы');
+
+    const waiting = createReportSession({fetcher: () => new Promise<Response>(() => {}), createUrl: () => 'blob:never', revokeUrl: () => {}});
+    void waiting.request([A], 'strict');
+    const loading = renderToStaticMarkup(<ReportDialog session={waiting} />);
+    expect(loading).toContain('Справка PDF по счёту');
+    expect(loading).toContain('Готовим PDF по 1 счёту');
+    expect(loading).not.toContain('blob:');
+    const button = renderToStaticMarkup(<AccountReportButton gid={A} mode="strict" report={waiting} />);
+    expect(button).toContain('Готовим PDF…');
+    expect(button).toContain('disabled=""');
+    expect(renderToStaticMarkup(<AccountReportButton gid={B} mode="strict" report={waiting} />)).toContain('Справка PDF');
+
+    const broken = createReportSession({fetcher: async () => new Response('{"error":"Модуль отчётов не установлен"}', {status: 503, headers: {'content-type': 'application/json'}})});
+    await broken.request([A], 'strict');
+    const error = renderToStaticMarkup(<ReportDialog session={broken} />);
+    expect(error).toContain('Модуль отчётов не установлен');
+    expect(error).toContain('Повторить');
   });
 });

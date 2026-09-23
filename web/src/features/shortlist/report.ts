@@ -145,16 +145,3 @@ export async function fetchReport(request: ReportRequest, options: ReportOptions
     signal?.removeEventListener('abort', forward);
   }
 }
-
-/** Сохраняет готовый файл через временную ссылку; ссылка освобождается позже, чтобы Safari успел начать загрузку. */
-export function downloadReport(file: ReportFile): void {
-  const url = URL.createObjectURL(file.blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = file.filename;
-  link.rel = 'noopener';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}

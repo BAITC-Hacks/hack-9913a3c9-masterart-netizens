@@ -63,3 +63,29 @@
 @media (prefers-reduced-motion: reduce) {
   .wb-save__button svg, .wb-shortlist__undo { animation: none; }
 }
+
+/* Просмотр PDF: модальное окно поверх рабочего места; на телефоне — во весь экран. */
+.wb-report { box-sizing: border-box; width: min(960px, calc(100vw - 32px)); height: min(88vh, 1100px); max-width: none; max-height: none; margin: auto; padding: 0; border: 1px solid var(--wb-line); border-radius: 18px; background: var(--wb-card); color: var(--wb-fg); box-shadow: var(--wb-shadow-md); overflow: hidden; }
+.wb-report[open] { display: flex; flex-direction: column; animation: wb-report-in var(--wb-normal) var(--wb-ease); }
+.wb-report::backdrop { background: rgba(20, 16, 10, .34); }
+.wb-report__head { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 20px; border-bottom: 1px solid var(--wb-line); }
+.wb-report__title { flex: 1; min-width: 0; margin: 0; font: 600 15px/1.35 var(--wb-display); }
+.wb-report__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.wb-report__actions .wb-button { min-height: 44px; text-decoration: none; }
+.wb-report__close { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--wb-muted); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease); }
+.wb-report__close:hover { color: var(--wb-fg); background: var(--wb-sunken); }
+.wb-report__body { flex: 1; min-height: 0; display: flex; background: var(--wb-sunken); }
+.wb-report__frame { flex: 1; width: 100%; height: 100%; border: 0; }
+.wb-report__status { box-sizing: border-box; max-width: 460px; margin: auto; padding: 24px; text-align: center; font-size: 14px; line-height: 1.5; color: var(--wb-soft); }
+.wb-report__status p { margin: 0 0 12px; }
+.wb-report__status a { color: var(--wb-fg); text-underline-offset: 3px; }
+.wb-report__error { color: var(--wb-alert); }
+.wb-report-button { min-height: 44px; }
+.wb-report-button:disabled { opacity: .6; cursor: progress; }
+@keyframes wb-report-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) {
+  .wb-report { width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; }
+  .wb-report__head { flex-wrap: wrap; padding: 8px 8px 8px 16px; }
+  .wb-report__actions { flex: 1 0 100%; justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { .wb-report[open] { animation: none; } }
