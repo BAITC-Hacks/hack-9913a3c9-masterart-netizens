@@ -114,7 +114,8 @@ WORKBENCH_REAL=../out/analysis.json npm test   # те же проверки на
 | `src/map/useMapFullscreen.ts` | `useSessionMapFullscreen.ts` | Переименование, русские комментарии |
 | `src/map/MapFrame.tsx` | `ProjectDagView.tsx` | Вписывание по обеим осям, русские подписи, центрирование; убраны зависимости от Fleet |
 | `src/map/egoLayout.ts` (`cardToCard`, размер карточки) | `projectDagIslands.ts` | Кривые связей и размер 224×118 перенесены; раскладка по направлению написана заново |
-| `src/map/icons.tsx` | `CommandCenterIcons.tsx` | Взяты 16 контуров; добавлены `copy` и `cycle` |
+| `src/map/icons.tsx` | `CommandCenterIcons.tsx` | Взяты 17 контуров; добавлены `copy` и `cycle` |
+| `src/ui/CopyGid.tsx` и стили `.wb-copy` в `src/styles/components/identity.css` | `CommandNodeIdentity.tsx`; `components/MarkdownRenderer.css:824–901, 1051–1059` (кнопка `CodeBlockCopyButton` из библиотеки streamdown) | Поведение и анимация кнопки перенесены без библиотеки streamdown; подписи на русском; успех засчитывается только для счёта, выбранного в момент копирования |
 | `src/styles/core/tokens.css` | `command-center.css` | Цвета ролей из палитры; для светлой темы подобраны заново |
 
 Не перенесены: работа с задачами, арендами, срочностью, аутентификацией и транспортом Fleet.

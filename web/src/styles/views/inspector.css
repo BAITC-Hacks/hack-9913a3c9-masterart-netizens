@@ -2,7 +2,7 @@
 .wb-account { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "kind copy" "gid copy"; align-items: center; column-gap: 12px; }
 .wb-account__kind { grid-area: kind; margin: 0 0 4px; font-size: 12.5px; color: var(--wb-muted); }
 .wb-account__gid { grid-area: gid; margin: 0; overflow: hidden; font: 300 23px/1.25 var(--wb-mono); letter-spacing: -0.01em; text-overflow: ellipsis; }
-.wb-account .wb-iconbutton { grid-area: copy; }
+.wb-account .wb-copy { grid-area: copy; }
 
 .wb-role { margin-top: 26px; padding-bottom: 8px; }
 .wb-role__line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; color: var(--role); }

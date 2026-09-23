@@ -1,10 +1,10 @@
 /**
  * Иконки интерфейса. Контуры zoom-in, zoom-out, fit, expand, close, graph, tasks, search, download,
- * arrow-up, arrow-down, alert, back, chevron, link и spark перенесены без изменений из
+ * arrow-up, arrow-down, alert, back, check, chevron, link и spark перенесены без изменений из
  * Command Center (CommandCenterIcons.tsx, ревизия 77e1b9b0, см. web/README.md). copy и cycle добавлены здесь.
  */
 export type IconName =
-  | 'alert' | 'arrow-down' | 'arrow-up' | 'back' | 'chevron' | 'close' | 'copy' | 'cycle' | 'download'
+  | 'alert' | 'arrow-down' | 'arrow-up' | 'back' | 'check' | 'chevron' | 'close' | 'copy' | 'cycle' | 'download'
   | 'expand' | 'fit' | 'graph' | 'link' | 'search' | 'spark' | 'tasks' | 'zoom-in' | 'zoom-out';
 
 function pathFor(name: IconName) {
@@ -13,6 +13,7 @@ function pathFor(name: IconName) {
     case 'arrow-down': return <><path d="M12 5v14" /><path d="m6.5 13.5 5.5 5.5 5.5-5.5" /></>;
     case 'arrow-up': return <><path d="M12 19V5" /><path d="m6.5 10.5 5.5-5.5 5.5 5.5" /></>;
     case 'back': return <path d="m15 18-6-6 6-6" />;
+    case 'check': return <path d="m5 12 4 4L19 6" />;
     case 'chevron': return <path d="m9 6 6 6-6 6" />;
     case 'close': return <path d="m6 6 12 12M18 6 6 18" />;
     case 'copy': return <><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" /><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" /></>;

@@ -5762,13 +5762,13 @@
    "strict": "Каждый следующий перевод строго позже предыдущего.",
    "same_day": "Переводы одного дня допускаются в любом порядке."
   },
-  "reached_by_at_least_1_seed": {
-   "structural": 45,
+  "reachable_from_at_least_1_seed": {
+   "static": 45,
    "strict": 42,
    "same_day": 45
   },
-  "reached_by_at_least_5_seeds": {
-   "structural": 1,
+  "reachable_from_at_least_5_seeds": {
+   "static": 1,
    "strict": 1,
    "same_day": 1
   }

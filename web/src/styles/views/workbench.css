@@ -29,6 +29,14 @@
 .wb-about__facts > div { display: grid; gap: 1px; }
 .wb-about__facts dt { font-size: 11px; color: var(--wb-muted); }
 .wb-about__facts dd { margin: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.wb-about__roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 0 0 14px; padding: 0; list-style: none; font-size: 12.5px; }
+.wb-about__roles li { display: flex; align-items: center; gap: 6px; }
+.wb-about__roles strong { margin-left: auto; font: 400 12.5px var(--wb-mono); }
+.wb-about__reach { width: 100%; margin: 0 0 14px; border-collapse: collapse; font-size: 12.5px; }
+.wb-about__reach th, .wb-about__reach td { padding: 5px 0; border-bottom: 1px solid var(--wb-line); font-weight: 400; text-align: left; }
+.wb-about__reach thead th { font-size: 11px; color: var(--wb-muted); }
+.wb-about__reach .is-num { padding-left: 12px; text-align: right; font-family: var(--wb-mono); }
+.wb-about__panel { max-height: min(78dvh, 640px); overflow: auto; }
 .wb-about__line { margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--wb-soft); }
 .wb-about__hash { display: block; word-break: break-all; font-size: 11px; color: var(--wb-muted); }
 .wb-about__warnings { margin: 10px 0 0; padding-left: 16px; font-size: 12px; color: var(--wb-alert); }

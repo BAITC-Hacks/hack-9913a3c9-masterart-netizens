@@ -250,8 +250,8 @@ const analysis = {
       strict: 'Каждый следующий перевод строго позже предыдущего.',
       same_day: 'Переводы одного дня допускаются в любом порядке.',
     },
-    reached_by_at_least_1_seed: {structural: out.filter(n => n.temporal.static_seed_count >= 1).length, strict: count(strictReach, 1), same_day: count(sameDayReach, 1)},
-    reached_by_at_least_5_seeds: {structural: out.filter(n => n.temporal.static_seed_count >= 5).length, strict: count(strictReach, 5), same_day: count(sameDayReach, 5)},
+    reachable_from_at_least_1_seed: {static: out.filter(n => n.temporal.static_seed_count >= 1).length, strict: count(strictReach, 1), same_day: count(sameDayReach, 1)},
+    reachable_from_at_least_5_seeds: {static: out.filter(n => n.temporal.static_seed_count >= 5).length, strict: count(strictReach, 5), same_day: count(sameDayReach, 5)},
   },
 };
 void byName;

@@ -8,6 +8,7 @@ import {Gid} from './Gid';
 import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
 import {AssistantSlot} from '../app/AssistantSlot';
+import {CopyGid} from './CopyGid';
 
 /**
  * Основания по выбранному счёту. Сначала — счёт, гипотеза роли, альтернатива и справка; затем
@@ -35,10 +36,6 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const families = extraNumbers(node, 'priority_families');
   const [copied, setCopied] = useState<string | null>(null);
 
-  const copy = async (text: string, what: string) => {
-    try { await navigator.clipboard.writeText(text); setCopied(what); window.setTimeout(() => setCopied(null), 1600); }
-    catch { setCopied('Копирование недоступно в этом браузере'); }
-  };
   const download = () => {
     const brief = buildReviewBrief(index, node.gid, mode, new Date().toLocaleString('ru-RU'));
     if (!brief) return;
@@ -61,7 +58,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
     <header className="wb-account">
       <p className="wb-account__kind">{node.is_seed ? 'Исходный клиент' : 'Счёт'} · {countLabel(node.depth, 'шаг', 'шага', 'шагов')} от исходных</p>
       <h2 className="wb-account__gid"><Gid gid={node.gid} /></h2>
-      <button type="button" className="wb-iconbutton" onClick={() => copy(node.gid, 'gid скопирован')} aria-label="Копировать gid" title="Копировать gid"><Icon name="copy" size={16} /></button>
+      <CopyGid gid={node.gid} />
     </header>
 
     <section className={`wb-role wb-role--${node.role}`} aria-label="Гипотеза роли">
