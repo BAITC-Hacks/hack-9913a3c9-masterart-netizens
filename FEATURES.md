@@ -7,9 +7,10 @@
 **Все проверки одной командой** (после `./run.sh --no-serve`, см. README, раздел 7):
 
 ```bash
-FINANCE_DATA=data FINANCE_DATA_DIR=data ASSISTANT_ANALYSIS_PATH=out/analysis.json \
+.venv/bin/python -m pip install pypdf==6.19.0
+FINANCE_DATA=data FINANCE_DATA_DIR=data FINANCE_ANALYSIS=out/analysis.json ASSISTANT_ANALYSIS_PATH=out/analysis.json \
   WORKBENCH_VERIFY_BOOTSTRAP=1 .venv/bin/python -m unittest discover -s tests -v
-cd web && WORKBENCH_REAL=../out/analysis.json npm test
+cd web && WORKBENCH_REAL=../out/analysis.json npm test && npx vitest run --config src/features/assistant/vitest.config.ts
 ```
 
 Состояние **готово** означает, что функция есть в этой версии и её тест проходит.
@@ -77,8 +78,9 @@ cd web && WORKBENCH_REAL=../out/analysis.json npm test
 | Повторяющиеся маршруты и возвратные потоки | [`insights.py · _routes`](backend/insights.py#L500-L561), [`insights.py · _cycles`](backend/insights.py#L621-L690); на карте: [`neighborhood.ts · compileNeighborhood`](web/src/data/neighborhood.ts#L33-L68) | [`INS_ROUTES` ×2](tests/test_insights.py#L187-L206), [`INS_CYCLES` ×3](tests/test_insights.py#L208-L255), [`neighborhood.test.ts · WEB-MAP-CYCLE` ×1](web/tests/neighborhood.test.ts#L10-L20) | Число возвратных потоков на карте открывает их список | готово |
 | Детекция аномалий: дробление, профиль, необычный для колена | [`insights.py · _splitting`](backend/insights.py#L696-L754), [`insights.py · _depth_profile`](backend/insights.py#L790-L879) | [`INS_ANOMALY` ×3](tests/test_insights.py#L259-L290) | `analysis.json` → `insights` | готово |
 | Устойчивость сети при изъятии топ-N узлов | [`insights.py · _resilience`](backend/insights.py#L967-L1040) | [`INS_RESILIENCE_hub_removal_order_and_conservation`](tests/test_insights.py#L294-L316) | `analysis.json` → `insights` → сценарии удаления | готово |
-| AI-ассистент аналитика: вопрос словами → ответ по графу со ссылками на узлы | [`service.py · answer`](assistant/service.py#L187-L235), [`queries.py · GraphQueries`](assistant/queries.py#L65-L291), [`queries.py · TOOL_SCHEMAS`](assistant/queries.py#L300-L318); панель: [`AssistantPanel.tsx · AssistantPanel`](web/src/features/assistant/AssistantPanel.tsx#L11-L150) | [`test_assistant F07` ×30](tests/test_assistant.py#L106-L414), [`F07_optional_assistant_seam`](tests/test_server.py#L162-L168) | Спросить «кто собирает деньги с этих счетов?» — ответ со ссылками на `gid` | готово |
+| AI-ассистент аналитика: вопрос словами → ответ по графу со ссылками на узлы | [`service.py · answer`](assistant/service.py#L187-L235), [`queries.py · GraphQueries`](assistant/queries.py#L65-L291), [`queries.py · TOOL_SCHEMAS`](assistant/queries.py#L300-L318); панель: [`AssistantPanel.tsx · AssistantPanel`](web/src/features/assistant/AssistantPanel.tsx#L11-L150) | [`test_assistant F07` ×30](tests/test_assistant.py#L106-L414), [`F07_optional_assistant_seam`](tests/test_server.py#L163-L169) | Спросить «кто собирает деньги с этих счетов?» — ответ со ссылками на `gid` | готово |
 | Автогенерация карточки узла | [`EvidencePanel.tsx · EvidencePanel`](web/src/ui/EvidencePanel.tsx#L27-L180), [`roleFacts.ts · roleFacts`](web/src/data/roleFacts.ts#L49-L160), [`brief.ts · buildReviewBrief`](web/src/data/brief.ts#L32-L115) | [`roleFacts.test.ts · WEB-ROLE-FACTS` ×16](web/tests/roleFacts.test.ts#L15-L138), [`brief.test.ts · WEB-BRIEF` ×5](web/tests/brief.test.ts#L10-L37) | Кнопка справки → файл `spravka-<gid>.md` | готово |
+| PDF-справка по одному или нескольким счетам для передачи на проверку | [`facts.py · AnalysisIndex`](reports/facts.py#L169-L187), [`pdf.py · render_pdf`](reports/pdf.py#L428-L455); командная строка: [`__main__.py · main`](reports/__main__.py#L16-L37); маршрут сервера: [`serve.py · make_handler`](serve.py#L103-L304) | [`test_pdf_*` ×13](tests/test_reports.py#L113-L253) | `python -m reports --analysis out/analysis.json --gid 100000004015047100` | готово |
 | Оценка полноты: чего не хватает и какой запрос сделать | [`roles.py · next_request`](backend/roles.py#L292-L316), [`insights.py · _data_requests`](backend/insights.py#L1065-L1088) | [`R3_short_window_card_asks_for_more_data`](tests/test_roles_repair.py#L106-L111) | Блок «Пробелы данных» в карточке | готово |
 
 ## Запреты и обязательные условия (раздел 9)
@@ -90,27 +92,28 @@ cd web && WORKBENCH_REAL=../out/analysis.json npm test
 | Нельзя обогащать извне и достраивать атрибуты | Читаются только поля задания: [`io.py · REQUIRED_COLUMNS`](backend/io.py#L20-L24) | [`F01_source_has_no_private_runtime_dependency`](tests/test_acceptance.py#L553-L561) | В выгрузках нет полей, кроме заданных | готово |
 | Нельзя требовать облако, GPU или платные сервисы | Зависимости: [`requirements.txt`](requirements.txt), [`web/package.json`](web/package.json); ключ модели необязателен: [`service.py · NO_KEY`](assistant/service.py#L15) | [`F01_fresh_cli_without_model_key_under_five_minutes`](tests/test_acceptance.py#L585-L587), [`F07_no_key_exact_large_id_and_alternative`](tests/test_assistant.py#L106-L114) | Запуск без `OPENAI_API_KEY` проходит полностью | готово |
 | Объяснимость для аналитика без ML | [`roles.py · evidence_text`](backend/roles.py#L232-L242), [`priority.py · why_text`](backend/priority.py#L53-L70) | [`roleFacts.test.ts · WEB-ROLE-FACTS` ×16](web/tests/roleFacts.test.ts#L15-L138) | Строки `evidence` и `why` читаются без справочника | готово |
-| Приватность | Только синтетические `gid`; журнал сервера не пишет запросы: [`serve.py · make_handler`](serve.py#L102-L290) | [`F07_adapter_errors_do_not_disclose_details`](tests/test_server.py#L153-L160) | — | готово |
+| Приватность | Только синтетические `gid`; журнал сервера не пишет запросы: [`serve.py · make_handler`](serve.py#L103-L304) | [`F07_adapter_errors_do_not_disclose_details`](tests/test_server.py#L154-L161) | — | готово |
 | Осторожность формулировок | Оговорки в правилах и кластерах: [`policy.py · SCORE_DESCRIPTION_RU`](backend/policy.py#L200-L203), [`clusters.py · _hypothesis`](backend/clusters.py#L70-L94) | [`brief.test.ts · WEB-BRIEF` ×5](web/tests/brief.test.ts#L10-L37), [`F07_unsupported_personal_guilt_provenance_code`](tests/test_assistant.py#L239-L247) | Гипотезы кластеров заканчиваются оговоркой | готово |
 | Производительность ≤ 5 минут на обычном ноутбуке | [`__main__.py · main`](backend/__main__.py#L29-L76) | [`F01_fresh_cli_without_model_key_under_five_minutes`](tests/test_acceptance.py#L585-L587) | Время в последней строке запуска | готово |
-| Всё локально; сеть только для внешнего LLM API | Сервер слушает только 127.0.0.1: [`serve.py · make_server`](serve.py#L293-L299); запрос к модели: [`openai.py · request`](assistant/openai.py#L25-L45) | [`F07_foreign_host_origin_and_cross_site_rejected`](tests/test_server.py#L128-L135), [`F07_http_transport_fixed_url_header_timeout_and_no_redirect`](tests/test_assistant.py#L324-L339) | Интерфейс работает с отключённой сетью | готово |
-| Масштабируемость до ~1 млн узлов — текстом | [`README · раздел 10`](README.md#L257) | — | Раздел 10 README | готово |
+| Всё локально; сеть только для внешнего LLM API | Сервер слушает только 127.0.0.1: [`serve.py · make_server`](serve.py#L307-L313); запрос к модели: [`openai.py · request`](assistant/openai.py#L25-L45) | [`F07_foreign_host_origin_and_cross_site_rejected`](tests/test_server.py#L129-L136), [`F07_http_transport_fixed_url_header_timeout_and_no_redirect`](tests/test_assistant.py#L324-L339) | Интерфейс работает с отключённой сетью | готово |
+| Масштабируемость до ~1 млн узлов — текстом | [`README · раздел 10`](README.md#L276) | — | Раздел 10 README | готово |
 
 ## Артефакты (раздел 10)
 
 | Артефакт | Где | Состояние |
 |---|---|---|
 | Репозиторий: код конвейера и интерфейса | [`backend/`](backend/), [`assistant/`](assistant/), [`web/`](web/), [`serve.py`](serve.py), [`run.sh`](run.sh) | готово |
-| README: одна команда, критерии и пороги, выходы, ограничения, масштабирование | [`раздел 7`](README.md#L179), [`раздел 4`](README.md#L76), [`раздел 9`](README.md#L236), [`раздел 10`](README.md#L248) | готово |
+| README: одна команда, критерии и пороги, выходы, ограничения, масштабирование | [`раздел 7`](README.md#L186), [`раздел 4`](README.md#L80), [`раздел 9`](README.md#L255), [`раздел 10`](README.md#L267) | готово |
 | Выгрузки: `nodes_roles.csv`, `clusters.csv`, `top_nodes.csv` | Создаются в `out/` командой `./run.sh --no-serve` | готово |
-| Схема решения: данные → метрики → роли → интерфейс | [`README · раздел 6`](README.md#L154), [`docs/architecture.md`](docs/architecture.md) | готово |
+| Схема решения: данные → метрики → роли → интерфейс | [`README · раздел 6`](README.md#L160), [`docs/architecture.md`](docs/architecture.md) | готово |
 | Демо на 5 минут | [`docs/demo.md`](docs/demo.md) | готово |
+| Сторонние ресурсы и лицензии | Шрифты PDF Noto Sans — [`SIL Open Font License 1.1`](reports/fonts/OFL.txt); перенесённый код интерфейса — [`web/README.md`](web/README.md#заимствованный-код) | готово |
 
 ## Надёжность и безопасность
 
 | Требование | Где реализовано | Чем проверено | Как убедиться вручную | Состояние |
 |---|---|---|---|---|
 | Неудачный запуск не портит прежние выгрузки | [`exports.py · _atomic_write`](backend/exports.py#L38-L41), [`exports.py · write_attempt`](backend/exports.py#L91-L101), [`__main__.py · _failed`](backend/__main__.py#L22-L26) | [`failed_run_keeps_prior_outputs_and_marks_the_attempt`](tests/test_roles_repair.py#L220-L231) | `cat out/last_attempt.json` | готово |
-| Локальный сервер отдаёт только интерфейс и четыре результата | [`serve.py · make_handler`](serve.py#L102-L290), [`serve.py · _read_regular`](serve.py#L85-L99) | [`F07_paths_and_private_artifacts_rejected`](tests/test_server.py#L90-L107), [`F07_symlink_files_directories_and_output_rejected`](tests/test_server.py#L109-L122) | Запрос `/out/../run.sh` → 404 | готово |
-| Ответ ассистента не выдумывает счета и цепочки | [`queries.py · validate_args`](assistant/queries.py#L321-L343), [`render.py · render`](assistant/render.py#L50-L124); [`SafeAnswer.tsx · SafeAnswer`](web/src/features/assistant/SafeAnswer.tsx#L12-L39) | [`F07_fabricated_or_nonchronological_witness_rejected`](tests/test_assistant.py#L217-L230), [`F07_inputs_unchanged_and_all_citations_resolve`](tests/test_assistant.py#L361-L372) | Каждая ссылка в ответе открывает существующий счёт | готово |
+| Локальный сервер отдаёт только интерфейс и четыре результата | [`serve.py · make_handler`](serve.py#L103-L304), [`serve.py · _read_regular`](serve.py#L86-L100) | [`F07_paths_and_private_artifacts_rejected`](tests/test_server.py#L91-L108), [`F07_symlink_files_directories_and_output_rejected`](tests/test_server.py#L110-L123) | Запрос `/out/../run.sh` → 404 | готово |
+| Ответ ассистента не выдумывает счета и цепочки | [`queries.py · validate_args`](assistant/queries.py#L321-L343), [`render.py · render`](assistant/render.py#L50-L124); [`SafeAnswer.tsx · SafeAnswer`](web/src/features/assistant/SafeAnswer.tsx#L25-L52) | [`F07_fabricated_or_nonchronological_witness_rejected`](tests/test_assistant.py#L217-L230), [`F07_inputs_unchanged_and_all_citations_resolve`](tests/test_assistant.py#L361-L372) | Каждая ссылка в ответе открывает существующий счёт | готово |
 | Повторяемость при перестановке строк входа | [`clusters.py · assign_clusters`](backend/clusters.py#L19-L33) | [`core_determinism_rerun_and_row_shuffle`](tests/test_core.py#L378-L390), [`TEMP_row_order_does_not_change_any_byte`](tests/test_temporal.py#L463-L470), [`INS_DETERMINISM_row_permutation`](tests/test_insights.py#L367-L377) | Два запуска → одинаковые файлы (`cmp`) | готово |
