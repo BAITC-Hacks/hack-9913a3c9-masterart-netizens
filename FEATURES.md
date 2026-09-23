@@ -13,7 +13,7 @@
 FINANCE_DATA=data FINANCE_DATA_DIR=data FINANCE_ANALYSIS=out/analysis.json ASSISTANT_ANALYSIS_PATH=out/analysis.json \
   WORKBENCH_VERIFY_BOOTSTRAP=1 .venv/bin/python -m unittest discover -s tests -v
 cd web && WORKBENCH_REAL=../out/analysis.json npm test
-for part in assistant shortlist import insights; do npx vitest run --config src/features/$part/vitest.config.ts; done
+for part in assistant shortlist import; do npx vitest run --config src/features/$part/vitest.config.ts; done
 ```
 
 Состояние **готово** означает, что функция есть в этой версии и её тест проходит.
@@ -86,6 +86,8 @@ for part in assistant shortlist import insights; do npx vitest run --config src/
 | PDF-справка по одному или нескольким счетам для передачи на проверку | [`facts.py · AnalysisIndex`](reports/facts.py#L169-L187), [`pdf.py · render_pdf`](reports/pdf.py#L428-L455); командная строка: [`__main__.py · main`](reports/__main__.py#L16-L37); маршрут сервера: [`serve.py · make_handler`](serve.py#L112-L342) | [`test_pdf_*` ×13](tests/test_reports.py#L113-L253) | `python -m reports --analysis out/analysis.json --gid 100000004015047100` | готово |
 | Сохранённые счета: собрать очередь проверки и выгрузить PDF по отмеченным | [`store.ts · createShortlistStore`](web/src/features/shortlist/store.ts#L119-L218), [`ShortlistPanel.tsx · ShortlistPanel`](web/src/features/shortlist/ShortlistPanel.tsx#L46-L124), [`SaveAccountButton.tsx · SaveAccountButton`](web/src/features/shortlist/SaveAccountButton.tsx#L18-L35) | `web/src/features/shortlist/shortlist.test.tsx` (33 проверки) | Кнопка «Сохранить» в карточке → вкладка «Сохранённые» | готово |
 | Загрузка своих данных через интерфейс: parquet или CSV той же схемы | [`ingest.py · _csv_to_parquet`](imports/ingest.py#L167-L201), [`ingest.py · _as_parquet`](imports/ingest.py#L204-L221), [`ingest.py · ingest_files`](imports/ingest.py#L342-L355); окно «О данных»: [`TopBar.tsx · TopBar`](web/src/ui/TopBar.tsx#L15-L81); панель: [`ImportPanel.tsx · ImportPanel`](web/src/features/import/ImportPanel.tsx#L29-L100) | [`test_F10_* (CSV)` ×4](tests/test_imports.py#L244-L285), [`import_same_content_same_identity_as_cli_loader`](tests/test_imports.py#L106-L113), [`import.test.ts · IMPORT-CSV` ×3](web/src/features/import/import.test.ts#L82-L112) | «О данных» → «Новые данные» → три CSV организаторов → тот же `input_sha256` | готово |
+| Вкладка «Наблюдения» и строки наблюдений в карточке счёта | [`InsightsPanel.tsx · InsightsPanel`](web/src/features/insights/InsightsPanel.tsx#L66-L82), [`AccountInsights.tsx · AccountInsights`](web/src/features/insights/AccountInsights.tsx#L7-L19), разбор данных — [`model.ts · parseSections`](web/src/features/insights/model.ts#L103-L120) | `web/src/features/insights/insights.test.tsx` (10 проверок, с `INSIGHTS_REAL` — на настоящем файле) | Вкладка «Наблюдения» → пример → счёт открывается в карточке | готово |
+| Рабочая область ассистента: сохранённые разговоры | [`AssistantWorkspace.tsx · AssistantWorkspace`](web/src/features/assistant/AssistantWorkspace.tsx#L66-L280), [`useConversations.ts · useConversations`](web/src/features/assistant/useConversations.ts#L18-L31) | [`conversations.test.tsx · CHAT-SAVE` ×2](web/src/features/assistant/conversations.test.tsx#L28-L47), [`workspace.test.tsx · CHAT-UI` ×4](web/src/features/assistant/workspace.test.tsx#L24-L72) | Кнопка ассистента в шапке → разговор → закрыть и открыть снова | готово |
 | Оценка полноты: чего не хватает и какой запрос сделать | [`roles.py · next_request`](backend/roles.py#L303-L327), [`insights.py · _data_requests`](backend/insights.py#L1067-L1090) | [`R3_short_window_card_asks_for_more_data`](tests/test_roles_repair.py#L106-L111) | Блок «Пробелы данных» в карточке | готово |
 
 ## Запреты и обязательные условия (раздел 9)
@@ -101,16 +103,16 @@ for part in assistant shortlist import insights; do npx vitest run --config src/
 | Осторожность формулировок | Оговорки в правилах и кластерах: [`policy.py · SCORE_DESCRIPTION_RU`](backend/policy.py#L208-L211), [`clusters.py · _hypothesis`](backend/clusters.py#L70-L94) | [`brief.test.ts · WEB-BRIEF` ×5](web/tests/brief.test.ts#L10-L37), [`F07_unsupported_personal_guilt_provenance_code`](tests/test_assistant.py#L377-L385) | Гипотезы кластеров заканчиваются оговоркой | готово |
 | Производительность ≤ 5 минут на обычном ноутбуке | [`__main__.py · main`](backend/__main__.py#L29-L78) | [`F01_fresh_cli_without_model_key_under_five_minutes`](tests/test_acceptance.py#L585-L587) | Время в последней строке запуска | готово |
 | Всё локально; сеть только для внешнего LLM API | Сервер слушает только 127.0.0.1: [`serve.py · make_server`](serve.py#L345-L351); запрос к модели: [`openai.py · request`](assistant/openai.py#L25-L45) | [`F07_foreign_host_origin_and_cross_site_rejected`](tests/test_server.py#L131-L138), [`F07_http_transport_fixed_url_header_timeout_and_no_redirect`](tests/test_assistant.py#L462-L477) | Интерфейс работает с отключённой сетью | готово |
-| Масштабируемость до ~1 млн узлов — текстом | [`README · раздел 10`](README.md#L303) | — | Раздел 10 README | готово |
+| Масштабируемость до ~1 млн узлов — текстом | [`README · раздел 10`](README.md#L311) | — | Раздел 10 README | готово |
 
 ## Артефакты (раздел 10)
 
 | Артефакт | Где | Состояние |
 |---|---|---|
 | Репозиторий: код конвейера и интерфейса | [`backend/`](backend/), [`assistant/`](assistant/), [`web/`](web/), [`serve.py`](serve.py), [`run.sh`](run.sh) | готово |
-| README: одна команда, критерии и пороги, выходы, ограничения, масштабирование | [`раздел 7`](README.md#L203), [`раздел 4`](README.md#L86), [`раздел 9`](README.md#L280), [`раздел 10`](README.md#L294) | готово |
+| README: одна команда, критерии и пороги, выходы, ограничения, масштабирование | [`раздел 7`](README.md#L209), [`раздел 4`](README.md#L87), [`раздел 9`](README.md#L288), [`раздел 10`](README.md#L302) | готово |
 | Выгрузки: `nodes_roles.csv`, `clusters.csv`, `top_nodes.csv` | Готовые файлы: [`results/`](results/); заново — в `out/` командой `./run.sh --no-serve` | готово |
-| Схема решения: данные → метрики → роли → интерфейс | [`README · раздел 6`](README.md#L177), [`docs/architecture.md`](docs/architecture.md) | готово |
+| Схема решения: данные → метрики → роли → интерфейс | [`README · раздел 6`](README.md#L183), [`docs/architecture.md`](docs/architecture.md) | готово |
 | Демо на 5 минут | [`docs/demo.md`](docs/demo.md) | готово |
 | Сторонние ресурсы и лицензии | Шрифты PDF Noto Sans — [`SIL Open Font License 1.1`](reports/fonts/OFL.txt); перенесённый код интерфейса — [`web/README.md`](web/README.md#заимствованный-код) | готово |
 
