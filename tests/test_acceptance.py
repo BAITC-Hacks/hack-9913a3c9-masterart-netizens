@@ -147,8 +147,9 @@ def validate_analysis(document, source=None):
     seeds = {n["gid"] for n in nodes if n["is_seed"]}
     incoming, outgoing = defaultdict(list), defaultdict(list)
     edge_totals, tx_totals, tx_counts = {}, defaultdict(Decimal), Counter()
+    # Одинаковые переводы (та же пара, день и сумма) в данных организаторов законны: 75 таких
+    # сочетаний, 97 повторных строк. Целостность проверяет сравнение мультимножеств с источником ниже.
     tx_keys = [transaction_key(tx) for tx in transactions]
-    require(len(tx_keys) == len(set(tx_keys)), "Повторяющаяся исходная транзакция")
     for src, dst, day, amount in tx_keys:
         require(src in by_gid and dst in by_gid, "Перевод с неизвестным концом")
         tx_totals[src, dst] += amount
@@ -187,7 +188,8 @@ def validate_analysis(document, source=None):
             require(integer(metrics["seed_" + prefix + "_count"]) == sum(e[endpoint] in seeds for e in incident), "Неверное число исходных соседей")
         if metrics["pass_through"] is not None:
             require(money(metrics["in_kzt"]) > 0, "Отношение при нулевом входящем потоке должно быть null")
-            require(abs(number(metrics["pass_through"]) - money(metrics["out_kzt"]) / money(metrics["in_kzt"])) < Decimal("0.00001"), "Неверное отношение потоков")
+            # analysis.json хранит долю с четырьмя знаками: допуск — половина последнего разряда.
+            require(abs(number(metrics["pass_through"]) - money(metrics["out_kzt"]) / money(metrics["in_kzt"])) <= Decimal("0.00005"), "Неверное отношение потоков")
         observation = node["observation"]
         keys(observation, ("outgoing_censored", "warnings"))
         require(type(observation["outgoing_censored"]) is bool, "Неверная отметка границы наблюдения")

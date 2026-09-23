@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import type {GraphIndex} from '../data/graph';
 import type {AccountNode, Mode, Witness} from '../data/schema';
 import type {Neighborhood} from '../data/neighborhood';
@@ -36,12 +36,16 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const alternatives = useMemo(() => roleAlternatives(node), [node]);
   const alt = alternatives[0];
   const rule = policy.rules.find(r => r.role === node.role);
-  const counterparties = hood.payers.length + hood.recipients.length + hood.mutual.length;
+  // Число разных контрагентов считает конвейер (metrics.counterparties); окрестность — запасной путь.
+  const exported = (m as unknown as Record<string, unknown>).counterparties;
+  const counterparties = typeof exported === 'number' ? exported : hood.payers.length + hood.recipients.length + hood.mutual.length;
   const facts = useMemo(() => roleFacts(node, rule, counterparties), [node, rule, counterparties]);
   const rank = index.topRank.get(node.gid);
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');
   const [status, setStatus] = useState<string | null>(null);
+  // Панель больше не пересоздаётся при смене счёта, поэтому сообщение сбрасывается явно.
+  useEffect(() => { setStatus(null); }, [node.gid]);
 
   const download = () => {
     const brief = buildReviewBrief(index, node.gid, mode, new Date().toLocaleString('ru-RU'));

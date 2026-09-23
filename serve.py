@@ -28,7 +28,25 @@ ASSET_TYPES = {
     ".woff2": "font/woff2",
 }
 Assistant = Callable[[dict], dict]
+Report = Callable[[dict], bytes]
 MAX_BODY_BYTES = 16_384
+# Глубже 32 уровней запрос помощника или отчёта не бывает; глубокая вложенность — признак атаки.
+MAX_JSON_DEPTH = 32
+REPORT_MODES = frozenset({"structural", "strict", "same_day"})
+MAX_REPORT_GIDS = 50
+
+
+def _depth_ok(value, limit: int = MAX_JSON_DEPTH) -> bool:
+    """Проверка вложенности без рекурсии: стек пар (значение, глубина)."""
+    stack = [(value, 1)]
+    while stack:
+        item, depth = stack.pop()
+        if isinstance(item, (dict, list)):
+            if depth > limit:
+                return False
+            children = item.values() if isinstance(item, dict) else item
+            stack.extend((child, depth + 1) for child in children)
+    return True
 
 
 def _decode_request(data: bytes) -> dict:
@@ -52,6 +70,8 @@ def _decode_request(data: bytes) -> dict:
     payload = json.loads(data, parse_constant=reject, parse_float=finite, object_pairs_hook=unique)
     if not isinstance(payload, dict):
         raise ValueError("Нужен объект JSON.")
+    if not _depth_ok(payload):
+        raise ValueError("Слишком глубокая вложенность JSON.")
     return payload
 
 
@@ -80,9 +100,9 @@ def _read_regular(root: Path, parts: tuple[str, ...]) -> bytes:
 
 
 def make_handler(
-    web_dir: Path, out_dir: Path, assistant: Optional[Assistant] = None
+    web_dir: Path, out_dir: Path, assistant: Optional[Assistant] = None, report: Optional[Report] = None
 ):
-    """Обработчик assistant подключается отдельно; без него API возвращает 503."""
+    """Обработчики assistant и report подключаются отдельно; без них соответствующий API возвращает 503."""
     web_root, out_root = _root(web_dir), _root(out_dir)
     _read_regular(web_root, ("index.html",))
 
@@ -110,7 +130,7 @@ def make_handler(
             self.send_header(
                 "Content-Security-Policy",
                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+                "img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self' blob:; "
                 "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
             )
             self.end_headers()
@@ -119,6 +139,32 @@ def make_handler(
 
         def _json(self, status: int, payload: dict) -> None:
             self._reply(status, json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8"), "application/json; charset=utf-8")
+
+        def _report(self, payload: dict) -> None:
+            """POST /api/report {gids: [строки цифр], mode} → PDF от reports.render_pdf."""
+            gids, mode = payload.get("gids"), payload.get("mode", "structural")
+            valid = (
+                set(payload) <= {"gids", "mode"}
+                and isinstance(gids, list)
+                and 1 <= len(gids) <= MAX_REPORT_GIDS
+                and all(isinstance(g, str) and g.isdigit() and len(g) <= 20 for g in gids)
+                and mode in REPORT_MODES
+            )
+            if not valid:
+                self.send_error(400)
+                return
+            if report is None:
+                self._json(503, {"error": "Отчёт PDF пока недоступен: модуль отчётов не установлен."})
+                return
+            try:
+                body = report({"gids": gids, "mode": mode})
+                if not isinstance(body, (bytes, bytearray)) or not bytes(body).startswith(b"%PDF"):
+                    raise ValueError
+            except Exception:
+                # Текст исключения может содержать сведения расследования.
+                self.send_error(500)
+                return
+            self._reply(200, bytes(body), "application/pdf")
 
         def send_error(self, code: int, message=None, explain=None) -> None:
             self._json(code, {"error": {
@@ -201,7 +247,7 @@ def make_handler(
             path = self._path()
             if path is None:
                 return
-            if path != "/api/assistant":
+            if path not in {"/api/assistant", "/api/report"}:
                 self.send_error(404)
                 return
             lengths = self.headers.get_all("Content-Length", [])
@@ -226,6 +272,9 @@ def make_handler(
             except (ValueError, UnicodeError, OSError, RecursionError):
                 self.send_error(400)
                 return
+            if path == "/api/report":
+                self._report(payload)
+                return
             if assistant is None:
                 self.send_error(503)
                 return
@@ -242,11 +291,46 @@ def make_handler(
 
 
 def make_server(
-    web_dir: Path, out_dir: Path, port: int = 8765, assistant: Optional[Assistant] = None
+    web_dir: Path, out_dir: Path, port: int = 8765, assistant: Optional[Assistant] = None,
+    report: Optional[Report] = None,
 ) -> ThreadingHTTPServer:
     if not 0 <= port <= 65535:
         raise ValueError("Порт должен быть от 0 до 65535.")
-    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(web_dir, out_dir, assistant))
+    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(web_dir, out_dir, assistant, report))
+
+
+def build_services(out_dir: Path, env_file: Path) -> tuple[Optional[Assistant], Optional[Report], str]:
+    """Помощник и отчёты поверх готового analysis.json; ключ API читается только здесь и не печатается."""
+    try:
+        analysis = json.loads(_read_regular(_root(out_dir), ("analysis.json",)).decode("utf-8"))
+    except (OSError, ValueError):
+        return None, None, "недоступен: нет out/analysis.json"
+    assistant = report = None
+    mode = "не установлен"
+    try:
+        from assistant import answer, load_config
+    except ImportError:
+        pass
+    else:
+        try:
+            config = load_config(env_file if env_file.is_file() else None)
+        except ValueError:
+            config = load_config(None)
+        key, model = config["api_key"], config["model"]
+
+        def assistant(payload: dict) -> dict:
+            return answer(payload.get("question"), payload.get("selection", []), analysis, api_key=key, model=model)
+
+        mode = f"OpenAI ({model})" if key else "локальный разбор без ключа OpenAI"
+    try:
+        import reports
+    except ImportError:
+        pass
+    else:
+        def report(payload: dict) -> bytes:
+            return reports.render_pdf(analysis, payload["gids"], mode=payload["mode"])
+
+    return assistant, report, mode
 
 
 def main(argv=None) -> int:
@@ -266,9 +350,11 @@ def main(argv=None) -> int:
     if not 1 <= args.port <= 65535:
         print("Ошибка: порт должен быть от 1 до 65535.", file=sys.stderr)
         return 2
+    assistant, report, mode = build_services(args.out, root / ".env")
     try:
-        with make_server(args.web_dir, args.out, args.port) as server:
+        with make_server(args.web_dir, args.out, args.port, assistant, report) as server:
             print(f"Просмотрщик: http://127.0.0.1:{args.port}", flush=True)
+            print(f"Помощник: {mode}. Отчёт PDF: {'подключён' if report else 'модуль не установлен'}.", flush=True)
             server.serve_forever()
     except KeyboardInterrupt:
         return 0

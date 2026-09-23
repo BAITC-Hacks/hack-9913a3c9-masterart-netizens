@@ -6,10 +6,11 @@ usage() {
   cat <<'HELP'
 Запуск: ./run.sh [--data каталог] [--out каталог] [--no-serve] [--port порт]
 По умолчанию: data/, out/, http://127.0.0.1:8765.
-Нужны Python >=3.12, Node.js 20.19+ (ветка 20) либо >=22.12 и npm.
+Для анализа нужен Python >=3.12. Для просмотрщика дополнительно нужны Node.js 20.19+ (ветка 20)
+либо >=22.12 и npm; без них анализ всё равно выполняется и три CSV-файла появляются в out/.
 WORKBENCH_PYTHON задаёт интерпретатор; WORKBENCH_VENV — каталог среды.
 Первая установка зависимостей может требовать сеть. Подготовленная среда работает автономно.
-Установка, сборка интерфейса и анализ измеряются отдельно.
+Установка, анализ и сборка интерфейса измеряются отдельно.
 HELP
 }
 
@@ -43,7 +44,6 @@ for file in nodes.parquet edges.parquet transactions.parquet; do
   [[ -r "$DATA/$file" && -f "$DATA/$file" ]] || fail "Нет входного файла: $file."
 done
 [[ -f "$ROOT/backend/__main__.py" ]] || fail 'Нет backend/__main__.py: аналитический модуль ещё не установлен.'
-[[ -f "$ROOT/web/package.json" && -f "$ROOT/web/package-lock.json" ]] || fail 'Нет package.json или package-lock.json в web/: интерфейс ещё не установлен.'
 
 PYTHON_BIN="${WORKBENCH_PYTHON:-}"
 if [[ -z "$PYTHON_BIN" ]]; then
@@ -51,11 +51,11 @@ if [[ -z "$PYTHON_BIN" ]]; then
 fi
 command -v "$PYTHON_BIN" >/dev/null 2>&1 || fail 'Установите Python >=3.12 или задайте WORKBENCH_PYTHON.'
 "$PYTHON_BIN" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' || fail 'Требуется Python >=3.12; проверенная версия — 3.12.'
-command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 || fail 'Установите Node.js и npm.'
-node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit((a===20&&b>=19)||(a===22&&b>=12)||a>22?0:1)' || fail 'Vite требует Node.js ^20.19 или >=22.12.'
 
 clock_now() { "$PYTHON_BIN" -c 'import time; print(time.perf_counter())'; }
 elapsed() { "$PYTHON_BIN" -c 'import sys,time; print(f"{time.perf_counter()-float(sys.argv[1]):.3f}")' "$1"; }
+
+# 1. Среда Python и анализ: обязательная часть, не зависит от Node.js.
 SETUP_START="$(clock_now)"
 VENV_DIR="${WORKBENCH_VENV:-$ROOT/.venv}"
 [[ "$VENV_DIR" = /* ]] || VENV_DIR="$PWD/$VENV_DIR"
@@ -83,22 +83,7 @@ then
   printf '%s\n' 'Установка зависимостей Python; для первой подготовки может потребоваться сеть.'
   "$PYTHON_BIN" -m pip install --disable-pip-version-check -r "$ROOT/requirements.txt" || fail 'Не удалось установить зависимости Python. Проверьте доступ к пакетам.'
 fi
-
-cd -- "$ROOT/web"
-LOCK_HASH="$("$PYTHON_BIN" -c 'import hashlib,pathlib; print(hashlib.sha256(pathlib.Path("package.json").read_bytes()+pathlib.Path("package-lock.json").read_bytes()).hexdigest())')"
-MARKER=node_modules/.workbench-lock-sha256
-if [[ ! -f "$MARKER" ]] || [[ "$(cat "$MARKER")" != "$LOCK_HASH" ]] || ! npm ls --depth=0 --silent >/dev/null 2>&1; then
-  printf '%s\n' 'Установка зависимостей интерфейса из package-lock.json.'
-  npm ci --no-audit --no-fund || fail 'Не удалось выполнить npm ci. Проверьте доступ к пакетам.'
-  printf '%s\n' "$LOCK_HASH" > "$MARKER"
-fi
 SETUP_SECONDS="$(elapsed "$SETUP_START")"
-printf 'Подготовка зависимостей: %s с.\n' "$SETUP_SECONDS"
-BUILD_START="$(clock_now)"
-npm run build || fail 'Сборка интерфейса завершилась ошибкой.'
-[[ -f "$ROOT/web/dist/index.html" ]] || fail 'Сборка не создала web/dist/index.html.'
-BUILD_SECONDS="$(elapsed "$BUILD_START")"
-printf 'Сборка интерфейса: %s с.\n' "$BUILD_SECONDS"
 
 cd -- "$ROOT"
 PIPELINE_START="$(clock_now)"
@@ -107,16 +92,49 @@ PIPELINE_SECONDS="$(elapsed "$PIPELINE_START")"
 for file in nodes_roles.csv clusters.csv top_nodes.csv analysis.json; do
   [[ -s "$OUT/$file" ]] || fail "Анализ не создал обязательный файл: $file."
 done
-"$PYTHON_BIN" - "$OUT" "$SETUP_SECONDS" "$BUILD_SECONDS" "$PIPELINE_SECONDS" <<'PY'
+printf 'Анализ: %s с. Результаты: %s\n' "$PIPELINE_SECONDS" "$OUT"
+
+write_receipt() {
+  "$PYTHON_BIN" - "$OUT" "$SETUP_SECONDS" "$PIPELINE_SECONDS" "$1" "$2" <<'PY'
 import json
 import pathlib
 import sys
 
-receipt = dict(zip(("setup_seconds", "build_seconds", "pipeline_seconds"), map(float, sys.argv[2:])))
-receipt["schema_version"] = "finance-workbench/runtime-v1"
-pathlib.Path(sys.argv[1], "runtime-receipt.json").write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+out, setup, pipeline, build, viewer = sys.argv[1:6]
+receipt = {"setup_seconds": float(setup), "pipeline_seconds": float(pipeline),
+           "build_seconds": float(build) if build else None, "viewer": viewer,
+           "schema_version": "finance-workbench/runtime-v2"}
+pathlib.Path(out, "runtime-receipt.json").write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 PY
-printf 'Анализ: %s с. Результаты: %s\n' "$PIPELINE_SECONDS" "$OUT"
+}
+
+# 2. Просмотрщик: дополнительная часть. Без Node.js результаты анализа уже готовы.
+viewer_unavailable() {
+  write_receipt "" "unavailable"
+  printf 'Просмотрщик недоступен: %s\n' "$1" >&2
+  printf 'Три CSV-файла и analysis.json уже готовы в %s.\n' "$OUT" >&2
+  exit 0
+}
+[[ -f "$ROOT/web/package.json" && -f "$ROOT/web/package-lock.json" ]] || viewer_unavailable 'нет web/package.json или web/package-lock.json.'
+command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 || viewer_unavailable 'для интерфейса установите Node.js ^20.19 или >=22.12 и npm, затем повторите ./run.sh.'
+node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit((a===20&&b>=19)||(a===22&&b>=12)||a>22?0:1)' || viewer_unavailable "Vite требует Node.js ^20.19 или >=22.12, установлена $(node --version)."
+
+cd -- "$ROOT/web"
+LOCK_HASH="$("$PYTHON_BIN" -c 'import hashlib,pathlib; print(hashlib.sha256(pathlib.Path("package.json").read_bytes()+pathlib.Path("package-lock.json").read_bytes()).hexdigest())')"
+MARKER=node_modules/.workbench-lock-sha256
+if [[ ! -f "$MARKER" ]] || [[ "$(cat "$MARKER")" != "$LOCK_HASH" ]] || ! npm ls --depth=0 --silent >/dev/null 2>&1; then
+  printf '%s\n' 'Установка зависимостей интерфейса из package-lock.json.'
+  npm ci --no-audit --no-fund || viewer_unavailable 'не удалось выполнить npm ci; проверьте доступ к пакетам.'
+  printf '%s\n' "$LOCK_HASH" > "$MARKER"
+fi
+BUILD_START="$(clock_now)"
+npm run build || fail "Сборка интерфейса завершилась ошибкой; результаты анализа готовы в $OUT."
+[[ -f "$ROOT/web/dist/index.html" ]] || fail 'Сборка не создала web/dist/index.html.'
+BUILD_SECONDS="$(elapsed "$BUILD_START")"
+printf 'Сборка интерфейса: %s с.\n' "$BUILD_SECONDS"
+write_receipt "$BUILD_SECONDS" "built"
+
+cd -- "$ROOT"
 if [[ "$SERVE" = 1 ]]; then
   exec "$PYTHON_BIN" "$ROOT/serve.py" --out "$OUT" --port "$PORT"
 fi
