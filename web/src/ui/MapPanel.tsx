@@ -61,7 +61,8 @@ export function MapPanel({index, hood, mode, onSelect, history}: {index: GraphIn
       <p className="wb-map__title">
         <span>{countLabel(hood.payers.length + hood.mutual.length, 'плательщик', 'плательщика', 'плательщиков')}</span>
         <span>{countLabel(hood.recipients.length + hood.mutual.length, 'получатель', 'получателя', 'получателей')}</span>
-        {cycles > 0 && <span className="wb-map__cycles"><Icon name="cycle" size={13} />{countLabel(cycles, 'возвратный поток', 'возвратных потока', 'возвратных потоков')}</span>}
+        {cycles > 0 && <button type="button" className="wb-map__cycles" onClick={() => openFold('cycles')} title="Показать циклы списком">
+          <Icon name="cycle" size={13} />{countLabel(cycles, 'возвратный поток', 'возвратных потока', 'возвратных потоков')}</button>}
       </p>
       <MapTools view={view} />
     </header>
