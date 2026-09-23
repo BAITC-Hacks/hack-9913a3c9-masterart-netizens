@@ -96,7 +96,8 @@ export function layoutEgo(hood: Neighborhood, {cap = 10, columns = 5, notes = {i
   const stroke = (kzt: number) => 1 + 2.4 * (Math.log1p(kzt) / Math.log1p(maxKzt));
   const edges: PlacedEdge[] = [];
   const spread = (i: number, n: number) => focus.x + CARD_W * (n === 1 ? 0.5 : 0.2 + (0.6 * i) / (n - 1));
-  const vertical = (sx: number, sy: number, tx: number, ty: number) => {
+  const vertical = (sx: number, sy: number, tx: number, cardEdge: number) => {
+    const ty = cardEdge + (cardEdge >= sy ? -ARROW_GAP : ARROW_GAP);
     const bend = Math.max(28, Math.abs(ty - sy) * 0.5) * (ty >= sy ? 1 : -1);
     return `M ${sx} ${sy} C ${sx} ${sy + bend}, ${tx} ${ty - bend}, ${tx} ${ty}`;
   };
@@ -123,9 +124,10 @@ export function layoutEgo(hood: Neighborhood, {cap = 10, columns = 5, notes = {i
       continue;
     }
     const link = card.link!;
-    edges.push({key: `out-${card.key}`, d: `M ${fx} ${upper} C ${(fx + mx) / 2} ${upper - lift}, ${(fx + mx) / 2} ${upper - lift}, ${mx} ${upper}`,
+    const mxEnd = mx + (onRight ? -ARROW_GAP : ARROW_GAP), fxEnd = fx + (onRight ? ARROW_GAP : -ARROW_GAP);
+    edges.push({key: `out-${card.key}`, d: `M ${fx} ${upper} C ${(fx + mx) / 2} ${upper - lift}, ${(fx + mx) / 2} ${upper - lift}, ${mxEnd} ${upper}`,
       kind: 'mutual-out', width: stroke(link.fromFocus?.sum_kzt ?? 0), src: hood.focus.gid, dst: link.gid, cycle: true});
-    edges.push({key: `in-${card.key}`, d: `M ${mx} ${lower} C ${(fx + mx) / 2} ${lower + lift}, ${(fx + mx) / 2} ${lower + lift}, ${fx} ${lower}`,
+    edges.push({key: `in-${card.key}`, d: `M ${mx} ${lower} C ${(fx + mx) / 2} ${lower + lift}, ${(fx + mx) / 2} ${lower + lift}, ${fxEnd} ${lower}`,
       kind: 'mutual-in', width: stroke(link.toFocus?.sum_kzt ?? 0), src: link.gid, dst: hood.focus.gid, cycle: true});
   }
 
@@ -142,14 +144,17 @@ export function layoutEgo(hood: Neighborhood, {cap = 10, columns = 5, notes = {i
   return {width, height, focus, cards, edges, labels};
 }
 
+/** Зазор между остриём стрелки и рамкой карточки, px: направление видно, стрелка не упирается в край. */
+export const ARROW_GAP = 5;
+
 /** Связь между двумя карточками: вбок внутри ряда, иначе от края до края (как в Command Center). */
 export function cardToCard(a: {x: number; y: number}, b: {x: number; y: number}): string {
   if (Math.abs(a.y - b.y) < 30 && Math.abs(a.x - b.x) > CARD_W) {
-    const right = b.x > a.x, x = a.x + (right ? CARD_W : 0), end = b.x + (right ? 0 : CARD_W), y = a.y + CARD_H / 2, ey = b.y + CARD_H / 2;
+    const right = b.x > a.x, x = a.x + (right ? CARD_W : 0), end = b.x + (right ? -ARROW_GAP : CARD_W + ARROW_GAP), y = a.y + CARD_H / 2, ey = b.y + CARD_H / 2;
     const bend = (end - x) / 2;
     return `M ${x} ${y} C ${x + bend} ${y}, ${end - bend} ${ey}, ${end} ${ey}`;
   }
-  const down = b.y >= a.y, x = a.x + CARD_W / 2, y = a.y + (down ? CARD_H : 0), end = b.y + (down ? 0 : CARD_H);
+  const down = b.y >= a.y, x = a.x + CARD_W / 2, y = a.y + (down ? CARD_H : 0), end = b.y + (down ? -ARROW_GAP : CARD_H + ARROW_GAP);
   const bend = (down ? 1 : -1) * Math.min(80, Math.max(24, Math.abs(end - y) / 2));
   return `M ${x} ${y} C ${x} ${y + bend}, ${b.x + CARD_W / 2} ${end - bend}, ${b.x + CARD_W / 2} ${end}`;
 }

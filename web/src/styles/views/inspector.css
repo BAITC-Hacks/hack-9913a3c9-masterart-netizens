@@ -3,8 +3,8 @@
    по ширине колонки (контейнерные единицы), поэтому все 18 цифр видны от 320 px и шире. */
 .wb-account { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "kind kind" "gid copy" "priority priority"; align-items: center; column-gap: 10px; }
 .wb-account__kind { grid-area: kind; margin: 0 0 4px; font-size: 12.5px; color: var(--wb-muted); }
-.wb-account__gid { grid-area: gid; margin: 0; min-width: 0; font: 300 clamp(15px, calc((100cqi - 56px) / 13), 23px)/1.25 var(--wb-mono); letter-spacing: -0.01em; }
-.wb-account__gid .wb-gid { white-space: normal; }
+.wb-account__gid { grid-area: gid; margin: 0; min-width: 0; font: 300 clamp(14px, calc((100cqi - 60px) / 14), 23px)/1.25 var(--wb-mono); letter-spacing: -0.01em; }
+.wb-account__gid .wb-gid { white-space: nowrap; }
 .wb-account .wb-copy { grid-area: copy; }
 .wb-account__priority { grid-area: priority; display: grid; grid-template-columns: auto auto minmax(32px, 1fr) auto; align-items: center; gap: 10px; margin-top: 14px; font-size: 12.5px; color: var(--wb-soft); }
 .wb-account__priority strong { font: 300 17px/1 var(--wb-mono); color: var(--wb-fg); }

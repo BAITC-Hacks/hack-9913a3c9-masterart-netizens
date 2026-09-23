@@ -1,5 +1,6 @@
 import type {AccountNode, Edge} from '../data/schema';
 import {compareGids} from '../data/graph';
+import {ARROW_GAP} from './egoLayout';
 
 /**
  * Карта кластера: ряды — шаги от исходных клиентов (depth), внутри ряда карточка встаёт под теми, кто ей
@@ -73,10 +74,10 @@ export function layoutCluster(members: readonly AccountNode[], outgoing: Readonl
 function link(a: {x: number; y: number}, b: {x: number; y: number}): string {
   const w = CLUSTER_CARD_W, h = CLUSTER_CARD_H;
   if (Math.abs(a.y - b.y) < 10) {
-    const right = b.x > a.x, x = a.x + (right ? w : 0), end = b.x + (right ? 0 : w), cy = a.y + h / 2, bend = (end - x) / 2;
+    const right = b.x > a.x, x = a.x + (right ? w : 0), end = b.x + (right ? -ARROW_GAP : w + ARROW_GAP), cy = a.y + h / 2, bend = (end - x) / 2;
     return `M ${x} ${cy} C ${x + bend} ${cy - 18}, ${end - bend} ${cy - 18}, ${end} ${cy}`;
   }
-  const down = b.y > a.y, x = a.x + w / 2, y = a.y + (down ? h : 0), ex = b.x + w / 2, ey = b.y + (down ? 0 : h);
+  const down = b.y > a.y, x = a.x + w / 2, y = a.y + (down ? h : 0), ex = b.x + w / 2, ey = b.y + (down ? -ARROW_GAP : h + ARROW_GAP);
   const bend = (down ? 1 : -1) * Math.min(90, Math.max(22, Math.abs(ey - y) / 2));
   return `M ${x} ${y} C ${x} ${y + bend}, ${ex} ${ey - bend}, ${ex} ${ey}`;
 }
