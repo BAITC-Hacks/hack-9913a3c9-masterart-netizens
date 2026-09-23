@@ -45,6 +45,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const rank = index.topRank.get(node.gid);
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');
+  const weights = ((policy as unknown as {priority_weights?: Record<string, number>}).priority_weights) ?? {};
   const [status, setStatus] = useState<string | null>(null);
   const reportSession = useReportSession();
   // Панель больше не пересоздаётся при смене счёта, поэтому сообщение сбрасывается явно.
@@ -176,11 +177,12 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
     <div className="wb-section wb-more-details">
       <details className="wb-disclosure">
         <summary>Из чего складывается приоритет</summary>
-        {families.length > 0 && <dl className="wb-families">{families.map(([key, value]) => <div key={key}>
-          <dt>{FAMILY_LABEL[key] ?? key}</dt>
+        {/* Пять признаков с их весами из policy; вклад каждого — его значение для этого счёта. */}
+        {families.length > 0 && <dl className="wb-families">{[...families].sort(([a], [b]) => (weights[b] ?? 0) - (weights[a] ?? 0)).map(([key, value]) => <div key={key}>
+          <dt>{FAMILY_LABEL[key] ?? key}{weights[key] !== undefined && <> · вес {Math.round(weights[key]! * 100)}%</>}</dt>
           <dd><span className="wb-meter wb-meter--small"><i style={{transform: `scaleX(${clamp01(value)})`}} /></span><span className="wb-mono">{formatScore(value)}</span></dd>
         </div>)}</dl>}
-        <p className="wb-footnote">{policy.priority_description}</p>
+        <p className="wb-footnote">Приоритет задаёт очередь проверки и не является оценкой вины.</p>
       </details>
       {policy.limitations.length > 0 && <details className="wb-disclosure">
         <summary>Ограничения данных · {policy.limitations.length}</summary>

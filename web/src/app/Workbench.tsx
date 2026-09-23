@@ -11,14 +11,13 @@ import {MapPanel} from '../ui/MapPanel';
 import {EvidencePanel} from '../ui/EvidencePanel';
 import {ClusterPanel} from '../ui/ClusterPanel';
 import {ShortlistPanel, ShortlistProvider} from '../features/shortlist';
-import {ImportPanel} from '../features/import';
 import {InsightsPanel} from '../features/insights';
 
 /**
  * Рабочее место: очередь и кластеры слева, направленная окрестность счёта в центре, основания справа.
  * Выбор счёта, режим дат и открытый кластер — единственное состояние; всё остальное выводится из файла.
  */
-export type RailTab = 'leads' | 'clusters' | 'insights' | 'saved' | 'data';
+export type RailTab = 'leads' | 'clusters' | 'insights' | 'saved';
 
 const unknownGid = (gid: string, index: GraphIndex) => `Счёт ${gid} из ссылки не найден среди ${countLabel(index.byGid.size, 'счёта', 'счетов', 'счетов')} выборки.`;
 
@@ -62,12 +61,11 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
 
   // Один список сохранённых и одно окно просмотра PDF на всё рабочее место.
   return <ShortlistProvider index={index}><div className="wb-app">
-    <TopBar index={index} warnings={warnings} onSelect={select} notice={notice} onDismissNotice={() => setNotice(null)} />
+    <TopBar index={index} warnings={warnings} onSelect={select} notice={notice} onDismissNotice={() => setNotice(null)} selected={selected} />
     <div className="wb-main">
       <LeadsRail index={index} selected={selected} tab={railTab} onTab={setRailTab} onSelect={select} openCluster={cluster} onOpenCluster={openCluster}
         insights={<InsightsPanel index={index} onSelect={select} />}
-        saved={<ShortlistPanel index={index} mode={mode} current={selected} onOpen={select} />}
-        data={<ImportPanel onReload={() => window.location.reload()} />} />
+        saved={<ShortlistPanel index={index} mode={mode} current={selected} onOpen={select} />} />
       <section className="wb-center" aria-label={cluster !== null ? 'Кластер' : 'Связи счёта'}>
         {cluster !== null
           ? <ClusterPanel key={cluster} index={index} clusterId={cluster} selected={selected} onSelect={select} onClose={() => setCluster(null)} />
