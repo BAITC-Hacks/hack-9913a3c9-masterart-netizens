@@ -155,6 +155,14 @@ describe('Разговоры с помощником — хранилище', ()
     expect(kept).toContain(created.at(-1));
   });
 
+  it('[CHAT-SETTINGS] запрошенные модель и усилие хранятся при вопросе и переживают перезагрузку', () => {
+    const mem = new MemoryStorage();
+    const store = open(mem);
+    const id = store.create(null);
+    store.ask(id, 'Вопрос', [], {model: 'gpt-6-luna', effort: 'none'});
+    expect(open(mem).getSnapshot().conversations[0]!.turns[0]).toMatchObject({model: 'gpt-6-luna', effort: 'none'});
+  });
+
   it('[CHAT-SETTINGS] выбор модели и усилия сохраняется только как идентификаторы', () => {
     const mem = new MemoryStorage();
     open(mem).setSettings({model: 'gpt-example', effort: 'low'});

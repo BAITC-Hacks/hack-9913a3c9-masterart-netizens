@@ -20,7 +20,8 @@ export function AnswerCard({ response, onSelectNode }: { response: AssistantResp
   return <div className="fa-result" data-parser={response.parser}>
     <p className="fa-mode">{parserLabel(response)}</p>
     {response.parser === 'openai' ? <p className="fa-caption">Модель помогает разобрать вопрос. Основания ответа — результаты операций с графом.</p> : null}
-    <SafeAnswer text={response.answer_md} gids={response.nodes} onSelectNode={onSelectNode} />
+    {/* Таблицы и схема пути — из проверенного результата инструмента; без них — обычный ответ. */}
+    <SafeAnswer text={response.answer_rich_md ?? response.answer_md} gids={response.nodes} onSelectNode={onSelectNode} />
     {response.warnings.length > 0 ? <div className="fa-warnings">
       <p className="fa-section-label">Ограничения ответа</p>
       <ul>{response.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>

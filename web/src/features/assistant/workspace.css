@@ -52,13 +52,14 @@
 .fa-ws-composer { padding: 12px 28px 16px; border-top: 1px solid var(--wb-line); background: var(--wb-paper); }
 .fa-ws-composer > * { max-width: 760px; margin-left: auto; margin-right: auto; }
 .fa-ws-context { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
-.fa-ws-model { margin-left: auto; }
-.fa-ws-field { display: flex; align-items: flex-end; gap: 8px; padding: 4px 4px 4px 18px; border: 1px solid var(--wb-line-strong); border-radius: 26px; background: var(--wb-card); transition: border-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease); }
+/* Поле вопроса как в Command Center (CommandComposer.tsx:470–574, 765–843): текст сверху, строка управления снизу. */
+.fa-ws-field { display: grid; gap: 2px; padding: 10px 8px 8px 18px; border: 1px solid var(--wb-line-strong); border-radius: 24px; background: var(--wb-card); transition: border-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-normal) var(--wb-ease); }
 .fa-ws-field:focus-within { border-color: var(--wb-gold-line); box-shadow: 0 0 0 4px var(--wb-gold-wash); }
-.fa-ws-field textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 200px; padding: 10px 0; border: 0; outline: 0; resize: none; background: transparent; color: var(--wb-fg); font: 400 16px/1.5 var(--wb-sans); field-sizing: content; }
+.fa-ws-field textarea { width: 100%; min-width: 0; min-height: 44px; max-height: 200px; padding: 4px 10px 4px 0; border: 0; outline: 0; resize: none; background: transparent; color: var(--wb-fg); font: 400 16px/1.5 var(--wb-sans); field-sizing: content; }
 .fa-ws-field textarea::placeholder { color: var(--wb-muted); }
 /* Фокус показывает вся капсула поля; отдельная рамка вокруг текста внутри неё была бы второй рамкой. */
 .fa-ws-field textarea:focus-visible { outline: none; }
+.fa-ws-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
 .fa-ws-send { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 0; border-radius: 999px; background: var(--wb-fg); color: var(--wb-paper); cursor: pointer; transition: opacity var(--wb-fast) var(--wb-ease), transform var(--wb-fast) var(--wb-ease); }
 .fa-ws-send:not(:disabled):active { transform: scale(.94); }
 .fa-ws-send:disabled { background: var(--wb-sunken); color: var(--wb-faint); cursor: default; }
@@ -67,6 +68,47 @@
 .fa-launcher { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border: 1px solid var(--wb-line-strong); border-radius: 999px; background: var(--wb-card); color: var(--wb-soft); cursor: pointer; transition: color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
 .fa-launcher:hover { color: var(--wb-fg); border-color: var(--wb-gold-line); }
 .fa-launcher[aria-expanded="true"] { color: var(--wb-gold); border-color: var(--wb-gold-line); }
+
+/* Модель и усилие — меню над полем, как в Command Center (CommandConfigurationMenu.tsx:257–328). */
+.fa-config { position: relative; min-width: 0; }
+.fa-config-trigger { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 100%; padding: 0 12px 0 14px; border: 1px solid var(--wb-line); border-radius: 999px; background: transparent; color: var(--wb-fg); font-size: 13px; white-space: nowrap; cursor: pointer; transition: border-color var(--wb-fast) var(--wb-ease), background-color var(--wb-fast) var(--wb-ease); }
+.fa-config-trigger:hover:not(:disabled) { border-color: var(--wb-gold-line); }
+.fa-config-trigger[aria-expanded="true"] { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
+.fa-config-trigger:disabled { opacity: .5; cursor: default; }
+.fa-config-trigger > span { overflow: hidden; text-overflow: ellipsis; }
+.fa-config-effort { color: var(--wb-muted); }
+.fa-config-trigger svg { flex: none; color: var(--wb-muted); transition: transform var(--wb-normal) var(--wb-ease); }
+.fa-config-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+.fa-config-menu { position: absolute; left: -8px; bottom: calc(100% + 14px); z-index: 5; display: grid; gap: 18px; width: min(380px, calc(100vw - 40px)); padding: 16px 14px 12px; border: 1px solid var(--wb-line); border-radius: 20px; background: var(--wb-card); box-shadow: var(--wb-shadow-md); animation: fa-ws-in var(--wb-normal) var(--wb-ease); }
+.fa-config-menu section { display: grid; gap: 8px; }
+.fa-config-label { padding-left: 2px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--wb-muted); }
+.fa-model-options { display: grid; gap: 4px; }
+.fa-model-options > button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 9px; width: 100%; min-height: 52px; padding: 7px 12px; border: 1px solid transparent; border-radius: 15px; background: transparent; color: var(--wb-soft); text-align: left; cursor: pointer; transition: border-color 160ms var(--wb-ease), background-color 160ms var(--wb-ease); }
+.fa-model-options > button:hover { background: var(--wb-sunken); }
+.fa-model-options > button.is-selected { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
+.fa-model-options strong, .fa-model-options small { display: block; }
+.fa-model-options strong { overflow: hidden; font-size: 13.5px; font-weight: 500; color: var(--wb-fg); text-overflow: ellipsis; white-space: nowrap; }
+.fa-model-options small { font: 400 11.5px/1.3 var(--wb-mono); color: var(--wb-muted); }
+.fa-model-options i { display: grid; color: var(--wb-gold); }
+
+/* Ступенчатый ползунок: настоящий range поверх дорожки, бегунок и ступени — command-center.css:10149–10342, 10819, 11120. */
+.fa-effort { position: relative; display: grid; gap: 2px; padding: 2px 0 0; isolation: isolate; }
+.fa-effort-track { position: relative; z-index: 1; height: 34px; margin-inline: 22px; }
+.fa-effort-track::before, .fa-effort-track > i { position: absolute; top: 50%; right: 0; left: 0; height: 3px; border-radius: 999px; content: ""; transform: translateY(-50%); }
+.fa-effort-track::before { background: var(--wb-line-strong); }
+.fa-effort-track > i { background: var(--wb-gold-line); transform: translateY(-50%) scaleX(var(--fa-effort-ratio)); transform-origin: left center; transition: transform 220ms var(--wb-ease); }
+.fa-effort-thumb { position: absolute; z-index: 3; top: 50%; left: calc(var(--fa-effort-ratio) * 100%); display: block; width: 18px; height: 18px; border: 1px solid var(--wb-gold-line); border-radius: 50%; background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, .55), transparent 36%), var(--wb-gold-line); box-shadow: 0 2px 8px rgba(42, 30, 12, .18), 0 0 0 4px var(--wb-gold-wash); pointer-events: none; transform: translate(-50%, -50%); transition: left 220ms cubic-bezier(.22, 1, .36, 1), transform 170ms var(--wb-ease), box-shadow 170ms var(--wb-ease); }
+.fa-effort.is-scrubbing .fa-effort-track > i, .fa-effort.is-scrubbing .fa-effort-thumb { transition: none; }
+.fa-effort.is-scrubbing .fa-effort-thumb { box-shadow: 0 3px 12px rgba(42, 30, 12, .24), 0 0 0 7px var(--wb-gold-wash); transform: translate(-50%, -50%) scale(.92, 1.12); }
+.fa-effort-track input { position: absolute; z-index: 2; inset: -8px 0; width: 100%; height: 50px; margin: 0; opacity: 0; cursor: grab; touch-action: none; }
+.fa-effort-track input:active { cursor: grabbing; }
+.fa-effort-track:has(input:focus-visible) .fa-effort-thumb { outline: 2px solid var(--wb-focus); outline-offset: 3px; }
+.fa-effort-marks { display: flex; justify-content: space-between; margin-top: -6px; }
+.fa-effort-marks > button { flex: 1 1 0; min-width: 44px; min-height: 44px; padding: 6px 1px 0; overflow-wrap: normal; word-break: normal; hyphens: none; border: 0; background: transparent; color: var(--wb-muted); font-size: 11px; line-height: 1.2; text-align: center; cursor: pointer; transition: color 160ms var(--wb-ease); }
+.fa-effort-marks > button:hover { color: var(--wb-fg); }
+.fa-effort-marks > button.is-selected { color: var(--wb-gold); font-weight: 500; }
+.fa-effort-detail { min-height: 16px; font-size: 12px; color: var(--wb-muted); text-align: center; }
+.fa-ws-meta { margin-top: 10px !important; }
 
 @media (max-width: 760px) {
   .fa-ws { width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; }
@@ -82,5 +124,6 @@
   .fa-ws-question { max-width: 92%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fa-ws[open], .fa-ws-notice { animation: none; }
+  .fa-ws[open], .fa-ws-notice, .fa-config-menu { animation: none; }
+  .fa-effort-thumb, .fa-effort-track > i, .fa-config-trigger svg { transition: none; }
 }

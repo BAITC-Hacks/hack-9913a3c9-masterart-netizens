@@ -38,7 +38,12 @@
 .wb-shortlist__row:hover { background: var(--wb-sunken); }
 .wb-shortlist__row.is-current { border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
 .wb-shortlist__check { flex: none; display: grid; place-items: center; width: 44px; height: 44px; cursor: pointer; }
-.wb-shortlist__check input { width: 17px; height: 17px; margin: 0; accent-color: var(--wb-gold); cursor: pointer; }
+/* Круглая отметка, но по-прежнему флажок: можно выбрать несколько счетов; нажимается вся область 44 px. */
+.wb-shortlist__check input { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 0; border: 1.5px solid var(--wb-line-strong); border-radius: 50%; background: var(--wb-card) center / 12px 12px no-repeat; cursor: pointer; transition: background-color var(--wb-fast) var(--wb-ease), border-color var(--wb-fast) var(--wb-ease); }
+.wb-shortlist__check:hover input { border-color: var(--wb-gold-line); }
+.wb-shortlist__check input:checked { border-color: var(--wb-gold-line); background-color: var(--wb-gold-line); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fffefb' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E"); }
+:root[data-theme="dark"] .wb-shortlist__check input:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0b0c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E"); }
+.wb-shortlist__check input:focus-visible { outline: 2px solid var(--wb-focus); outline-offset: 3px; }
 .wb-shortlist__open { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; min-height: 44px; padding: 6px 4px; border: 0; border-radius: 8px; background: none; color: var(--wb-fg); text-align: left; cursor: pointer; }
 .wb-shortlist__gid { font-size: 13.5px; }
 .wb-shortlist__open:hover .wb-shortlist__gid { color: var(--wb-gold); }
