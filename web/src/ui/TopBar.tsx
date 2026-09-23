@@ -7,13 +7,16 @@ import {Icon} from '../map/icons';
 import {RoleGlyph} from './RoleGlyph';
 import {MODE_LABEL} from '../data/format';
 import {ImportPanel} from '../features/import';
+import {AssistantLauncher} from '../features/assistant/AssistantWorkspace';
 
 /**
  * Верхняя строка: название, поиск по gid — главное действие — и одна тихая строка о выборке.
  * Подробности о данных и их происхождении раскрываются по запросу. Синтетика помечена всегда.
  */
-export function TopBar({index, warnings, onSelect, notice, onDismissNotice}: {
+export function TopBar({index, warnings, onSelect, notice, onDismissNotice, selected = null}: {
   index: GraphIndex; warnings: string[]; onSelect: (gid: string) => void; notice: string | null; onDismissNotice: () => void;
+  /** Выбранный счёт — контекст вопроса помощнику. */
+  selected?: string | null;
 }) {
   const {summary, fixture, policy} = index.analysis;
   const about = useRef<HTMLDetailsElement>(null);
@@ -76,6 +79,7 @@ export function TopBar({index, warnings, onSelect, notice, onDismissNotice}: {
         <ImportPanel className="wb-about__import" />
       </div>
     </details>
+    <AssistantLauncher scope={summary.input_sha256} selection={selected ? [selected] : []} onSelectNode={onSelect} />
     {fixture?.synthetic && <p className="wb-fixture" role="note"><strong>Синтетический пример.</strong> {fixture.label}</p>}
   </header>;
 }
