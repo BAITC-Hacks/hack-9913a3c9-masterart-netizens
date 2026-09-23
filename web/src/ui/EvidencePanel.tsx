@@ -62,7 +62,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <h2 className="wb-account__gid"><Gid gid={node.gid} /></h2>
       <CopyGid gid={node.gid} />
       <div className="wb-account__priority" title={policy.priority_description}>
-        <span className="wb-account__label">Приоритет проверки</span>
+        <span className="wb-account__label">Приоритет</span>
         <strong>{formatScore(node.priority_score)}</strong>
         <span className="wb-meter" role="img" aria-label={`Приоритет ${formatScore(node.priority_score)} из 1`}><i style={{transform: `scaleX(${clamp01(node.priority_score)})`}} /></span>
         <span className="wb-account__rank">{rank ? `№ ${rank} в очереди` : 'вне очереди'}</span>
@@ -75,7 +75,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
         <p className="wb-role__name">{roleLabel(node.role)}</p>
       </div>
       <ul className="wb-facts" aria-label="На чём держится гипотеза">
-        {facts.map(fact => <li key={fact.label} className={fact.met === false ? 'is-below' : undefined}>
+        {facts.map(fact => <li key={fact.label} className={[fact.value.length > 8 ? 'is-wide' : '', fact.met === false ? 'is-below' : ''].filter(Boolean).join(' ') || undefined}>
           <strong>{fact.value}</strong>
           <span>{fact.label}</span>
           {fact.threshold && <small>{fact.threshold}</small>}

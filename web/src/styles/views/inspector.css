@@ -3,16 +3,17 @@
 .wb-account__kind { grid-area: kind; margin: 0 0 4px; font-size: 12.5px; color: var(--wb-muted); }
 .wb-account__gid { grid-area: gid; margin: 0; overflow: hidden; font: 300 23px/1.25 var(--wb-mono); letter-spacing: -0.01em; text-overflow: ellipsis; }
 .wb-account .wb-copy { grid-area: copy; }
-.wb-account__priority { grid-area: priority; display: grid; grid-template-columns: auto auto minmax(40px, 1fr) auto; align-items: center; gap: 10px; margin-top: 14px; font-size: 12.5px; color: var(--wb-soft); }
+.wb-account__priority { grid-area: priority; display: grid; grid-template-columns: auto auto minmax(32px, 1fr) auto; align-items: center; gap: 10px; margin-top: 14px; font-size: 12.5px; color: var(--wb-soft); }
 .wb-account__priority strong { font: 300 17px/1 var(--wb-mono); color: var(--wb-fg); }
 .wb-account__rank { color: var(--wb-muted); white-space: nowrap; }
 
-.wb-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
+.wb-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); grid-auto-flow: row dense; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
 .wb-facts li { display: grid; align-content: start; gap: 3px; padding: 12px 12px 11px; border-radius: 12px; background: var(--wb-sunken); }
 .wb-facts strong { font: 300 21px/1.1 var(--wb-mono); color: var(--wb-fg); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .wb-facts span { font-size: 12px; line-height: 1.35; color: var(--wb-soft); }
 .wb-facts small { font-size: 11.5px; color: var(--wb-gold); }
 .wb-facts li.is-below small { color: var(--wb-muted); }
+.wb-facts li.is-wide { grid-column: 1 / -1; }
 
 .wb-compare { display: grid; gap: 8px; margin-top: 18px; }
 .wb-compare__row { display: grid; grid-template-columns: 86px minmax(0, 1fr) minmax(60px, 1.1fr) 40px; align-items: center; gap: 10px; font-size: 12.5px; }
