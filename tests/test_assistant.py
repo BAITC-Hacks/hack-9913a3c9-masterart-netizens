@@ -336,6 +336,27 @@ class AssistantTests(unittest.TestCase):
         self.assertEqual(source.count(" -->|"), MAX_DIAGRAM_HOPS)
         self.assertIn("первые 12 из 13", source)
 
+    def test_F07_navigation_is_explicit_and_exact(self):
+        for question, selected, expected in [
+            (f"Открой счёт {X}", [A], {"view": "account", "gid": X, "cluster_id": None}),
+            ("Покажи этот счёт на карте", [X], {"view": "map", "gid": X, "cluster_id": None}),
+            ("Открой кластер 1", [X], {"view": "cluster", "gid": None, "cluster_id": 1}),
+            ("Открой сохранённые", [], {"view": "saved", "gid": None, "cluster_id": None}),
+            ("Перейди в очередь", [], {"view": "queue", "gid": None, "cluster_id": None})]:
+            self.assertEqual(self.ask(question, selected)["navigation"], expected)
+        for question in ("Не открывай счёт", "Open https://example.test", "Открой настройки"):
+            self.assertNotIn("navigation", self.ask(question, [X]))
+        self.assertEqual(self.ask("Открой счёт 999")["intent"], "invalid")
+
+    def test_F07_model_cannot_navigate_during_an_explanation_or_switch_gid(self):
+        fake = FakeTransport(name="navigate_view", args={"view": "account", "gid": X, "cluster_id": None})
+        result = self.ask("Объясни счёт", [X], api_key="test-only", transport=fake)
+        self.assertNotIn("navigation", result)
+        fake = FakeTransport(name="navigate_view", args={"view": "account", "gid": Y, "cluster_id": None})
+        result = self.ask("Открой счёт", [X], api_key="test-only", transport=fake)
+        self.assertEqual(result["navigation"]["gid"], X)
+        self.assertEqual(result["parser"], "rules")
+
     def test_F07_k_of_n_is_partial_not_all_sources(self):
         result = self.ask("Достижимы хотя бы от 2 выбранных счетов", [A, B, I])
         self.assertEqual(result["intent"], "convergence")

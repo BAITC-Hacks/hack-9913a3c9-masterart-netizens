@@ -57,6 +57,14 @@ def render(result: dict) -> str:
     lines: list[str] = []
     if kind == "help":
         return HELP if facts["topic"] == "help" else UNSUPPORTED
+    if kind == "navigation":
+        destinations = {"account": "Счёт", "map": "Карта счёта", "cluster": "Кластер", "queue": "Очередь проверки", "saved": "Сохранённые счета"}
+        target = destinations[facts["view"]]
+        if facts["view"] in ("account", "map"):
+            target += " " + link(facts["gid"])
+        elif facts["view"] == "cluster":
+            target += " " + str(facts["cluster_id"])
+        return "Переход: " + target + "."
     if kind == "node":
         lines.append(row(facts))
         lines.append(f"Поддержка роли по эвристике: {number(facts['role_score'])}; это не вероятность. Кластер: {facts['cluster_id']}.")

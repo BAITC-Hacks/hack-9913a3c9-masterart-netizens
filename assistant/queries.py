@@ -26,6 +26,7 @@ MAX_SOURCES = 100
 MAX_COMPARE = 5
 INSIGHT_SECTIONS = ("pass_through", "convergence", "bursts", "routes", "cycles", "splitting", "depth_profile", "resilience", "data_requests")
 MAX_INSIGHT_RESULTS = 10
+NAVIGATION_VIEWS = ("account", "map", "cluster", "queue", "saved")
 
 
 class QueryError(ValueError):
@@ -155,6 +156,24 @@ class GraphQueries:
             "evidence", "metrics", "observation", "role_alternatives", "next_request")}
         facts["priority_description"] = self.analysis["policy"]["priority_description"]
         return self._result("node", facts, [gid], [self.node_citation(gid), citation("/policy", "Правила и ограничения")])
+
+    def navigate(self, view: str, gid: str | None, cluster_id: int | None) -> dict:
+        if view in ("account", "map"):
+            if gid is None or cluster_id is not None:
+                raise QueryError("Для перехода к счёту нужен один точный gid.")
+            gid = self.require_gid(gid)
+            return self._result("navigation", {"view": view, "gid": gid, "cluster_id": None}, [gid], [self.node_citation(gid)])
+        if view == "cluster":
+            cid = cluster_id if cluster_id is not None else self.nodes[self.require_gid(gid)]["cluster_id"] if gid is not None else None
+            if cid not in self.clusters:
+                raise QueryError("Укажите существующий номер кластера или счёт из него.")
+            if gid is not None and self.nodes[gid]["cluster_id"] != cid:
+                raise QueryError("Выбранный счёт относится к другому кластеру.")
+            return self._result("navigation", {"view": view, "gid": gid, "cluster_id": cid}, [gid] if gid else [],
+                                [citation(f"/clusters/{self.cluster_positions[cid]}", "Кластер для просмотра")])
+        if gid is not None or cluster_id is not None:
+            raise QueryError("Для перехода к этому разделу не нужны параметры счёта или кластера.")
+        return self._result("navigation", {"view": view, "gid": None, "cluster_id": None}, [], [])
 
     def neighbors(self, gid: str, direction: str, limit: int) -> dict:
         gid = self.require_gid(gid)
@@ -348,7 +367,7 @@ class GraphQueries:
         methods = {"get_node": self.node, "get_neighbors": self.neighbors, "rank_nodes": self.rank,
                    "get_clusters": self.cluster_query, "find_convergence": self.convergence,
                    "get_temporal": self.temporal, "get_gaps": self.gaps, "compare_nodes": self.compare,
-                   "get_insights": self.insights}
+                   "get_insights": self.insights, "navigate_view": self.navigate}
         if name == "help":
             return self._result("help", {"topic": args["topic"]}, [], [])
         try:
@@ -366,6 +385,10 @@ def _schema(properties: dict) -> dict:
 GID_SCHEMA = {"type": "string", "pattern": r"^(0|-?[1-9][0-9]{0,18})$"}
 LIMIT_SCHEMA = {"type": "integer", "minimum": 1, "maximum": MAX_RESULTS}
 TOOL_SCHEMAS = {
+    "navigate_view": ("Подготовить явный переход в интерфейсе: открыть счёт, его карту, кластер, очередь или сохранённые. Используй только когда пользователь просит открыть/показать раздел, не для обычного объяснения. Ничего не сохраняет и не удаляет.",
+                      _schema({"view": {"type": "string", "enum": list(NAVIGATION_VIEWS)},
+                               "gid": {"type": ["string", "null"], "pattern": GID_SCHEMA["pattern"]},
+                               "cluster_id": {"type": ["integer", "null"], "minimum": 0, "maximum": 2147483647}})),
     "get_insights": ("Уже рассчитанные паттерны: циклы, маршруты, всплески, транзит, дробление, профиль глубины, устойчивость и запросы данных. gid=null — вся выборка. Сохранённые примеры ограничены и не являются полным поиском. Устойчивость только для всей выборки.",
                      _schema({"section": {"type": "string", "enum": list(INSIGHT_SECTIONS)},
                               "gid": {"type": ["string", "null"], "pattern": GID_SCHEMA["pattern"]},

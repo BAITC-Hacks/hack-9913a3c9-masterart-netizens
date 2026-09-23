@@ -1,4 +1,4 @@
-import type { AssistantCitation, AssistantOptions, AssistantRequest, AssistantResponse, JsonObject, JsonValue } from './types';
+import type { AssistantCitation, AssistantNavigation, AssistantOptions, AssistantRequest, AssistantResponse, JsonObject, JsonValue } from './types';
 
 export const MAX_QUESTION_LENGTH = 2000;
 export const REQUEST_TIMEOUT_MS = 60000;
@@ -72,16 +72,28 @@ function citation(value: unknown, index: number): AssistantCitation {
   return { label: typeof label === 'string' ? label : `Основание ${index + 1}`, gids: [...new Set(gids)], detail: json(value) };
 }
 
+function navigation(value: unknown, nodes: string[]): AssistantNavigation {
+  if (!object(value) || typeof value.view !== 'string'
+    || !['account', 'map', 'cluster', 'queue', 'saved'].includes(value.view)
+    || !(value.gid === null || (isGid(value.gid) && nodes.includes(value.gid)))
+    || !(value.cluster_id === null || (typeof value.cluster_id === 'number' && Number.isInteger(value.cluster_id) && value.cluster_id >= 0))) return malformed();
+  if (['account', 'map'].includes(value.view) && (value.gid === null || value.cluster_id !== null)) return malformed();
+  if (value.view === 'cluster' && value.cluster_id === null) return malformed();
+  if (['queue', 'saved'].includes(value.view) && (value.gid !== null || value.cluster_id !== null)) return malformed();
+  return { view: value.view as AssistantNavigation['view'], gid: value.gid as string | null, cluster_id: value.cluster_id as number | null };
+}
+
 export function parseAssistantResponse(value: unknown): AssistantResponse {
   if (!object(value) || typeof value.answer_md !== 'string' || !value.answer_md.trim()
     || typeof value.intent !== 'string' || !object(value.args)
     || (value.parser !== 'openai' && value.parser !== 'rules' && value.parser !== 'none')
     || !Array.isArray(value.nodes) || !Array.isArray(value.citations) || !Array.isArray(value.tool_trace)
     || (value.model !== undefined && typeof value.model !== 'string')) return malformed();
+  const nodes = [...new Set(value.nodes.map(nodeGid))];
   return {
     answer_md: value.answer_md,
     ...(typeof value.answer_rich_md === 'string' ? { answer_rich_md: value.answer_rich_md } : {}),
-    nodes: [...new Set(value.nodes.map(nodeGid))],
+    nodes,
     intent: value.intent,
     args: json(value.args) as JsonObject,
     parser: value.parser as AssistantResponse['parser'],
@@ -92,6 +104,7 @@ export function parseAssistantResponse(value: unknown): AssistantResponse {
     ...(typeof value.effort === 'string' ? { effort: value.effort } : {}),
     ...(typeof value.dataset_fingerprint === 'string' ? { dataset_fingerprint: value.dataset_fingerprint } : {}),
     ...(typeof value.history_turns_used === 'number' ? { history_turns_used: value.history_turns_used } : {}),
+    ...(value.navigation !== undefined ? { navigation: navigation(value.navigation, nodes) } : {}),
   };
 }
 

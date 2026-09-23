@@ -29,6 +29,13 @@ export interface AssistantResponse {
   effort?: string;
   dataset_fingerprint?: string;
   history_turns_used?: number;
+  navigation?: AssistantNavigation;
+}
+
+export interface AssistantNavigation {
+  view: 'account' | 'map' | 'cluster' | 'queue' | 'saved';
+  gid: string | null;
+  cluster_id: number | null;
 }
 
 export interface AssistantHistoryTurn {
