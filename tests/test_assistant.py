@@ -109,8 +109,8 @@ class AssistantTests(unittest.TestCase):
         self.assertEqual(result["parser"], "rules")
         self.assertEqual(result["nodes"], [X])
         self.assertIn(f"?gid={X}", result["answer_md"])
-        self.assertIn("Сильнейшая альтернатива", result["answer_md"])
-        self.assertIn("17000 KZT", result["answer_md"])
+        self.assertIn("Альтернатива по правилу", result["answer_md"])
+        self.assertIn("17 000 ₸", result["answer_md"])
         self.assertNotIn("model", result)
 
     def test_F07_unknown_neighboring_int64_never_selects_real_account(self):
@@ -170,11 +170,39 @@ class AssistantTests(unittest.TestCase):
         self.assertEqual(result["args"], {"limit": 3, "role": "consolidator"})
         self.assertEqual(result["nodes"], [X])
 
+    def test_F07_ranking_count_is_not_a_short_account_identifier(self):
+        next(n for n in self.data["nodes"] if n["gid"] == I)["gid"] = "3"
+        self.data["clusters"][1]["top_gids"] = ["3"]
+        ranked = self.ask("Покажи 3 консолидатора с наибольшим приоритетом", [A])
+        self.assertEqual(ranked["intent"], "rank")
+        self.assertEqual(ranked["nodes"], [X])
+        self.assertEqual(self.ask("Покажи счёт 3")["nodes"], ["3"])
+
+    def test_F07_ranking_reuses_pipeline_seed_exclusion_policy(self):
+        self.data["nodes"][0]["priority_score"] = 1
+        self.data["policy"]["top_excludes_seeds"] = True
+        self.data["top_nodes"] = [{"gid": gid} for gid in [X, Z, Y]]
+        result = self.ask("топ 3")
+        self.assertEqual(result["nodes"], [row["gid"] for row in self.data["top_nodes"]])
+        self.assertIn("вне списка известных исходных клиентов", result["answer_md"])
+        self.assertEqual(self.ask("Объясни счёт", [A])["nodes"], [A])
+        self.data["policy"]["top_excludes_seeds"] = False
+        self.assertEqual(self.ask("топ 3")["nodes"][0], A)
+
+    def test_F07_alternative_keeps_pipeline_order_not_peripheral_complement(self):
+        node = next(n for n in self.data["nodes"] if n["gid"] == X)
+        node["role_alternatives"] = [{"role": "coordinator", "score": .33, "reason": "наблюдаемые связи"},
+                                      {"role": "peripheral", "score": .8, "reason": "дополнение сигнала"}]
+        result = self.ask("Объясни счёт", [X])
+        self.assertIn("Альтернатива по правилу: кандидат в координаторы (0,33). Наблюдаемые связи", result["answer_md"])
+        self.assertIn("**Альтернатива:** кандидат в координаторы", result["answer_rich_md"])
+        self.assertNotIn("KZT", result["answer_md"])
+
     def test_F07_compare_uses_current_facts_and_explains_order(self):
         result = self.ask(f"Сравни счета {Y} и {X}")
         self.assertEqual(result["intent"], "comparison")
         self.assertEqual(result["nodes"], [X, Y])
-        self.assertIn("17000 KZT", result["answer_md"])
+        self.assertIn("17 000 ₸", result["answer_md"])
         self.assertIn("раньше в вычисленной очереди", result["answer_md"])
         self.assertIn("а не большую вероятность", result["answer_md"])
         self.assertEqual(result["tool_trace"][0]["result"]["facts"]["leaders"], [X])
@@ -301,6 +329,13 @@ class AssistantTests(unittest.TestCase):
         self.assertEqual(result["intent"], "invalid")
         self.assertEqual(fake.calls, [])
 
+    def test_F07_long_visual_path_has_explicit_cap(self):
+        from assistant.presentation import diagram, MAX_DIAGRAM_HOPS
+        hops = [self.data["transactions"][0]] * (MAX_DIAGRAM_HOPS + 1)
+        source = diagram(hops)
+        self.assertEqual(source.count(" -->|"), MAX_DIAGRAM_HOPS)
+        self.assertIn("первые 12 из 13", source)
+
     def test_F07_k_of_n_is_partial_not_all_sources(self):
         result = self.ask("Достижимы хотя бы от 2 выбранных счетов", [A, B, I])
         self.assertEqual(result["intent"], "convergence")
@@ -350,7 +385,7 @@ class AssistantTests(unittest.TestCase):
         self.assertIn("пример пути отсутствует", result["answer_md"])
         possible = self.ask("путь внутри одного дня", [Y])
         self.assertEqual(possible["args"]["mode"], "same_day")
-        self.assertIn("11000 KZT", possible["answer_md"])
+        self.assertIn("11 000 ₸", possible["answer_md"])
 
     def test_F07_fabricated_or_nonchronological_witness_rejected(self):
         for change in ("sum", "date", "target"):
@@ -537,6 +572,23 @@ class AssistantTests(unittest.TestCase):
 
 
 class OfficialAssistantTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get("ASSISTANT_ANALYSIS_PATH"), "Нужен путь к официальному analysis.json")
+    def test_F07_every_rendered_alternative_and_queue_match_pipeline(self):
+        from assistant.queries import ROLES
+        from assistant.render import render
+        from assistant.presentation import render_rich
+        data = json.loads(Path(os.environ["ASSISTANT_ANALYSIS_PATH"]).read_text())
+        graph = GraphQueries(data)
+        self.assertEqual(graph.execute("rank_nodes", {"limit": 30, "role": None})["nodes"],
+                         [row["gid"] for row in data["top_nodes"][:30]])
+        for node in data["nodes"]:
+            if not node["role_alternatives"]:
+                continue
+            expected = ROLES[node["role_alternatives"][0]["role"]]
+            result = graph.node(node["gid"])
+            self.assertIn("Альтернатива по правилу: " + expected, render(result), node["gid"])
+            self.assertIn("**Альтернатива:** " + expected, render_rich(result), node["gid"])
+
     @unittest.skipUnless(os.environ.get("ASSISTANT_ANALYSIS_PATH"), "Нужен путь к официальному analysis.json")
     def test_F07_real_computed_insights_and_random_baseline(self):
         from assistant.queries import INSIGHT_SECTIONS

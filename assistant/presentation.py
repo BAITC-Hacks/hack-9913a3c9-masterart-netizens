@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from .queries import LIMITATION, ROLES
-from .render import link, number, render, text
+from .render import link, number, render, text, sentence
 
 MAX_DIAGRAM_HOPS = 12
 
@@ -55,8 +55,9 @@ def render_rich(result: dict) -> str:
         return "\n\n".join(lines)
     if kind == "rank":
         rows = [[link(n["gid"]), number(n["priority_score"]), text(n["evidence"])] for n in facts["rows"]]
+        scope = " Известные исходные клиенты исключены из очереди и остаются доступны через поиск." if facts.get("top_excludes_seeds") else ""
         return "\n\n".join([f"**Очередь проверки:** {len(rows)} из {facts['total']} счетов по заданному фильтру.",
-                             table(["Счёт", "Приоритет", "Наблюдаемое основание"], rows), LIMITATION])
+                             scope, table(["Счёт", "Приоритет", "Наблюдаемое основание"], rows), LIMITATION])
     if kind == "temporal" and facts["witness"]:
         hops = facts["witness"]["hops"]
         temporal = facts["temporal"]
@@ -76,8 +77,8 @@ def render_rich(result: dict) -> str:
                  "**Основание:** " + text(facts["evidence"])]
         alternatives = facts["role_alternatives"]
         if alternatives:
-            alt = sorted(alternatives, key=lambda item: (-item["score"], item["role"]))[0]
-            lines.append(f"**Альтернатива:** {ROLES[alt['role']]} · {number(alt['score'])}. {text(alt['reason'])}")
+            alt = alternatives[0]
+            lines.append(f"**Альтернатива:** {ROLES[alt['role']]} · {number(alt['score'])}. {sentence(alt['reason'])}")
         if facts["observation"].get("outgoing_censored"):
             lines.append("Исходящие ограничены границей сбора. Ноль в выборке не означает отсутствие переводов.")
         lines.extend(text(w) for w in facts["observation"].get("warnings", []))
