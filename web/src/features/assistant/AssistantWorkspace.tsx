@@ -1,13 +1,16 @@
 import {useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent} from 'react';
-import {askAssistant, AssistantError, exactSelection, MAX_QUESTION_LENGTH, REQUEST_TIMEOUT_MS} from './api';
+import {askAssistant, AssistantError, exactSelection, loadAssistantOptions, MAX_QUESTION_LENGTH, REQUEST_TIMEOUT_MS} from './api';
 import {AnswerCard, NodeLinks} from './AnswerCard';
-import type {Conversation, ConversationIssue, ConversationStorage, ConversationStore} from './conversationStore';
+import type {Conversation, ConversationIssue, ConversationStorage, ConversationStore, StoredTurn} from './conversationStore';
+import type {AssistantOptions, AssistantRequest} from './types';
+import {buildHistory, effortLabel, modelLabel, resolveSettings} from './modelSettings';
+import {ModelEffortMenu} from './ModelEffortMenu';
 import {useConversations} from './useConversations';
 import './assistant.css';
 import './workspace.css';
 
 export interface AssistantWorkspaceProps {
-  /** summary.input_sha256 открытого набора данных. */
+  /** summary.input_sha256 — запасной ключ разговоров, если сервер не сообщил отпечаток набора данных. */
   scope: string;
   /** Выбранные на карте счета — контекст следующего вопроса. */
   selection: string[];
@@ -16,8 +19,13 @@ export interface AssistantWorkspaceProps {
   onClose: () => void;
   /** Подмена хранилища для проверок; null — только память. */
   storage?: ConversationStorage | null;
+  /** Загрузка настроек помощника (GET /api/assistant/options); подменяется в проверках. */
+  loadOptions?: (signal: AbortSignal) => Promise<AssistantOptions>;
+  /** Уже известные настройки — для проверок без сети. */
+  initialOptions?: AssistantOptions;
 }
 
+type OptionsState = {phase: 'loading'} | {phase: 'ready'; options: AssistantOptions} | {phase: 'error'; message: string};
 type Pending = {conversationId: string; turnId: string; controller: AbortController; timer: ReturnType<typeof setTimeout>};
 
 const plural = (n: number, one: string, few: string, many: string) => {
@@ -33,6 +41,24 @@ export function issueText(issue: ConversationIssue): string {
     case 'reset': return 'Сохранённые разговоры не удалось прочитать, начат новый список.';
     case 'recovered': return `Часть сохранённых записей была повреждена и пропущена: ${issue.dropped}.`;
   }
+}
+
+/**
+ * Чем получен ответ: модель и усилие называет сам ответ сервера. Если модель была запрошена, а ответ пришёл
+ * без неё (нет ключа, ошибка сервиса), это сказано прямо — локальный разбор не выдаётся за ответ модели.
+ */
+export function turnMeta(turn: StoredTurn, options: AssistantOptions | null): string {
+  const response = turn.response;
+  if (!response) return '';
+  const parts: string[] = [];
+  if (response.parser === 'openai') {
+    if (response.model) parts.push(`Модель ${modelLabel(options, response.model)}`);
+    if (response.effort) parts.push(`усилие «${effortLabel(response.effort).toLowerCase()}»`);
+  } else if (turn.model) {
+    parts.push(`Запрошена ${modelLabel(options, turn.model)}, ответ получен без модели`);
+  }
+  if (response.history_turns_used) parts.push(`учтено вопросов из разговора: ${response.history_turns_used}`);
+  return parts.join(' · ');
 }
 
 function suggestionsFor(selection: string[]): [string, string][] {
@@ -58,14 +84,22 @@ function ConversationRow({conversation, active, onOpen}: {conversation: Conversa
   </li>;
 }
 
+const Icon = ({d, size = 18}: {d: string; size?: number}) =>
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
+
 /**
- * Рабочая область разговоров: список сохранённых разговоров слева, лента вопросов и ответов, поле вопроса внизу.
- * Разговоры сохраняются в браузере и привязаны к набору данных и счёту, с которого начаты. Переход к счёту из
- * ответа закрывает окно, чтобы показать счёт на карте; открытый разговор остаётся тем же при следующем открытии.
+ * Рабочая область разговоров: сохранённые разговоры слева, лента вопросов и ответов, поле вопроса внизу.
+ * Разговоры привязаны к отпечатку набора данных от сервера и к счёту, с которого начаты. Следующий вопрос
+ * уходит с выбранной моделью и усилием и с ограниченным контекстом разговора (вопросы, выбор, счета из
+ * ответов — не текст ответов). Переход к счёту из ответа закрывает окно; открытый разговор не меняется.
  */
-export function AssistantWorkspace({scope, selection, onSelectNode, open, onClose, storage}: AssistantWorkspaceProps) {
+export function AssistantWorkspace({scope, selection, onSelectNode, open, onClose, storage, loadOptions, initialOptions}: AssistantWorkspaceProps) {
   const prefix = useId();
-  const {snapshot, store} = useConversations(scope, storage);
+  const [optionsState, setOptionsState] = useState<OptionsState>(initialOptions ? {phase: 'ready', options: initialOptions} : {phase: 'loading'});
+  const options = optionsState.phase === 'ready' ? optionsState.options : null;
+  const optionsLoading = optionsState.phase === 'loading';
+  const {snapshot, store} = useConversations(options?.dataset_fingerprint ?? scope, storage);
+  const settings = options ? resolveSettings(options, snapshot.settings) : null;
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const feed = useRef<HTMLOListElement>(null);
@@ -81,8 +115,21 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
   let contextError = '';
   try { context = exactSelection(selection); } catch { contextError = 'Выбранный счёт имеет некорректный идентификатор. Выберите его заново на карте.'; }
 
-  const active = snapshot.conversations.find(c => c.id === snapshot.activeId) ?? null;
+  // Пока сервер не назвал отпечаток данных, разговоры не показываются: иначе мелькнул бы чужой список.
+  const conversations = optionsLoading ? [] : snapshot.conversations;
+  const active = conversations.find(c => c.id === snapshot.activeId) ?? null;
   const draft = active ? active.draft : newDraft;
+
+  useEffect(() => {
+    if (initialOptions) return;
+    const controller = new AbortController();
+    (loadOptions ?? loadAssistantOptions)(controller.signal)
+      .then(loaded => { if (!controller.signal.aborted) setOptionsState({phase: 'ready', options: loaded}); })
+      .catch(error => {
+        if (!controller.signal.aborted) setOptionsState({phase: 'error', message: error instanceof AssistantError ? error.message : 'Настройки помощника недоступны.'});
+      });
+    return () => controller.abort();
+  }, [initialOptions, loadOptions]);
 
   useEffect(() => {
     const element = dialog.current;
@@ -115,16 +162,21 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
   }
 
   async function send(text: string) {
-    if (pending.current || contextError) return;
+    if (pending.current || contextError || optionsLoading) return;
     const question = text.trim();
     if (!question || question.length > MAX_QUESTION_LENGTH) {
       setValidation(`Введите вопрос длиной от 1 до ${MAX_QUESTION_LENGTH} символов.`);
       input.current?.focus();
       return;
     }
+    // Контекст — завершённые вопросы этого разговора до нового; лимиты называет сервер.
+    const history = options && active ? buildHistory(active.turns, options.history_limits) : [];
     const conversationId = active?.id ?? store.create(context[0] ?? null);
-    const turnId = store.ask(conversationId, question, context);
+    const turnId = store.ask(conversationId, question, context, settings ?? undefined);
     if (!turnId) return;
+    const request: AssistantRequest = options && settings
+      ? {question, selection: context, model: settings.model, effort: settings.effort, dataset_fingerprint: options.dataset_fingerprint, history}
+      : {question, selection: context};
     setNewDraft('');
     setValidation('');
     const controller = new AbortController();
@@ -133,7 +185,7 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
     setBusy(true);
     setNotice('Проверяем вопрос по данным графа.');
     try {
-      const response = await askAssistant({question, selection: context}, controller.signal);
+      const response = await askAssistant(request, controller.signal);
       // Отменённый запрос не подменяет следующий, даже если сеть ответила поздно.
       if (pending.current?.turnId !== turnId) return;
       store.answer(conversationId, turnId, response);
@@ -168,6 +220,10 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
   const navigate = (gid: string) => { onSelectNode(gid); onClose(); };
   const startNew = () => { store.open(null); setNewDraft(''); setListOpen(false); requestAnimationFrame(() => input.current?.focus()); };
   const pendingTurn = pending.current?.turnId;
+  const keys = `Enter — отправить, Shift + Enter — новая строка · ${draft.length}/${MAX_QUESTION_LENGTH}.`;
+  const hint = options
+    ? `${keys} Помощник учитывает до ${options.history_limits.turns} последних вопросов этого разговора; текст прежних ответов не передаётся.`
+    : optionsState.phase === 'error' ? `${keys} Каждый вопрос проверяется отдельно: прежние ответы в запрос не передаются.` : keys;
 
   return <dialog ref={dialog} className="fa-ws" aria-labelledby={`${prefix}-title`} onClose={() => { store.flush(); if (open) onClose(); }}>
     <div className={`fa-ws-frame fa-panel${listOpen ? ' is-list-open' : ''}`}>
@@ -176,18 +232,20 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
           <p className="fa-section-label">Разговоры</p>
           <button type="button" className="fa-button fa-ws-new" onClick={startNew} disabled={busy}>Новый разговор</button>
         </div>
-        {snapshot.conversations.length
-          ? <ul className="fa-ws-list">{snapshot.conversations.map(c => <ConversationRow key={c.id} conversation={c} active={c.id === snapshot.activeId}
-              onOpen={() => { store.open(c.id); setListOpen(false); }} />)}</ul>
-          : <p className="fa-caption fa-ws-side-empty">Здесь появятся разговоры по этому набору данных. Они сохраняются в браузере.</p>}
-        {snapshot.foreign.length > 0 && <div className="fa-ws-foreign">
+        {optionsLoading
+          ? <p className="fa-caption fa-ws-side-empty">Загружаем разговоры…</p>
+          : conversations.length
+            ? <ul className="fa-ws-list">{conversations.map(c => <ConversationRow key={c.id} conversation={c} active={c.id === snapshot.activeId}
+                onOpen={() => { store.open(c.id); setListOpen(false); }} />)}</ul>
+            : <p className="fa-caption fa-ws-side-empty">Здесь появятся разговоры по этому набору данных. Они сохраняются в браузере.</p>}
+        {!optionsLoading && snapshot.foreign.length > 0 && <div className="fa-ws-foreign">
           <p className="fa-section-label">Другие наборы данных · {snapshot.foreign.length}</p>
           <p className="fa-caption">Эти разговоры велись на другом файле анализа. Продолжить их можно, только открыв тот файл.</p>
           <ul className="fa-ws-list">{snapshot.foreign.map(c => <li key={c.id} className="fa-ws-foreign-row">
             <span className="fa-ws-row-title">{c.title || 'Разговор без вопросов'}</span>
-            <span className="fa-ws-row-meta"><span className="fa-gid">sha256 {c.scope.slice(0, 12)}…</span><span>{questions(c.turns.length)}</span></span>
+            <span className="fa-ws-row-meta"><span className="fa-gid" title={c.scope}>данные {c.scope.slice(0, 12)}…</span><span>{questions(c.turns.length)}</span></span>
             <button type="button" className="fa-ws-icon" onClick={() => store.remove(c.id)} aria-label={`Удалить разговор «${c.title || 'без вопросов'}»`}>
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg>
+              <Icon d="m6 6 12 12M18 6 6 18" size={16} />
             </button>
           </li>)}</ul>
         </div>}
@@ -196,7 +254,7 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
       <section className="fa-ws-main" aria-label="Разговор">
         <header className="fa-ws-head">
           <button type="button" className="fa-ws-icon fa-ws-list-toggle" aria-expanded={listOpen} onClick={() => setListOpen(value => !value)} aria-label="Список разговоров">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h10" /></svg>
+            <Icon d="M4 7h16M4 12h16M4 17h10" />
           </button>
           {active && renaming === active.id
             ? <form className="fa-ws-rename" onSubmit={event => { event.preventDefault(); store.rename(active.id, new FormData(event.currentTarget).get('title') as string); setRenaming(null); }}>
@@ -208,13 +266,13 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
             : <h2 id={`${prefix}-title`} className="fa-ws-title">{active ? active.title || 'Новый разговор' : 'Новый разговор'}</h2>}
           <div className="fa-ws-actions">
             {active && renaming !== active.id && <button type="button" className="fa-ws-icon" onClick={() => setRenaming(active.id)} aria-label="Переименовать разговор" title="Переименовать">
-              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
+              <Icon d="M4 20h4L19 9l-4-4L4 16v4Zm9.5-13.5 4 4" size={17} />
             </button>}
             {active && <button type="button" className="fa-ws-icon" disabled={busy} onClick={() => store.remove(active.id)} aria-label="Удалить разговор" title="Удалить">
-              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" /></svg>
+              <Icon d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" size={17} />
             </button>}
             <button type="button" className="fa-ws-icon" onClick={onClose} aria-label="Закрыть разговоры">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg>
+              <Icon d="m6 6 12 12M18 6 6 18" />
             </button>
           </div>
         </header>
@@ -238,15 +296,21 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
                   <button type="button" className="fa-button" key={label} disabled={busy || Boolean(contextError)} onClick={() => { setDraft(text); input.current?.focus(); }}>{label}</button>)}</div>
               </div>
             : <ol ref={feed} className="fa-ws-feed" aria-label="Вопросы и ответы">
-                {active.turns.map(turn => <li key={turn.id} className="fa-ws-turn" aria-busy={turn.id === pendingTurn || undefined}>
-                  <div className="fa-ws-question"><p>{turn.question}</p>
-                    {turn.selection.length > 0 && <span className="fa-caption">Контекст: {turn.selection.length === 1 ? <span className="fa-gid" dir="ltr">{turn.selection[0]}</span> : `${turn.selection.length} счёта`}</span>}
-                  </div>
-                  {turn.response ? <AnswerCard response={turn.response} onSelectNode={navigate} />
-                    : turn.error ? <div className="fa-failure"><p className={turn.error.startsWith('Запрос остановлен') ? 'fa-caption' : 'fa-error'}>{turn.error}</p>
-                        <button type="button" className="fa-button" disabled={busy} onClick={() => void send(turn.question)}>Спросить ещё раз</button></div>
-                      : <p className="fa-pending">Проверяем вопрос по данным графа…</p>}
-                </li>)}
+                {active.turns.map(turn => {
+                  const meta = turnMeta(turn, options);
+                  return <li key={turn.id} className="fa-ws-turn" aria-busy={turn.id === pendingTurn || undefined}>
+                    <div className="fa-ws-question"><p>{turn.question}</p>
+                      {turn.selection.length > 0 && <span className="fa-caption">Контекст: {turn.selection.length === 1 ? <span className="fa-gid" dir="ltr">{turn.selection[0]}</span> : `${turn.selection.length} счёта`}</span>}
+                    </div>
+                    {turn.response ? <div>
+                        <AnswerCard response={turn.response} onSelectNode={navigate} />
+                        {meta && <p className="fa-caption fa-ws-meta">{meta}</p>}
+                      </div>
+                      : turn.error ? <div className="fa-failure"><p className={turn.error.startsWith('Запрос остановлен') ? 'fa-caption' : 'fa-error'}>{turn.error}</p>
+                          <button type="button" className="fa-button" disabled={busy} onClick={() => void send(turn.question)}>Спросить ещё раз</button></div>
+                        : <p className="fa-pending">Проверяем вопрос по данным графа…</p>}
+                  </li>;
+                })}
               </ol>}
         </div>
 
@@ -254,7 +318,6 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
           <div className="fa-ws-context" aria-label="Контекст следующего вопроса">
             <span className="fa-caption">{context.length ? 'Вопрос о счёте' : 'Вопрос о графе в целом'}</span>
             <NodeLinks gids={context} onSelectNode={navigate} />
-            <span className="fa-caption fa-ws-model">Модель выбирает сервер</span>
           </div>
           <label className="fa-sr" htmlFor={`${prefix}-question`}>Вопрос к данным</label>
           <div className="fa-ws-field">
@@ -262,16 +325,21 @@ export function AssistantWorkspace({scope, selection, onSelectNode, open, onClos
               placeholder="Спросите о счёте или о графе…" aria-invalid={Boolean(validation || contextError)}
               aria-describedby={`${prefix}-hint${validation || contextError ? ` ${prefix}-validation` : ''}`}
               onKeyDown={onKeyDown} onChange={event => setDraft(event.target.value)} />
-            {busy
-              ? <button type="button" className="fa-ws-send is-stop" onClick={() => stop()} aria-label="Остановить запрос">
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" /></svg>
-                </button>
-              : <button type="submit" className="fa-ws-send" disabled={!draft.trim() || Boolean(contextError)} aria-label="Отправить вопрос">
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
-                </button>}
+            <div className="fa-ws-bar">
+              {options && settings
+                ? <ModelEffortMenu options={options} settings={settings} onChange={next => store.setSettings(next)} disabled={busy} />
+                : <span className="fa-caption fa-ws-model">{optionsState.phase === 'error' ? `${optionsState.message} Модель выбирает сервер.` : 'Загружаем настройки модели…'}</span>}
+              {busy
+                ? <button type="button" className="fa-ws-send is-stop" onClick={() => stop()} aria-label="Остановить запрос">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" /></svg>
+                  </button>
+                : <button type="submit" className="fa-ws-send" disabled={!draft.trim() || Boolean(contextError) || optionsLoading} aria-label="Отправить вопрос">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+                  </button>}
+            </div>
           </div>
           {validation || contextError ? <p className="fa-error" id={`${prefix}-validation`} role="alert">{contextError || validation}</p> : null}
-          <p className="fa-caption fa-ws-hint" id={`${prefix}-hint`}>Enter — отправить, Shift + Enter — новая строка · {draft.length}/{MAX_QUESTION_LENGTH}. Каждый вопрос проверяется отдельно: прежние ответы в запрос не передаются.</p>
+          <p className="fa-caption fa-ws-hint" id={`${prefix}-hint`}>{hint}</p>
           <p className="fa-sr" role="status" aria-live="polite">{notice}</p>
         </form>
       </section>

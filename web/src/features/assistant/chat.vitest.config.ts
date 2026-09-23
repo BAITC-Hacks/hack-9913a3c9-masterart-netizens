@@ -6,5 +6,5 @@ import {fileURLToPath} from 'node:url';
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   esbuild: {jsx: 'automatic'},
-  test: {environment: 'node', include: ['conversations.test.tsx', 'workspace.test.tsx']},
+  test: {environment: 'node', include: ['conversations.test.tsx', 'workspace.test.tsx', 'model.test.tsx']},
 });
