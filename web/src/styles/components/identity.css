@@ -1,6 +1,6 @@
 /* Идентификаторы и роли: моноширинные цифры, группы — отступами, знак роли — цветом и формой. */
 .wb-gid { font-family: var(--wb-mono); font-variant-numeric: tabular-nums; letter-spacing: .01em; white-space: nowrap; }
-.wb-gid > span + span { margin-left: .34em; }
+.wb-gid > span:not(:first-child) { margin-left: .34em; }
 .wb-glyph { flex: none; color: var(--role); }
 .wb-role-tag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; color: var(--wb-soft); }
 .wb-role-tag__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -11,14 +11,16 @@
  * 1051–1059; ревизия 77e1b9b0) по просьбе автора, включая свечение значка при наведении.
  */
 .wb-copy { position: relative; display: inline-flex; }
-.wb-copy__button { box-sizing: border-box; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 12px; color: var(--wb-soft); background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color 220ms var(--wb-ease), border-color 180ms ease; }
+/* Спокойный скруглённый прямоугольник: волосяная рамка и плоская поверхность; 44 px при сенсорном вводе. */
+.wb-copy__button { box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px; margin: 0; padding: 0; border: 1px solid var(--wb-line-strong); border-radius: 10px; color: var(--wb-soft); background: var(--wb-card); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color 220ms var(--wb-ease), border-color 180ms ease, background-color 180ms ease; }
+@media (pointer: coarse) { .wb-copy__button { width: 44px; height: 44px; } }
 .wb-copy__button svg { transform-origin: center; animation: wb-copy-glyph-in 360ms var(--wb-ease); transition: opacity 180ms ease, filter 300ms var(--wb-ease), transform 300ms var(--wb-ease); }
 @media (hover: hover) and (pointer: fine) {
-  .wb-copy__button:hover { color: var(--wb-fg); }
+  .wb-copy__button:hover { color: var(--wb-fg); border-color: var(--wb-gold-line); }
   .wb-copy__button:hover svg { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--wb-fg) 30%, transparent)); transform: translateY(-1px) scale(1.055); }
 }
 .wb-copy__button:active svg { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--wb-fg) 22%, transparent)); transform: translateY(0) scale(.86); }
-.wb-copy__button[data-copied] { color: var(--wb-gold); }
+.wb-copy__button[data-copied] { color: var(--wb-gold); border-color: var(--wb-gold-line); background: var(--wb-gold-wash); }
 .wb-copy__fail { position: absolute; top: calc(100% + 4px); right: 0; z-index: 5; padding: 6px 10px; border: 1px solid var(--wb-line); border-radius: 10px; background: var(--wb-card); box-shadow: var(--wb-shadow-sm); font-size: 12px; color: var(--wb-alert); white-space: nowrap; }
 @keyframes wb-copy-glyph-in {
   0% { opacity: .28; transform: scale(.72); }

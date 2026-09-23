@@ -1,6 +1,7 @@
 import type {Mode, Witness} from './schema';
 import {compileNeighborhood, type NeighborLink} from './neighborhood';
 import {pairDateRange, type GraphIndex} from './graph';
+import {roleAlternatives} from './roleFacts';
 import {MODE_LABEL, REACH_CAVEAT, countLabel, formatDate, formatInt, formatKzt, formatScore, roleLabel} from './format';
 
 /**
@@ -34,7 +35,7 @@ export function buildReviewBrief(index: GraphIndex, gid: string, mode: Mode, gen
   if (!node || !hood) return null;
   const {analysis} = index;
   const m = node.metrics;
-  const alt = [...node.role_alternatives].sort((a, b) => b.score - a.score).find(a => a.role !== node.role);
+  const alt = roleAlternatives(node)[0];
   const rank = index.topRank.get(gid);
   const cluster = index.clusters.get(node.cluster_id);
   const out: string[] = [];
@@ -59,9 +60,11 @@ export function buildReviewBrief(index: GraphIndex, gid: string, mode: Mode, gen
 
   out.push('## Наблюдаемые потоки', '');
   out.push('| | Входящие | Исходящие |', '|---|---:|---:|');
-  out.push(`| Контрагентов | ${formatInt(m.in_degree)} | ${formatInt(m.out_degree)} |`);
-  out.push(`| Переводов | ${formatInt(m.in_tx)} | ${formatInt(m.out_tx)} |`);
-  out.push(`| Сумма | ${formatKzt(m.in_kzt)} | ${formatKzt(m.out_kzt)} |`);
+  // На границе выборки исходящие не собирались: ноль в таблице читался бы как известный ноль.
+  const outCell = (value: string) => (node.observation.outgoing_censored && m.out_degree === 0 ? 'не наблюдаются' : value);
+  out.push(`| Контрагентов | ${formatInt(m.in_degree)} | ${outCell(formatInt(m.out_degree))} |`);
+  out.push(`| Переводов | ${formatInt(m.in_tx)} | ${outCell(formatInt(m.out_tx))} |`);
+  out.push(`| Сумма | ${formatKzt(m.in_kzt)} | ${outCell(formatKzt(m.out_kzt))} |`);
   out.push(`| Связей с исходными клиентами | ${formatInt(m.seed_in_count)} | ${formatInt(m.seed_out_count)} |`, '');
   out.push(`- Отношение исходящих к входящим: ${m.pass_through === null ? 'не определено по наблюдаемым данным' : formatScore(m.pass_through)}.`);
   out.push(`- Шагов от исходных клиентов: ${node.depth}; ${node.is_seed ? 'это исходный клиент выборки' : 'не исходный клиент'}.`, '');
@@ -72,7 +75,8 @@ export function buildReviewBrief(index: GraphIndex, gid: string, mode: Mode, gen
   out.push(payers.length ? 'Платили этому счёту:' : 'Входящих переводов в выборке нет.');
   for (const link of payers) out.push(counterpartyLine(index, gid, link, 'in'));
   out.push('');
-  out.push(recipients.length ? 'Получали от этого счёта:' : 'Исходящих переводов в выборке нет.');
+  out.push(recipients.length ? 'Получали от этого счёта:'
+    : node.observation.outgoing_censored ? 'Исходящие переводы не наблюдаются: граница сбора данных.' : 'Исходящих переводов в выборке нет.');
   for (const link of recipients) out.push(counterpartyLine(index, gid, link, 'out'));
   out.push('');
   if (hood.cycles.length) {

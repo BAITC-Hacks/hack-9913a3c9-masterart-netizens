@@ -3,6 +3,7 @@ import type {RailTab} from '../app/Workbench';
 import {countLabel, formatScore, roleLabel} from '../data/format';
 import {Gid} from './Gid';
 import {RoleGlyph} from './RoleGlyph';
+import {CompactKzt} from './Amount';
 
 /**
  * Очередь проверки и кластеры. Строка — две линии: номер, знак роли, gid и приоритет; ниже — одна
@@ -40,7 +41,7 @@ export function LeadsRail({index, selected, tab, onTab, onSelect, openCluster, o
             title={cluster.hypothesis} onClick={() => onOpenCluster(cluster.cluster_id)}>
             <span className="wb-cluster__head"><strong>Кластер {cluster.cluster_id}</strong>
               <span>{countLabel(cluster.n_nodes, 'счёт', 'счёта', 'счетов')}{cluster.n_seed > 0 && ` · исходных ${cluster.n_seed}`}</span></span>
-            <span className="wb-cluster__hypothesis">{cluster.hypothesis}</span>
+            <span className="wb-cluster__meta">{cluster.sum_kzt_internal > 0 ? <>оборот внутри <CompactKzt value={cluster.sum_kzt_internal} /></> : 'переводов внутри нет'}</span>
           </button>
         </li>)}
       </ul>}

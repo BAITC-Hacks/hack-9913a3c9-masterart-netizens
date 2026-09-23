@@ -35,7 +35,16 @@ const kztFormat = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2, mini
 const intFormat = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 0});
 const scoreFormat = new Intl.NumberFormat('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-export const formatKzt = (value: number) => `${kztFormat.format(value)} ₸`;
+/** Сумма в тенге. Разделители разрядов и пробел перед знаком ₸ неразрывные — число никогда не делится. */
+export const formatKzt = (value: number) => `${kztFormat.format(value)}\u00a0₸`;
+const compactFormat = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1, minimumFractionDigits: 0});
+/** Краткая сумма для сводок: «29,5 млн ₸». До миллиона — точная сумма; точное значение показывается рядом или по запросу. */
+export function formatKztCompact(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1e9) return `${compactFormat.format(value / 1e9)}\u00a0млрд\u00a0₸`;
+  if (abs >= 1e6) return `${compactFormat.format(value / 1e6)}\u00a0млн\u00a0₸`;
+  return formatKzt(value);
+}
 export const formatInt = (value: number) => intFormat.format(value);
 export const formatScore = (value: number) => scoreFormat.format(value);
 

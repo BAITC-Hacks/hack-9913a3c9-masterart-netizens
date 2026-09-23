@@ -6,6 +6,7 @@ import {MapFrame, MapTools, MapViewport, useMapView} from '../map/MapFrame';
 import {Gid} from './Gid';
 import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
+import {CompactKzt} from './Amount';
 
 /**
  * Обзор кластера: гипотеза о структуре, фильтр по ролям и два вида одного набора — карта по шагам
@@ -49,8 +50,8 @@ export function ClusterPanel({index, clusterId, selected, onSelect, onClose}: {
       <button type="button" className="wb-button wb-button--quiet" onClick={onClose}><Icon name="back" size={15} />К связям счёта</button>
       <h2 className="wb-clusterview__title">Кластер {clusterId}</h2>
       {cluster ? <>
-        <p className="wb-cluster-line">{countLabel(cluster.n_nodes, 'счёт', 'счёта', 'счетов')} · исходных клиентов {formatInt(cluster.n_seed)} · внутренний оборот {formatKzt(cluster.sum_kzt_internal)}</p>
-        <p className="wb-hypothesis">{cluster.hypothesis}</p>
+        <p className="wb-cluster-summary">{countLabel(cluster.n_nodes, 'счёт', 'счёта', 'счетов')} · {countLabel(cluster.n_seed, 'исходный клиент', 'исходных клиента', 'исходных клиентов')} · оборот внутри <CompactKzt value={cluster.sum_kzt_internal} /></p>
+        <p className="wb-cluster-caveat">Наблюдаемая структура переводов, а не вывод о связи владельцев.</p>
       </> : <p className="wb-muted">Описание кластера в файле отсутствует.</p>}
       <div className="wb-role-filter" role="group" aria-label="Фильтр по ролям">
         <button type="button" aria-pressed={role === null} className={role === null ? 'is-active' : undefined} onClick={() => setRole(null)}>
@@ -60,7 +61,21 @@ export function ClusterPanel({index, clusterId, selected, onSelect, onClose}: {
       </div>
       <p className="wb-role-filter__count" aria-live="polite">{role
         ? <>В фильтре {formatInt(shown.length)} из {formatInt(members.length)} · <button type="button" className="wb-linklike wb-reset" onClick={() => setRole(null)}>сбросить фильтр</button></>
-        : <>Все участники: {formatInt(members.length)}</>}</p>
+        : null}</p>
+      {cluster && <details className="wb-disclosure wb-cluster-about">
+        <summary>О кластере</summary>
+        <p className="wb-hypothesis">{cluster.hypothesis}</p>
+        <dl className="wb-cluster-exact">
+          <div><dt>Счетов</dt><dd>{formatInt(cluster.n_nodes)}</dd></div>
+          <div><dt>Исходных клиентов</dt><dd>{formatInt(cluster.n_seed)}</dd></div>
+          <div><dt>Оборот внутри, точно</dt><dd>{formatKzt(cluster.sum_kzt_internal)}</dd></div>
+        </dl>
+        {cluster.top_gids.length > 0 && <>
+          <p className="wb-cluster-keys__title">Ключевые счета по расчёту конвейера</p>
+          <ul className="wb-cluster-keys">{cluster.top_gids.map(gid => <li key={gid}>
+            <button type="button" className="wb-linklike" onClick={() => onSelect(gid)} aria-label={`Открыть счёт ${gid}`}><Gid gid={gid} /></button></li>)}</ul>
+        </>}
+      </details>}
       {selected && !members.some(node => node.gid === selected) && members[0] && <p className="wb-context" role="note">
         <Icon name="link" size={15} />
         <span>Справа — счёт из другого кластера. Нажмите участника этого кластера или <button type="button" className="wb-linklike wb-reset" onClick={() => onSelect(members[0]!.gid)}>откройте первого по приоритету</button>.</span>
@@ -87,9 +102,10 @@ export function ClusterPanel({index, clusterId, selected, onSelect, onClose}: {
           {layout.cards.map(card => <button key={card.gid} type="button" className={`wb-card wb-card--compact${card.gid === selected ? ' wb-card--focus' : ''}`}
             style={{left: card.x, top: card.y, width: CLUSTER_CARD_W, height: CLUSTER_CARD_H}} onClick={() => onSelect(card.gid)}
             aria-label={`Открыть: счёт ${card.gid}, ${roleLabel(card.node.role)}, приоритет ${formatScore(card.node.priority_score)}`}>
-            <span className="wb-card__role"><RoleTag role={card.node.role} /><span className="wb-card__score">{formatScore(card.node.priority_score)}</span></span>
+            <span className="wb-card__role"><RoleTag role={card.node.role} /></span>
             <Gid gid={card.gid} className="wb-card__gid" />
-            {(card.node.is_seed || card.node.observation.outgoing_censored) && <span className="wb-card__flag">{card.node.observation.outgoing_censored ? 'граница выборки' : 'исходный клиент'}</span>}
+            <span className="wb-card__meta"><span>приоритет <span className="wb-mono">{formatScore(card.node.priority_score)}</span></span>
+              {(card.node.is_seed || card.node.observation.outgoing_censored) && <span>{card.node.observation.outgoing_censored ? 'граница выборки' : 'исходный клиент'}</span>}</span>
           </button>)}
         </MapViewport>
         : <div className="wb-outline">

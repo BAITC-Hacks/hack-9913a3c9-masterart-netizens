@@ -23,7 +23,6 @@
   .wb-clusterview .wb-map__viewport { height: 60dvh; }
   .wb-iconbutton { width: 44px; }
   .wb-zoom button { width: 44px; height: 44px; }
-  .wb-account__gid { font-size: 19px; }
   .wb-role__name { font-size: 26px; }
   .wb-flows { grid-template-columns: minmax(0, 1fr); }
   .wb-compare__row { grid-template-columns: minmax(0, 1fr) minmax(60px, 1fr) 40px; }
@@ -32,4 +31,11 @@
   .wb-modes button { grid-template-columns: 48px 1fr; align-items: center; min-height: 48px; }
   .wb-table--members th:nth-child(n + 4), .wb-table--members td:nth-child(n + 4) { display: none; }
   .wb-map__legend { font-size: 11px; }
+}
+
+/* На сенсорном экране самостоятельные ссылки-номера и строки подсказок — не меньше 44 px по высоте.
+   Ссылки внутри фразы (.wb-reset) остаются строчными: для них действует исключение для текста. */
+@media (max-width: 560px), (pointer: coarse) {
+  .wb-linklike:not(.wb-reset) { display: inline-flex; align-items: center; min-height: 44px; }
+  .wb-search__options li { min-height: 44px; }
 }
