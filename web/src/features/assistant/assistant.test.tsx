@@ -99,13 +99,25 @@ describe('ASSIST — запросы и безопасный показ', () => {
     expect(html).toContain('<strong>Гипотеза</strong>');
     expect(html).toContain('<code>9007199254740993</code>');
   });
-  it('ASSIST-13 оставляет видимые источники, точный gid и полный журнал', () => {
+  it('ASSIST-13 показывает понятные основания и условия без стены JSON', () => {
     const html = renderToStaticMarkup(<AnswerCard response={parseAssistantResponse(fixture())} onSelectNode={() => {}} />);
     expect(html).toContain(`Открыть счёт ${NEXT} на карте`);
     expect(html).toContain('Основания ответа · 1');
     expect(html).toContain('analysis.json');
-    expect(html).toContain('explain_node');
+    expect(html).toContain('Карточка счёта');
+    expect(html).toContain('Проверенные операции · 1');
+    expect(html).not.toContain('<pre');
+    expect(html).not.toContain('explain_node');
+    expect(html).not.toContain('in_degree');
     expect(html).toContain('Исходящие на границе не наблюдаются.');
+  });
+  it('ASSIST-20 сохраняет доказательства в данных, но не показывает сырые результаты', () => {
+    const response = parseAssistantResponse(fixture({tool_trace: [{name: 'get_node', result: {note: 'ONLY_API_DETAIL'}}]}));
+    const html = renderToStaticMarkup(<AnswerCard response={response} onSelectNode={() => {}} />);
+    expect(html).not.toContain('ONLY_API_DETAIL');
+    expect(html).not.toContain('<pre');
+    expect(JSON.stringify(response.tool_trace)).toContain('ONLY_API_DETAIL');
+    expect(html).toContain('Карточка счёта');
   });
   it('ASSIST-14 не теряет скрытые счета и не выполняет запрос при рендере', () => {
     const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
