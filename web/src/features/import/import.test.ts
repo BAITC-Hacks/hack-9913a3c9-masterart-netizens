@@ -1,4 +1,7 @@
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
 import {describe, expect, it} from 'vitest';
+import {ImportPanel, placeInRow, placeMany, readiness} from './ImportPanel';
 import {
   IMPORT_URL, ImportError, MAX_FILE_BYTES, MAX_TOTAL_BYTES, REQUIRED_FILES,
   parseImportResponse, selectFiles, toBase64, uploadDataset,
@@ -109,5 +112,74 @@ describe('IMPORT-CSV файлы CSV той же схемы', () => {
       return new Response(JSON.stringify({ok: true, dataset: DATASET}), {status: 200});
     });
     expect(Object.keys(JSON.parse(sent).files).sort()).toEqual(['edges.parquet', 'nodes.csv', 'transactions.csv']);
+  });
+});
+
+describe('IMPORT-ROWS кнопка «Загрузить / Заменить» в каждой строке', () => {
+  const file = (name: string, text = 'PAR1 data PAR1') => new File([text], name);
+  const full = () => ({
+    'nodes.parquet': file('nodes.parquet'),
+    'edges.parquet': file('edges.parquet'),
+    'transactions.parquet': file('transactions.csv', 'src,dst,date,sum_kzt\n'),
+  });
+
+  it('[IMPORT-ROWS] строка принимает только файл своей таблицы, parquet или CSV', () => {
+    for (const row of REQUIRED_FILES) {
+      const table = row.replace('.parquet', '');
+      for (const name of [`${table}.parquet`, `${table}.csv`]) {
+        const placed = placeInRow({}, row, file(name));
+        expect(placed.error).toBeNull();
+        expect(placed.rows[row]?.name).toBe(name);
+      }
+    }
+    const wrong = placeInRow({'nodes.parquet': file('nodes.parquet')}, 'nodes.parquet', file('edges.csv'));
+    expect(wrong.error).toBe('Строка nodes: нужен файл nodes.parquet или nodes.csv, а выбран «edges.csv».');
+    expect(wrong.rows['nodes.parquet']?.name).toBe('nodes.parquet');
+    expect(placeInRow({}, 'edges.parquet', file('edges.xlsx')).error).toContain('Строка edges');
+  });
+
+  it('[IMPORT-ROWS] замена одной строки сохраняет две другие', () => {
+    const rows = full();
+    const replacement = file('edges.csv', 'src,dst,sum_kzt,n_tx,depth\n');
+    const placed = placeInRow(rows, 'edges.parquet', replacement);
+    expect(placed.error).toBeNull();
+    expect(placed.rows['nodes.parquet']).toBe(rows['nodes.parquet']);
+    expect(placed.rows['transactions.parquet']).toBe(rows['transactions.parquet']);
+    expect(placed.rows['edges.parquet']).toBe(replacement);
+    expect(readiness(placed.rows).ok).toBe(true);
+  });
+
+  it('[IMPORT-ROWS] выбор нескольких файлов дополняет строки, прежние проверки остаются', () => {
+    const rows = full();
+    const merged = placeMany({'edges.parquet': rows['edges.parquet'], 'transactions.parquet': rows['transactions.parquet']}, [file('nodes.csv')]);
+    expect(Object.keys(merged.rows).sort()).toEqual([...REQUIRED_FILES].sort());
+    expect(merged.errors).toEqual([]);
+    expect(placeMany({}, [file('model.pkl')]).errors[0]).toContain('«model.pkl» не поддерживается');
+    const partial = readiness({'nodes.parquet': file('nodes.parquet')});
+    expect(!partial.ok && partial.errors).toEqual(['Не хватает файлов: edges.parquet, transactions.parquet.']);
+    const empty = readiness({...rows, 'nodes.parquet': file('nodes.parquet', '')});
+    expect(!empty.ok && empty.errors).toEqual(['Файл nodes.parquet пуст.']);
+  });
+
+  it('[IMPORT-ROWS] итоговый запрос несёт выбранные файлы с настоящими именами', async () => {
+    const placed = placeInRow(full(), 'edges.parquet', file('edges.csv', 'src,dst,sum_kzt,n_tx,depth\n'));
+    const ready = readiness(placed.rows);
+    expect(ready.ok).toBe(true);
+    if (!ready.ok) return;
+    let sent = '';
+    await uploadDataset(ready.files, async (_url, init) => {
+      sent = String(init.body);
+      return new Response(JSON.stringify({ok: true, dataset: DATASET}), {status: 200});
+    });
+    expect(Object.keys(JSON.parse(sent).files).sort()).toEqual(['edges.csv', 'nodes.parquet', 'transactions.csv']);
+  });
+
+  it('[IMPORT-ROWS] у каждой строки своя кнопка, итоговое действие одно', () => {
+    const html = renderToStaticMarkup(createElement(ImportPanel));
+    expect(html.match(/fi-row-button/g)).toHaveLength(3);
+    for (const table of ['nodes', 'edges', 'transactions']) expect(html).toContain(`aria-label="Загрузить файл ${table}"`);
+    expect(html.match(/Проверить и проанализировать/g)).toHaveLength(1);
+    expect(html).toContain('Выбрать три файла');
+    expect(html.match(/accept="\.parquet,\.csv"/g)).toHaveLength(4);
   });
 });

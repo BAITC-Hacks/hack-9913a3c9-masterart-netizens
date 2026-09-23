@@ -1,7 +1,7 @@
 import {useId, useState, type ChangeEvent} from 'react';
 import {
   FILE_COLUMNS, ImportError, MAX_FILE_BYTES, MAX_TOTAL_BYTES, MIB, REQUIRED_FILES,
-  selectFiles, uploadDataset, type ImportedDataset, type Selection,
+  selectFiles, slotOf, uploadDataset, type ImportedDataset, type PickedFile, type RequiredFile, type Selection,
 } from './api';
 import './import.css';
 
@@ -19,30 +19,83 @@ type State =
   | {status: 'done'; dataset: ImportedDataset}
   | {status: 'error'; errors: string[]};
 
+/** Выбранный файл каждой строки: nodes, edges, transactions. */
+export type Rows<T extends PickedFile> = Partial<Record<RequiredFile, T>>;
+
+const MISSING = 'Не хватает файлов';
 const number = (value: number) => value.toLocaleString('ru-RU');
+const tableOf = (row: RequiredFile) => row.replace('.parquet', '');
 
 function sizeText(bytes: number): string {
   return bytes < 1024 ? `${bytes} Б` : bytes < MIB ? `${Math.ceil(bytes / 1024)} КБ` : `${(bytes / MIB).toFixed(1)} МБ`;
 }
 
+function shown(name: string): string {
+  return name.length > 60 ? `${name.slice(0, 60)}…` : name;
+}
+
+/** Файл для одной строки: подходит только та же таблица, nodes.parquet или nodes.csv. Другие строки не меняются. */
+export function placeInRow<T extends PickedFile>(rows: Rows<T>, row: RequiredFile, file: T): {rows: Rows<T>; error: string | null} {
+  if (slotOf(file.name) !== row) {
+    const table = tableOf(row);
+    return {rows, error: `Строка ${table}: нужен файл ${table}.parquet или ${table}.csv, а выбран «${shown(file.name)}».`};
+  }
+  return {rows: {...rows, [row]: file}, error: null};
+}
+
+/** Несколько файлов сразу: каждый встаёт в строку своей таблицы, невыбранные строки сохраняются. */
+export function placeMany<T extends PickedFile>(rows: Rows<T>, files: readonly T[]): {rows: Rows<T>; errors: string[]} {
+  const picked = selectFiles(files);
+  const found = picked.ok ? picked.files : picked.found;
+  // Нехватка файлов считается по всем строкам вместе, поэтому здесь её не повторяем.
+  const errors = picked.ok ? [] : picked.errors.filter((error) => !error.startsWith(MISSING));
+  return {rows: {...rows, ...found}, errors};
+}
+
+/** Все выбранные строки проверяются теми же правилами, что и раньше: имена, размеры, нехватка файлов. */
+export function readiness<T extends PickedFile>(rows: Rows<T>): Selection<T> {
+  return selectFiles(REQUIRED_FILES.flatMap((row) => {
+    const file = rows[row];
+    return file ? [file] : [];
+  }));
+}
+
 /** Загрузка нового набора данных по схеме кейса: три файла parquet или CSV → проверка → новый анализ. */
 export function ImportPanel({onImported, onReload, className}: ImportPanelProps) {
   const inputId = useId();
-  const [selection, setSelection] = useState<Selection<File> | null>(null);
+  const [rows, setRows] = useState<Rows<File>>({});
+  const [pickErrors, setPickErrors] = useState<string[]>([]);
   const [state, setState] = useState<State>({status: 'idle'});
   const busy = state.status === 'uploading';
+  const ready = readiness(rows);
+  const anyChosen = REQUIRED_FILES.some((row) => rows[row]);
 
-  function choose(event: ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(event.target.files ?? []);
-    setSelection(picked.length ? selectFiles(picked) : null);
+  function chooseRow(row: RequiredFile, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Сброс позволяет выбрать тот же файл повторно после его правки.
+    event.target.value = '';
+    if (!file) return;
+    const placed = placeInRow(rows, row, file);
+    setRows(placed.rows);
+    setPickErrors(placed.error ? [placed.error] : []);
+    setState({status: 'idle'});
+  }
+
+  function chooseMany(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (!files.length) return;
+    const placed = placeMany(rows, files);
+    setRows(placed.rows);
+    setPickErrors(placed.errors);
     setState({status: 'idle'});
   }
 
   async function submit() {
-    if (!selection?.ok || busy) return;
+    if (!ready.ok || busy) return;
     setState({status: 'uploading'});
     try {
-      const dataset = await uploadDataset(selection.files);
+      const dataset = await uploadDataset(ready.files);
       setState({status: 'done', dataset});
       onImported?.(dataset);
     } catch (error) {
@@ -50,8 +103,9 @@ export function ImportPanel({onImported, onReload, className}: ImportPanelProps)
     }
   }
 
-  const found = selection ? (selection.ok ? selection.files : selection.found) : {};
-  const errors = state.status === 'error' ? state.errors : selection && !selection.ok ? selection.errors : [];
+  const errors = state.status === 'error'
+    ? state.errors
+    : [...new Set([...pickErrors, ...(anyChosen && !ready.ok ? ready.errors : [])])];
 
   return <section className={['fi-panel', className].filter(Boolean).join(' ')} aria-label="Импорт данных">
     <h2 className="fi-title">Новые данные</h2>
@@ -62,19 +116,25 @@ export function ImportPanel({onImported, onReload, className}: ImportPanelProps)
       заново строит роли, кластеры, приоритеты и три выгрузки.
     </p>
     <ul className="fi-files">
-      {REQUIRED_FILES.map((name) => {
-        const file = found[name];
-        return <li key={name} className={file ? 'is-chosen' : undefined}>
-          <span className="fi-name">{file ? file.name : name.replace('.parquet', '.parquet / .csv')}</span>
-          <span className="fi-columns">{FILE_COLUMNS[name]}</span>
+      {REQUIRED_FILES.map((row) => {
+        const file = rows[row];
+        const table = tableOf(row);
+        const rowId = `${inputId}-${table}`;
+        const action = file ? 'Заменить' : 'Загрузить';
+        return <li key={row} className={file ? 'is-chosen' : undefined}>
+          <span className="fi-name">{file ? file.name : row.replace('.parquet', '.parquet / .csv')}</span>
+          <span className="fi-columns">{FILE_COLUMNS[row]}</span>
           <span className="fi-state">{file ? sizeText(file.size) : 'не выбран'}</span>
+          <label className="wb-button fi-choose fi-row-button" htmlFor={rowId}>{action}</label>
+          <input id={rowId} className="fi-input" type="file" accept=".parquet,.csv" disabled={busy}
+            aria-label={`${action} файл ${table}`} onChange={(event) => chooseRow(row, event)} />
         </li>;
       })}
     </ul>
     <div className="fi-actions">
       <label className="wb-button fi-choose" htmlFor={inputId}>Выбрать три файла</label>
-      <input id={inputId} className="fi-input" type="file" accept=".parquet,.csv" multiple disabled={busy} onChange={choose} />
-      <button type="button" className="wb-button wb-button--primary" disabled={!selection?.ok || busy} onClick={submit}>
+      <input id={inputId} className="fi-input" type="file" accept=".parquet,.csv" multiple disabled={busy} onChange={chooseMany} />
+      <button type="button" className="wb-button wb-button--primary" disabled={!ready.ok || busy} onClick={submit}>
         Проверить и проанализировать
       </button>
     </div>
