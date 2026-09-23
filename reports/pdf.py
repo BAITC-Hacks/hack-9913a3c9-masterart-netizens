@@ -47,6 +47,9 @@ PAGE_W, PAGE_H = A4
 MARGIN_X, MARGIN_TOP, MARGIN_BOTTOM = 56, 62, 60
 WIDTH = PAGE_W - 2 * MARGIN_X
 
+# Одна короткая оговорка на справку: на первой странице счёта или на сводке, не на каждой странице.
+CAUTION = "Роль и приоритет — эвристические оценки для очереди проверки: не вероятность и не вывод о виновности."
+
 
 def _register_fonts() -> None:
     if REGULAR in pdfmetrics.getRegisteredFontNames():
@@ -172,7 +175,7 @@ def _key_figures(index, node: dict, styles: dict) -> Table:
         [P("Гипотеза роли", styles["figure_note"]), P("Опора правила роли", styles["figure_note"]), P("Приоритет проверки", styles["figure_note"])],
         [P(T(F.capital(index.label(node["role"]))), styles["figure"]), P(F.score(node["role_score"]), styles["figure"]), P(F.score(node["priority_score"]), styles["figure"])],
         [
-            P(f"основание {T(node['role_basis'])}", styles["figure_note"]),
+            P("", styles["figure_note"]),
             P("эвристика 0–1, не вероятность", styles["figure_note"]),
             P(T(queue), styles["figure_note"]),
         ],
@@ -215,7 +218,8 @@ def _flows(node: dict, styles: dict) -> list:
         if m.get("observation_margin_days") is not None:
             notes[-1] += f", до конца периода {F.count(m['observation_margin_days'], 'день', 'дня', 'дней')}"
         if m.get("value_window_days") is not None:
-            notes[-1] += f"; после поступления основной суммы — {F.count(m['value_window_days'], 'день', 'дня', 'дней')}"
+            # Порог накопления: 90% входящей суммы набралось к этой дате; это не значит, что большая часть пришла поздно.
+            notes[-1] += f"; 90% входящей суммы набралось за {F.count(m['value_window_days'], 'день', 'дня', 'дней')} до конца периода"
         notes[-1] += "."
     story.append(Spacer(1, 5))
     story.append(P(T(" ".join(notes)), styles["small"]))
@@ -318,13 +322,13 @@ def _account(index, node: dict, position: int, total: int, mode: str, styles: di
         P(T(f"{kind} · {F.count(node.get('depth', 0), 'шаг', 'шага', 'шагов')} от исходных клиентов · кластер {node.get('cluster_id', '—')}"), styles["sub"]),
         Spacer(1, 14),
         _key_figures(index, node, styles),
-        Spacer(1, 7),
-        P(
-            "Это гипотеза для проверки, а не вывод о виновности клиента. Опора правила показывает, насколько "
-            "выполнено правило роли; приоритет упорядочивает очередь проверки. Это разные величины, и ни одна не вероятность.",
-            styles["small"],
-        ),
     ]
+    if total == 1:
+        story += [Spacer(1, 7), P(T(CAUTION), styles["small"])]
+
+    # Что запросить дальше — главное действие для аналитика, поэтому сразу после ключевых цифр.
+    story += _section("Следующий запрос данных", styles)
+    story.append(P(T(node.get("next_request", "—")), styles["body"]))
 
     story += _section("Почему такая гипотеза", styles)
     story.append(P(T(node.get("evidence", "")), styles["body"]))
@@ -335,8 +339,8 @@ def _account(index, node: dict, position: int, total: int, mode: str, styles: di
     story.append(Spacer(1, 6))
     if alt:
         story.append(P(
-            f"<b>Ближайшая альтернатива: {T(index.label(alt['role']))} {F.score(alt['score'])}</b> — {T(alt.get('reason', ''))}. "
-            f"Основание {T(alt.get('basis', '—'))}.",
+            f"<b>Ближайшая альтернатива: {T(index.label(alt['role']))} {F.score(alt['score'])}</b> — "
+            f"{T(alt.get('reason', '').rstrip(' .'))}.",
             styles["body"],
         ))
     else:
@@ -357,9 +361,6 @@ def _account(index, node: dict, position: int, total: int, mode: str, styles: di
             story.append(item)
     else:
         story.append(P("Особых ограничений для этого счёта не отмечено; общие ограничения данных — в конце справки.", styles["body"]))
-
-    story += _section("Следующий запрос данных", styles)
-    story.append(P(T(node.get("next_request", "—")), styles["body"]))
 
     story += _section("Контрагенты", styles)
     story += _counterparty_tables(index, node, styles)
@@ -396,11 +397,7 @@ def _cover(index, nodes: list, mode: str, styles: dict, provenance: dict) -> lis
             P(f"№ {rank}" if rank else "—", styles["cell"]),
         ])
     story += [_table(rows, [20, WIDTH * 0.3, WIDTH * 0.27, WIDTH * 0.12, WIDTH * 0.14, WIDTH * 0.17 - 20]), Spacer(1, 10)]
-    story.append(P(
-        "Каждый счёт — отдельный раздел: гипотеза роли и её основание, ближайшая альтернатива, наблюдаемые потоки, "
-        "датированный путь, границы наблюдения и следующий запрос данных. Это гипотезы для проверки, а не выводы о виновности.",
-        styles["small"],
-    ))
+    story.append(P(T(CAUTION), styles["small"]))
     return story
 
 
