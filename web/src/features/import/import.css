@@ -1,0 +1,19 @@
+/* Панель наследует материалы просмотрщика; префикс fi- не задевает соседние части. */
+.fi-panel { display: grid; gap: 12px; min-width: 0; color: var(--wb-fg, #1c1a16); font: 400 14px/1.55 var(--wb-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif); overflow-wrap: anywhere; }
+.fi-title { margin: 0; font-size: 15px; font-weight: 600; }
+.fi-note { margin: 0; color: var(--wb-muted, #67645f); font-size: 13px; }
+.fi-files { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.fi-files li { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--wb-line, #ddd8cf); border-radius: 10px; }
+.fi-files li.is-chosen { border-color: var(--wb-gold-line, #b48540); }
+.fi-name, .fi-columns { font-family: var(--wb-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 12.5px; }
+.fi-columns, .fi-state { color: var(--wb-muted, #67645f); }
+.fi-state { font-size: 12.5px; }
+.fi-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fi-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fi-input:focus-visible + * { outline: none; }
+.fi-choose:focus-within, .fi-actions button:focus-visible { outline: 2px solid var(--wb-focus, #b48540); outline-offset: 2px; }
+.fi-actions button:disabled { opacity: .5; cursor: default; }
+.fi-progress, .fi-done p { margin: 0; }
+.fi-done { display: grid; gap: 8px; justify-items: start; }
+.fi-errors { margin: 0; padding: 8px 12px 8px 28px; border: 1px solid var(--wb-alert, #9a4636); border-radius: 10px; color: var(--wb-alert, #9a4636); font-size: 13px; }
+@media (max-width: 640px) { .fi-files li { grid-template-columns: 1fr; gap: 2px; } }
