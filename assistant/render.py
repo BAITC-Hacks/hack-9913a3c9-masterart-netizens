@@ -40,7 +40,7 @@ def observation(value: dict) -> list[str]:
 
 
 HELP = ("Доступны проверяемые запросы: «объясни выбранный счёт», «входящие связи», «топ 10», "
-        "«кластеры», «достижимы хотя бы от 2 выбранных счетов», «путь по датам», «каких данных не хватает». "
+        "«сравни два счёта», «кластеры», «достижимы хотя бы от 2 выбранных счетов», «путь по датам», «каких данных не хватает». "
         "Укажите точный gid или выберите счёт на карте. Для достижимости доступны режимы «без дат», "
         "«строго по дням» и «внутри одного дня». Помощник выполняет только чтение графа.")
 UNSUPPORTED = ("По этим данным нельзя установить личность клиента, виновность или происхождение конкретных денег. "
@@ -68,6 +68,44 @@ def render(result: dict) -> str:
             lines.append(f"Сильнейшая альтернатива: {ROLES[alt['role']]} ({number(alt['score'])}). {text(alt['reason'])}")
         lines.extend(observation(facts["observation"]))
         lines.append("Следующий запрос данных: " + text(facts["next_request"]))
+    elif kind == "comparison":
+        if len(facts["leaders"]) == 1:
+            lines.append("Из сравниваемых счетов раньше в вычисленной очереди проверки: " + link(facts["leaders"][0]) + ".")
+        else:
+            lines.append("Одинаковый максимальный приоритет у счетов: " + ", ".join(link(g) for g in facts["leaders"]) + ". Данные не задают предпочтение между ними.")
+        for node in facts["rows"]:
+            metrics = node["metrics"]
+            lines.append(row(node))
+            lines.append(f"- Наблюдаемые входящие: {number(metrics['in_kzt'])} KZT от {metrics['in_degree']} плательщиков; "
+                         f"исходящие: {number(metrics['out_kzt'])} KZT к {metrics['out_degree']} получателям.")
+            lines.extend(observation(node["observation"]))
+            lines.append("- Следующий запрос: " + text(node["next_request"]))
+        lines.append("Основание очереди: " + text(facts["priority_description"]))
+        lines.append("Более высокий приоритет означает порядок проверки, а не большую вероятность виновности.")
+    elif kind == "insights":
+        lines.append(facts["title"] + ".")
+        if facts["scope_gid"]:
+            lines.append("Счёт " + link(facts["scope_gid"]) + ": смотрим сохранённые примеры и отметки этого раздела.")
+        lines.append(text(facts["method"]))
+        for flag in facts["account_flags"]:
+            lines.append(text(flag["text"]))
+        for example in facts["examples"]:
+            lines.append("- " + text(example.get("text") or example.get("request") or "Пример доступен в основании ответа."))
+        if facts["section"] == "resilience":
+            strategies = {"priority": "по приоритету", "flow": "по обороту", "random": "случайно"}
+            for scenario in facts["scenarios"]:
+                strategy = strategies.get(scenario["strategy"], "по рассчитанному сценарию")
+                averaging = f" (среднее по {scenario['runs']} наборам)" if scenario["strategy"] == "random" else ""
+                lines.append(f"- Удаление {scenario['n_removed']} счетов {strategy}{averaging}: "
+                             f"компонент — {scenario['components']}, крупнейшая — {scenario['largest_component_nodes']} счетов; "
+                             f"достижимых остальных счетов от исходных — {scenario['reachable_non_seed']}.")
+            lines.append(f"Показано сценариев: {len(facts['scenarios'])} из {facts['total_scenarios']}.")
+        else:
+            lines.append(f"Показано сохранённых примеров: {len(facts['examples'])} из {facts['matching_examples']} подходящих; "
+                         f"в разделе сохранено {facts['saved_examples']} примеров по всей выборке.")
+            if not facts["examples"]:
+                lines.append("Подходящего сохранённого примера нет. Это не доказывает отсутствие паттерна: список примеров ограничен.")
+        lines.extend(text(item) for item in facts["limitations"])
     elif kind == "neighbors":
         direction = {"in": "входящие", "out": "исходящие", "both": "входящие и исходящие"}[facts["direction"]]
         lines.append(f"Счёт {link(facts['gid'])}: {direction} связи. Показано {facts['shown']} из {facts['total_edges']} наблюдаемых рёбер, по убыванию суммы.")

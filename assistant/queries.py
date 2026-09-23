@@ -23,6 +23,9 @@ MODES = {"static": "без учёта дат", "strict": "только боле�
 LIMITATION = "Достижимость не доказывает движение одних и тех же денег; роль — гипотеза, а не вывод о виновности."
 MAX_RESULTS = 30
 MAX_SOURCES = 100
+MAX_COMPARE = 5
+INSIGHT_SECTIONS = ("pass_through", "convergence", "bursts", "routes", "cycles", "splitting", "depth_profile", "resilience", "data_requests")
+MAX_INSIGHT_RESULTS = 10
 
 
 class QueryError(ValueError):
@@ -175,6 +178,16 @@ class GraphQueries:
                                      "priority_description": self.analysis["policy"]["priority_description"]}, gids,
                             [citation("/policy/priority_description", "Правило приоритета")] + [self.node_citation(g) for g in gids])
 
+    def compare(self, gids: list[str]) -> dict:
+        rows = [self.node(gid)["facts"] for gid in gids]
+        rows.sort(key=lambda node: (-amount(node["priority_score"]), int(node["gid"])))
+        leaders = [node["gid"] for node in rows if node["priority_score"] == rows[0]["priority_score"]]
+        return self._result("comparison", {
+            "rows": rows, "leaders": leaders,
+            "priority_description": self.analysis["policy"]["priority_description"],
+        }, [node["gid"] for node in rows],
+            [self.node_citation(gid) for gid in gids] + [citation("/policy/priority_description", "Правило приоритета")])
+
     def cluster_query(self, cluster_id: int | None, limit: int) -> dict:
         if cluster_id is not None and cluster_id not in self.clusters:
             raise QueryError("Кластер с таким номером отсутствует в выборке.")
@@ -276,11 +289,61 @@ class GraphQueries:
             citations.append(self.node_citation(gid))
         return self._result("gaps", facts, gids, citations)
 
+    def insights(self, section: str, gid: str | None, limit: int) -> dict:
+        data = self.analysis.get("insights")
+        if not isinstance(data, dict) or not isinstance(data.get("sections"), list):
+            raise QueryError("Дополнительные паттерны ещё не рассчитаны для этого набора данных.")
+        matches = [(i, item) for i, item in enumerate(data["sections"]) if item.get("key") == section]
+        if len(matches) != 1:
+            raise QueryError("Этот раздел дополнительных паттернов отсутствует в расчёте.")
+        pos, source = matches[0]
+        if gid is not None:
+            self.require_gid(gid)
+        if section == "resilience" and gid is not None:
+            raise QueryError("Сценарии устойчивости рассчитаны для всей выборки. Произвольное удаление выбранного счёта здесь не моделируется.")
+
+        def account_refs(value, key="", depth=0):
+            if depth > 12:
+                raise QueryError("Сохранённый пример паттерна слишком глубоко вложен.")
+            if isinstance(value, dict):
+                return [g for name, item in value.items() for g in account_refs(item, name, depth + 1)]
+            if isinstance(value, list):
+                return [g for item in value for g in account_refs(item, key, depth + 1)]
+            if key in {"gid", "src", "dst", "seed_gid", "gids", "route", "cycle", "payers", "removed_gids", "example_gids"}:
+                return [self.require_gid(value)]
+            return []
+
+        examples = source.get("examples", [])
+        candidates = [(i, example, account_refs(example)) for i, example in enumerate(examples)]
+        candidates = [(i, example, refs) for i, example, refs in candidates if gid is None or gid in refs]
+        chosen = candidates[:limit]
+        # Первые строки сопоставляют способы удаления при одном размере, включая случайную опору.
+        strategies = {"priority": 0, "flow": 1, "random": 2}
+        scenarios = sorted(source.get("scenarios", []), key=lambda item: (
+            item["n_removed"], strategies.get(item["strategy"], 3)))[:limit] if section == "resilience" else []
+        gids = ([gid] if gid else []) + [g for _, _, refs in chosen for g in refs] + account_refs(scenarios)
+        citations = [citation(f"/insights/sections/{pos}", source["title"])]
+        for i, _, refs in chosen:
+            item = citation(f"/insights/sections/{pos}/examples/{i}", "Сохранённый пример паттерна")
+            item["gids"] = list(dict.fromkeys(refs))
+            citations.append(item)
+        flags = [copy.deepcopy(flag) for flag in data.get("by_gid", {}).get(gid, []) if flag.get("section") == section] if gid else []
+        facts = {"section": section, "title": source["title"], "method": source["method"],
+                 "scope_gid": gid, "counts": copy.deepcopy(source.get("counts", {})),
+                 "saved_examples": len(examples), "matching_examples": len(candidates),
+                 "examples": [copy.deepcopy(example) for _, example, _ in chosen], "account_flags": flags,
+                 "scenarios": copy.deepcopy(scenarios), "total_scenarios": len(source.get("scenarios", [])),
+                 "limitations": copy.deepcopy(source.get("limitations", []))}
+        if flags:
+            citations.append(citation(f"/insights/by_gid/{gid}", "Наблюдаемые паттерны счёта", gid))
+        return self._result("insights", facts, gids, citations)
+
     def execute(self, name: str, args: dict) -> dict:
         validate_args(name, args, self)
         methods = {"get_node": self.node, "get_neighbors": self.neighbors, "rank_nodes": self.rank,
                    "get_clusters": self.cluster_query, "find_convergence": self.convergence,
-                   "get_temporal": self.temporal, "get_gaps": self.gaps}
+                   "get_temporal": self.temporal, "get_gaps": self.gaps, "compare_nodes": self.compare,
+                   "get_insights": self.insights}
         if name == "help":
             return self._result("help", {"topic": args["topic"]}, [], [])
         try:
@@ -298,6 +361,12 @@ def _schema(properties: dict) -> dict:
 GID_SCHEMA = {"type": "string", "pattern": r"^(0|-?[1-9][0-9]{0,18})$"}
 LIMIT_SCHEMA = {"type": "integer", "minimum": 1, "maximum": MAX_RESULTS}
 TOOL_SCHEMAS = {
+    "get_insights": ("Уже рассчитанные паттерны: циклы, маршруты, всплески, транзит, дробление, профиль глубины, устойчивость и запросы данных. gid=null — вся выборка. Сохранённые примеры ограничены и не являются полным поиском. Устойчивость только для всей выборки.",
+                     _schema({"section": {"type": "string", "enum": list(INSIGHT_SECTIONS)},
+                              "gid": {"type": ["string", "null"], "pattern": GID_SCHEMA["pattern"]},
+                              "limit": {"type": "integer", "minimum": 1, "maximum": MAX_INSIGHT_RESULTS}})),
+    "compare_nodes": ("Сравнить 2–5 явно указанных счетов: порядок проверки, наблюдаемые потоки, основания и пробелы. Это не оценка вины.",
+                      _schema({"gids": {"type": "array", "items": GID_SCHEMA, "minItems": 2, "maxItems": MAX_COMPARE}})),
     "get_node": ("Карточка точного счёта: роль-гипотеза, альтернатива, метрики и следующий запрос.", _schema({"gid": GID_SCHEMA})),
     "get_neighbors": ("Наблюдаемые входящие/исходящие рёбра одного счёта; лимит не меняет общее число.",
                       _schema({"gid": GID_SCHEMA, "direction": {"type": "string", "enum": ["in", "out", "both"]}, "limit": LIMIT_SCHEMA})),
@@ -330,9 +399,10 @@ def validate_args(name: str, args: dict, graph: GraphQueries) -> None:
             continue
         if key == "gid":
             graph.require_gid(value)
-        elif key == "sources":
-            if not isinstance(value, list) or len(value) > MAX_SOURCES:
-                raise QueryError("Список источников должен содержать не больше 100 точных идентификаторов.")
+        elif key in ("sources", "gids"):
+            low, high = (2, MAX_COMPARE) if key == "gids" else (0, MAX_SOURCES)
+            if not isinstance(value, list) or not low <= len(value) <= high:
+                raise QueryError(f"Список должен содержать от {low} до {high} точных идентификаторов.")
             for gid in value:
                 graph.require_gid(gid)
             if len(set(value)) != len(value):

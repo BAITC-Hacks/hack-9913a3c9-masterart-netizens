@@ -65,7 +65,7 @@ class RoleRepairTests(unittest.TestCase):
         self.assertEqual(primary.role, "terminal")
         self.assertEqual(primary.code, "terminal.small_outflow")
         self.assertGreaterEqual(primary.score, 0.5)
-        self.assertIn("лишь 4%", evidence_text(m, primary, alternatives[0]))
+        self.assertIn("исходящие — 4% наблюдаемых входящих", evidence_text(m, primary, alternatives[0]))
         # Отрицательный случай: ушло 30% — это уже не накопление.
         passed_on = node(in_degree=2, in_tiyn=4_500_000_00, out_degree=1, out_tiyn=1_350_000_00, in_tx=2, out_tx=1,
                          margin_days=15, value_margin_days=15)
