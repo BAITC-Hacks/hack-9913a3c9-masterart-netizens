@@ -115,7 +115,7 @@ def terminal(m: NodeMetrics) -> Candidate:
         return Candidate(
             "terminal",
             0.0,
-            f"дальше ушло {percent_ru(passed)} полученного (для накопления — не больше {percent_ru(max_share)})",
+            f"исходящие — {percent_ru(passed)} наблюдаемых входящих (для накопления — не больше {percent_ru(max_share)})",
             "terminal.outgoing",
         )
     need_payers, need_kzt = T("terminal", "min_payers"), T("terminal", "min_in_kzt")
@@ -126,11 +126,11 @@ def terminal(m: NodeMetrics) -> Candidate:
     if m.out_degree == 0:
         base, code = f"исходящих нет; плательщиков: {m.in_degree}, получено {kzt_ru(m.in_tiyn)}", "terminal.no_outgoing"
     else:
-        base = f"дальше ушло лишь {percent_ru(passed)}; плательщиков: {m.in_degree}, получено {kzt_ru(m.in_tiyn)}"
+        base = f"исходящие — {percent_ru(passed)} наблюдаемых входящих; плательщиков: {m.in_degree}, получено {kzt_ru(m.in_tiyn)}"
         code = "terminal.small_outflow"
     if margin < min_margin:
         score = min(0.4999, 0.5 * min(1.0, accumulation) * margin / min_margin)
-        return Candidate("terminal", score, f"{base}; после поступления {value_share} суммы {margin} дн. (нужно {min_margin})", code)
+        return Candidate("terminal", score, f"{base}; окно после {value_share} суммы — {margin} дн. (нужно {min_margin})", code)
     if accumulation < 1:
         return Candidate("terminal", min(0.4999, 0.5 * accumulation), f"{base}: ниже порога накопления", code)
     amount = min(1.0, max(0.0, (m.in_tiyn / 100 - need_kzt) / (T("terminal", "saturation_in_kzt") - need_kzt)))
@@ -139,7 +139,7 @@ def terminal(m: NodeMetrics) -> Candidate:
     if passed:
         # Чем больше ушло дальше, тем слабее опора накопления; на пределе 20% остаётся порог 0,5.
         score = 0.5 + (score - 0.5) * (1 - passed / max_share)
-    return Candidate("terminal", score, f"{base}; наблюдение {margin} дн. после поступления {value_share} суммы", code)
+    return Candidate("terminal", score, f"{base}; окно после {value_share} суммы — {margin} дн.", code)
 
 
 def coordinator(m: NodeMetrics) -> Candidate:
@@ -285,7 +285,7 @@ def warnings_for(m: NodeMetrics) -> list:
     if m.out_degree == 0 and m.margin_days is not None and m.margin_days < min_margin and not m.outgoing_censored:
         notes.append(f"Последнее поступление за {m.margin_days} дн. до конца периода: окно наблюдения короткое.")
     if observation_gap(m) == SHORT_VALUE_WINDOW:
-        notes.append(f"Основная сумма поступила за {m.window_days} дн. до конца периода: окно наблюдения короткое.")
+        notes.append(f"90% суммы набралось за {m.window_days} дн. до конца периода: окно наблюдения короткое.")
     return notes
 
 
@@ -308,7 +308,7 @@ def next_request(m: NodeMetrics, role: str) -> str:
     if gap == SHORT_WINDOW:
         return f"Запросить операции счёта после конца периода: после последнего поступления прошло лишь {m.margin_days} дн."
     if gap == SHORT_VALUE_WINDOW:
-        return f"Запросить операции счёта после конца периода: после поступления основной суммы прошло лишь {m.window_days} дн."
+        return f"Запросить операции счёта после конца периода: 90% суммы набралось лишь за {m.window_days} дн. до его конца."
     if m.is_seed:
         return "Запросить входящие переводы исходного клиента, не попавшие в выгрузку."
     if m.out_tiyn > m.in_tiyn * T("transit", "pass_through_high"):
