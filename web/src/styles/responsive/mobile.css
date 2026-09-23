@@ -14,7 +14,8 @@
   .wb-map__viewport { flex: none; height: min(62dvh, 520px); }
   .wb-top { padding: 10px 16px; }
   .wb-top__search { flex-basis: 100%; max-width: none; order: 3; }
-  .wb-clusterview { overflow: visible; padding: 16px; }
+  .wb-clusterview { overflow-x: auto; overflow-y: visible; padding: 16px; }
+  .wb-outline { overflow-x: auto; }
 }
 @media (max-width: 560px) {
   .wb-button, .wb-segmented button, .wb-iconbutton { min-height: 44px; }

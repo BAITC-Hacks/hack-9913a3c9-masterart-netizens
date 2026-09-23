@@ -33,8 +33,9 @@ export function MapPanel({index, hood, mode, onSelect}: {index: GraphIndex; hood
   useLayoutEffect(() => {
     const el = view.viewport.current;
     if (!el) return;
-    setViewportWidth(el.clientWidth);
-    const observer = new ResizeObserver(() => setViewportWidth(el.clientWidth));
+    // offsetWidth не зависит от появления полосы прокрутки, поэтому число колонок не «дрожит».
+    setViewportWidth(el.offsetWidth);
+    const observer = new ResizeObserver(() => setViewportWidth(el.offsetWidth));
     observer.observe(el);
     return () => observer.disconnect();
   }, [view.viewport, view.mode]);

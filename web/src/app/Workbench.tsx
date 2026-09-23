@@ -21,14 +21,14 @@ const unknownGid = (gid: string, index: GraphIndex) => `Счёт ${gid} из с�
 function initialState(index: GraphIndex) {
   const hash = readHash();
   const fallback = index.analysis.top_nodes.find(top => index.byGid.has(top.gid))?.gid ?? index.gids[0] ?? null;
-  if (hash.gid && !index.byGid.has(hash.gid)) return {gid: fallback, mode: hash.mode ?? 'structural', notice: unknownGid(hash.gid, index)};
-  return {gid: hash.gid ?? fallback, mode: hash.mode ?? 'structural', notice: null as string | null};
+  if (hash.gid && !index.byGid.has(hash.gid)) return {gid: fallback, mode: hash.mode, notice: unknownGid(hash.gid, index)};
+  return {gid: hash.gid ?? fallback, mode: hash.mode, notice: null as string | null};
 }
 
 export function Workbench({index, warnings}: {index: GraphIndex; warnings: string[]}) {
   const initial = useMemo(() => initialState(index), [index]);
   const [selected, setSelected] = useState<string | null>(initial.gid);
-  const [mode, setModeState] = useState<Mode>(initial.mode as Mode);
+  const [mode, setModeState] = useState<Mode>(initial.mode);
   const [notice, setNotice] = useState<string | null>(initial.notice);
   const [cluster, setCluster] = useState<number | null>(null);
   const [railTab, setRailTab] = useState<RailTab>('leads');
@@ -46,7 +46,7 @@ export function Workbench({index, warnings}: {index: GraphIndex; warnings: strin
   useEffect(() => {
     const onHash = () => {
       const hash = readHash();
-      if (hash.mode) setModeState(hash.mode);
+      setModeState(hash.mode);
       if (!hash.gid) return;
       if (index.byGid.has(hash.gid)) { setSelected(hash.gid); setNotice(null); setCluster(null); }
       else setNotice(unknownGid(hash.gid, index));

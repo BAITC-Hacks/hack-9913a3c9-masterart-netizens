@@ -58,7 +58,7 @@ export function MapFrame({view, label, children}: {view: MapView; label: string;
 export function MapTools({view}: {view: MapView}) {
   return <div className="wb-map__tools">
     <div className="wb-segmented wb-segmented--compact" role="group" aria-label="Представление">
-      {(['map', 'outline'] as const).map(value => <button type="button" key={value} className={view.mode === value ? 'is-active' : undefined}
+      {(['map', 'outline'] as const).map(value => <button type="button" key={value} data-view={value} className={view.mode === value ? 'is-active' : undefined}
         aria-pressed={view.mode === value} onClick={() => view.setMode(value)}>
         <Icon name={value === 'map' ? 'graph' : 'tasks'} size={15} />{value === 'map' ? 'Карта' : 'Список'}</button>)}
     </div>

@@ -1,0 +1,27 @@
+{
+  "entry": "http://127.0.0.1:8765/",
+  "viewports": [390, 1024, 1440],
+  "themes": ["light", "dark"],
+  "states": [
+    {"id": "rest", "reach": {"param": "theme=light"}, "expect": {"visible": ".wb-account__gid"}},
+    {"id": "lead-2", "reach": {"click": ".wb-leads li:nth-child(2) .wb-lead"}, "expect": {"visible": ".wb-lead.is-selected"}},
+    {"id": "search-not-found", "reach": {"steps": [{"click": ".wb-search__field input"}, {"type": {"selector": ".wb-search__field input", "text": "111111111111111111"}}]}, "expect": {"visible": ".wb-search.is-not_found .wb-search__panel.is-open"}},
+    {"id": "search-partial", "reach": {"steps": [{"click": ".wb-search__field input"}, {"type": {"selector": ".wb-search__field input", "text": "0000"}}]}, "expect": {"visible": ".wb-search__options"}},
+    {"id": "outline", "reach": {"click": "[data-view='outline']"}, "expect": {"visible": ".wb-outline"}},
+    {"id": "clusters", "reach": {"click": ".wb-rail__tabs [role='tab']:nth-child(2)"}, "expect": {"visible": ".wb-clusters"}},
+    {"id": "cluster-open", "reach": {"steps": [{"click": ".wb-rail__tabs [role='tab']:nth-child(2)"}, {"click": ".wb-clusters li:first-child .wb-cluster"}]}, "expect": {"visible": ".wb-clusterview"}},
+    {"id": "mode-strict", "reach": {"click": ".wb-modes button:nth-child(2)"}, "expect": {"visible": ".wb-modes button.is-active"}},
+    {"id": "rule-open", "reach": {"click": ".wb-role .wb-disclosure > summary"}, "expect": {"visible": ".wb-rule"}},
+    {"id": "about-open", "reach": {"click": ".wb-about summary"}, "expect": {"visible": ".wb-about__panel"}},
+    {"id": "fullscreen", "reach": {"click": ".wb-zoom button:last-child"}, "expect": {"visible": ".wb-map.is-fullscreen"}},
+    {"id": "missing-file", "reach": {"param": "analysis=/out/absent.json"}, "expect": {"text": "Файл анализа не найден"}}
+  ],
+  "transitions": [
+    {"id": "search-panel", "from": "rest", "trigger": {"type": {"selector": ".wb-search__field input", "text": "0000"}},
+      "expect": {"targets": [".wb-search__panel"], "duration_ms": [150, 200], "easing": "ease-lux", "props": ["opacity", "transform"]}}
+  ],
+  "flows": [
+    {"id": "cluster-to-account", "steps": [{"click": ".wb-rail__tabs [role='tab']:nth-child(2)"}, {"click": ".wb-clusters li:first-child .wb-cluster"}, {"click": ".wb-table--members tbody tr:first-child .wb-linklike"}], "end": {"visible": ".wb-map__viewport"}},
+    {"id": "fullscreen-escape", "steps": [{"click": ".wb-zoom button:last-child"}, {"wait": 200}, {"press": "Escape"}], "end": {"hidden": ".wb-map.is-fullscreen"}}
+  ]
+}

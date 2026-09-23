@@ -1,5 +1,7 @@
 /* Каркас: одна тихая строка сверху, три колонки на широком экране; колонки прокручиваются независимо. */
-.wb-app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+.wb-app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+/* Ширину страницы задаёт окно, а не содержимое: карта и таблицы прокручиваются внутри своих рамок. */
+.wb-main, .wb-main > *, .wb-map, .wb-map__viewport { min-width: 0; }
 .wb-main { display: grid; grid-template-columns: minmax(280px, 316px) minmax(0, 1fr) minmax(360px, 420px); min-height: 0; }
 .wb-rail { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: auto; padding: 18px 14px 40px 18px; border-right: 1px solid var(--wb-line); }
 .wb-center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }

@@ -6,7 +6,7 @@
 .wb-map__title { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: 13px; color: var(--wb-soft); font-variant-numeric: tabular-nums; }
 .wb-map__cycles { display: inline-flex; align-items: center; gap: 4px; color: var(--wb-cycle); }
 .wb-map__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.wb-map__viewport { flex: 1; min-height: 320px; overflow: auto; border: 1px solid var(--wb-line); border-radius: 16px; background: var(--wb-sunken); overscroll-behavior: contain; touch-action: none; cursor: grab; }
+.wb-map__viewport { flex: 1; width: 100%; max-width: 100%; min-height: 320px; overflow: auto; border: 1px solid var(--wb-line); border-radius: 16px; background: var(--wb-sunken); overscroll-behavior: contain; touch-action: none; cursor: grab; }
 .wb-map__viewport.is-panning { cursor: grabbing; user-select: none; }
 .wb-map__viewport:focus-visible { outline-offset: -2px; }
 .wb-map__canvas { position: relative; }

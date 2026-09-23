@@ -11,6 +11,12 @@ export type AnalysisState =
 
 export const ANALYSIS_URL = '/out/analysis.json';
 
+/** Для проверки состояний: ?analysis=/out/<файл> — только внутри /out/, другие адреса игнорируются. */
+function analysisUrl(): string {
+  const override = new URLSearchParams(window.location.search).get('analysis');
+  return override && /^\/out\/[\w.-]+\.json$/.test(override) ? override : ANALYSIS_URL;
+}
+
 export function useAnalysis(): AnalysisState {
   const [state, setState] = useState<AnalysisState>({status: 'loading'});
   useEffect(() => {
@@ -18,7 +24,7 @@ export function useAnalysis(): AnalysisState {
     (async () => {
       let response: Response;
       try {
-        response = await fetch(ANALYSIS_URL, {cache: 'no-store'});
+        response = await fetch(analysisUrl(), {cache: 'no-store'});
       } catch {
         if (!cancelled) setState({status: 'missing', detail: 'Локальный сервер не ответил.'});
         return;
