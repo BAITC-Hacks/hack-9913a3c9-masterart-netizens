@@ -16,12 +16,12 @@ export function LeadsRail({index, selected, tab, onTab, onSelect, openCluster, o
   const {top_nodes, clusters} = index.analysis;
   const orderedClusters = [...clusters].sort((a, b) => b.n_nodes - a.n_nodes || a.cluster_id - b.cluster_id);
   return <nav className="wb-rail" aria-label="Очередь и кластеры">
-    <div className="wb-segmented wb-rail__tabs" role="tablist" aria-label="Список">
+    <div className="wb-rail__head"><div className="wb-segmented wb-rail__tabs" role="tablist" aria-label="Список">
       <button type="button" role="tab" aria-selected={tab === 'leads'} className={tab === 'leads' ? 'is-active' : undefined} onClick={() => onTab('leads')}>
         Очередь <span className="wb-count">{top_nodes.length}</span></button>
       <button type="button" role="tab" aria-selected={tab === 'clusters'} className={tab === 'clusters' ? 'is-active' : undefined} onClick={() => onTab('clusters')}>
         Кластеры <span className="wb-count">{clusters.length}</span></button>
-    </div>
+    </div></div>
     {tab === 'leads'
       ? <ol className="wb-leads" aria-label="Очередь проверки по приоритету">
         {top_nodes.map(top => <li key={`${top.rank}-${top.gid}`}>

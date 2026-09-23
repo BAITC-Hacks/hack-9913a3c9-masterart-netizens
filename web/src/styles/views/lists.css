@@ -1,5 +1,8 @@
 /* Очередь, кластеры, список окрестности и таблица участников кластера. Строка очереди — две линии. */
-.wb-rail__tabs { align-self: flex-start; }
+/* Переключатель «Очередь / Кластеры» остаётся на месте, пока под ним прокручивается список. Полоса
+   непрозрачная, в цвет страницы, и перекрывает отступы панели: строки уходят под неё целиком, без
+   просвечивания и без затемнения текста. */
+.wb-rail__head { position: sticky; top: 0; z-index: 2; margin: -18px -14px 0 -18px; padding: 18px 14px 10px 18px; border-bottom: 1px solid var(--wb-line); background: var(--wb-bg); }
 .wb-leads, .wb-clusters { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
 .wb-lead, .wb-cluster { width: 100%; border: 0; border-radius: 12px; background: transparent; text-align: left; cursor: pointer; transition: background-color var(--wb-fast) var(--wb-ease), box-shadow var(--wb-fast) var(--wb-ease); }
 .wb-lead { display: grid; grid-template-columns: 22px 16px minmax(0, 1fr) auto; grid-template-areas: "rank glyph gid score" ". . why why"; align-items: center; column-gap: 8px; row-gap: 3px; padding: 10px 10px 10px 4px; }
@@ -26,8 +29,13 @@
 .wb-table .is-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .wb-table tr.is-selected td { background: var(--wb-gold-wash); }
 .wb-table .wb-flag { margin-left: 8px; }
-.wb-tx summary { color: var(--wb-soft); cursor: pointer; white-space: nowrap; }
-.wb-tx ul { display: grid; gap: 2px; margin: 6px 0 0; padding: 0; list-style: none; }
+.wb-tx__toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; margin: -4px 0; padding: 0; border: 0; background: transparent; font: inherit; color: var(--wb-soft); white-space: nowrap; cursor: pointer; transition: color var(--wb-fast) var(--wb-ease); }
+.wb-tx__toggle:hover, .wb-tx__toggle[aria-expanded="true"] { color: var(--wb-fg); }
+.wb-tx__toggle::after { content: ""; width: 5px; height: 5px; margin-top: -3px; border-right: 1.3px solid currentColor; border-bottom: 1.3px solid currentColor; transform: rotate(45deg); transition: transform var(--wb-normal) var(--wb-ease); }
+.wb-tx__toggle[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
+.wb-table tr.is-expanded td { border-bottom-color: transparent; }
+.wb-tx-row td { padding: 0 10px 12px; }
+.wb-tx { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 3px 20px; margin: 0; padding: 0; list-style: none; }
 .wb-tx li { display: grid; grid-template-columns: 72px 14px auto; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .wb-cycles { display: grid; gap: 8px; margin: 0; padding-left: 18px; font-size: 13px; }
 .wb-cycles li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
