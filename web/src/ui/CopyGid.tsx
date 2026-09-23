@@ -31,7 +31,7 @@ export function CopyGid({gid}: {gid: string}) {
   return <span className="wb-copy">
     <button type="button" className="wb-copy__button" data-copied={copied || undefined} onClick={copy}
       aria-label={copied ? 'gid скопирован' : 'Копировать gid'} title={copied ? 'Скопировано' : 'Копировать gid'}>
-      <Icon key={copied ? 'check' : 'copy'} name={copied ? 'check' : 'copy'} size={17} />
+      <Icon key={copied ? 'check' : 'copy'} name={copied ? 'check' : 'copy'} size={20} />
     </button>
     <span className="wb-visually-hidden" role="status">{copied ? 'gid скопирован' : ''}</span>
     {failed && <span className="wb-copy__fail" role="alert">Выделите gid и скопируйте вручную</span>}

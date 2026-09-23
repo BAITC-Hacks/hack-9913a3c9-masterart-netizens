@@ -16,7 +16,7 @@ function pathFor(name: IconName) {
     case 'check': return <path d="m5 12 4 4L19 6" />;
     case 'chevron': return <path d="m9 6 6 6-6 6" />;
     case 'close': return <path d="m6 6 12 12M18 6 6 18" />;
-    case 'copy': return <><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" /><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" /></>;
+    case 'copy': return <><rect x="8.75" y="7" width="10" height="13.5" rx="2.5" /><path d="M15.25 7V5.5a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2V15a2 2 0 0 0 2 2h1.5" /></>;
     case 'cycle': return <><path d="M19.5 12a7.5 7.5 0 0 1-12.9 5.2" /><path d="M4.5 12a7.5 7.5 0 0 1 12.9-5.2" /><path d="M17.8 3.6v3.6h-3.6M6.2 20.4v-3.6h3.6" /></>;
     case 'download': return <><path d="M12 3v12" /><path d="m7 10 5 5 5-5M5 21h14" /></>;
     case 'expand': return <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />;
