@@ -39,13 +39,16 @@ def summarize(assignment: dict, edges: list, metrics: dict, roles: dict, priorit
     for gid, cid in assignment.items():
         members.setdefault(cid, []).append(gid)
     internal = Counter()
-    internal_degree = Counter()
+    neighbours: dict = {}
     for e in edges:
         cid = assignment[e["src"]]
         if assignment[e["dst"]] == cid:
             internal[cid] += e["tiyn"]
-            internal_degree[e["src"]] += 1
-            internal_degree[e["dst"]] += 1
+            if e["src"] != e["dst"]:
+                # Встречные переводы A→B и B→A — одна связь между двумя счетами, а не две.
+                neighbours.setdefault(e["src"], set()).add(e["dst"])
+                neighbours.setdefault(e["dst"], set()).add(e["src"])
+    internal_degree = Counter({g: len(s) for g, s in neighbours.items()})
     rows = []
     for cid in sorted(members):
         gids = sorted(members[cid])

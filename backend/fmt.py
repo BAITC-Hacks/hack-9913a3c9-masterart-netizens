@@ -26,7 +26,11 @@ def kzt_ru(tiyn: int) -> str:
 
 
 def score_ru(value: float) -> str:
-    return f"{value:.2f}".replace(".", ",")
+    """Опора с двумя знаками; значение ниже порога 0,5 не округляется до порога."""
+    shown = f"{value:.2f}"
+    if value < 0.5 and shown == "0.50":
+        shown = "0.49"
+    return shown.replace(".", ",")
 
 
 def percent_ru(ratio: float) -> str:

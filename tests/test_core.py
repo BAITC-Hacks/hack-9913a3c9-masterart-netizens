@@ -245,9 +245,11 @@ class RoleMotifTests(unittest.TestCase):
         self.assertIn("исходящие не собирались", b2["evidence"])
 
     def test_core_roles_isolated_seed_kept(self):
+        # R2: у счёта без переводов «сигналов нет» — не довод, поэтому опора 0, а не 1.
         iso = self.role("s_iso")
         self.assertEqual(iso["role"], "peripheral")
-        self.assertEqual(iso["role_score"], 1.0)
+        self.assertEqual(iso["role_score"], 0.0)
+        self.assertEqual(iso["role_basis"], "peripheral.no_transfers")
         self.assertTrue(iso["is_seed"])
         self.assertIn("нет переводов", iso["evidence"])
 
@@ -265,7 +267,9 @@ class RoleMotifTests(unittest.TestCase):
         self.assertLess(ramp(6, 7, 20), 0.5)
         self.assertEqual(ramp(40, 7, 20), 1.0)
         self.assertEqual(transit(metrics(out_tiyn=80_00)).score, 0.5)
-        self.assertEqual(transit(metrics()).score, 1.0)
+        self.assertEqual(transit(metrics(in_tx=3, out_tx=3)).score, 1.0)
+        # R5: одна пара переводов не даёт полной опоры транзита.
+        self.assertLess(transit(metrics()).score, 0.9)
         self.assertLess(transit(metrics(out_tiyn=125_00)).score, 0.5)
 
     def test_core_roles_tie_uses_precedence(self):

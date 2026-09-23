@@ -26,6 +26,8 @@ REQUIRED_COLUMNS = {
 INT64_MIN = -(2**63)
 INT64_MAX = 2**63 - 1
 MAX_REPORTED = 5
+# Допуск двоичной погрешности суммы, в тиынах: миллионная доля тиына — заведомо не деньги.
+FLOAT_NOISE_TIYN = Decimal("0.000001")
 
 
 class InputValidationError(ValueError):
@@ -65,7 +67,12 @@ def to_tiyn(value, where: str) -> int:
         raise InputValidationError(f"{where}: сумма «{value}» не является конечным числом")
     tiyn = exact * 100
     if tiyn != tiyn.to_integral_value():
-        raise InputValidationError(f"{where}: сумма {value} точнее одного тиына")
+        nearest = tiyn.to_integral_value()
+        # Сумма, накопленная в двоичной арифметике (231398.71000000002), отличается от целых
+        # тиынов на миллиардные доли: это погрешность представления, а не лишняя точность.
+        if not (isinstance(value, float) and abs(tiyn - nearest) <= FLOAT_NOISE_TIYN):
+            raise InputValidationError(f"{where}: сумма {value} точнее одного тиына")
+        tiyn = nearest
     return int(tiyn)
 
 

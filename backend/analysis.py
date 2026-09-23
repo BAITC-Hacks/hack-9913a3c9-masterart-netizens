@@ -110,6 +110,7 @@ def build_analysis(data: Dataset, temporal_fn=None) -> dict:
         m = metrics[gid]
         role, alternatives = chosen[gid]
         pass_through = m.pass_through
+        forward_share = m.forward_share
         nodes.append(
             {
                 "gid": str(gid),
@@ -117,6 +118,7 @@ def build_analysis(data: Dataset, temporal_fn=None) -> dict:
                 "is_seed": m.is_seed,
                 "role": role.role,
                 "role_score": round(role.score, 4),
+                "role_basis": role.code,
                 "cluster_id": assignment[gid],
                 "priority_score": priority[gid]["score"],
                 "evidence": evidence_text(m, role, alternatives[0]),
@@ -130,13 +132,16 @@ def build_analysis(data: Dataset, temporal_fn=None) -> dict:
                     "seed_in_count": m.seed_in_count,
                     "seed_out_count": m.seed_out_count,
                     "pass_through": None if pass_through is None else round(pass_through, 4),
+                    "forward_share": None if forward_share is None else round(forward_share, 4),
+                    "counterparties": m.counterparties,
                     "seed_links": m.seed_links,
                     "last_in_date": m.last_in_date.isoformat() if m.last_in_date else None,
                     "observation_margin_days": m.margin_days,
+                    "value_window_days": m.value_margin_days,
                 },
                 "observation": {"outgoing_censored": m.outgoing_censored, "warnings": warnings_for(m)},
                 "role_alternatives": [
-                    {"role": c.role, "score": round(c.score, 4), "reason": c.reason} for c in alternatives
+                    {"role": c.role, "score": round(c.score, 4), "reason": c.reason, "basis": c.code} for c in alternatives
                 ],
                 "next_request": next_request(m, role.role),
                 "priority_families": priority[gid]["families"],
