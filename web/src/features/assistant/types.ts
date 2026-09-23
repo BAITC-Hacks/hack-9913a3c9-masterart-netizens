@@ -17,6 +17,7 @@ export interface AssistantCitation {
 
 export interface AssistantResponse {
   answer_md: string;
+  answer_rich_md?: string;
   nodes: string[];
   intent: string;
   args: JsonObject;

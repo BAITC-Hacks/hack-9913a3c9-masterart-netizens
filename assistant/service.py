@@ -12,6 +12,7 @@ from .config import load_config, DEFAULT_EFFORT, MODEL_EFFORTS
 from .conversation import dataset_fingerprint as fingerprint_for, referenced_gids, validate_history
 from .queries import GraphQueries, MAX_SOURCES, MAX_INSIGHT_RESULTS, QueryError, ROLES
 from .render import UNSUPPORTED, render
+from .presentation import render_rich
 
 NO_KEY = "Ключ модели не настроен. Выполнен локальный разбор по правилам, без языковой модели."
 API_FAILED = "Запрос к модели не завершён или её операция отклонена. Использован локальный разбор по правилам."
@@ -103,7 +104,9 @@ def _rules(question: str, selected: list[str], mentioned: list[str], graph: Grap
         return "get_neighbors", {"gid": gid, "direction": direction, "limit": limit}
     if re.search(r"путь|пути|по дат|по дням|времен|temporal|witness|path", q) and gid:
         return "get_temporal", {"gid": gid, "mode": "same_day" if _mode(q) == "same_day" else "strict"}
-    if re.search(r"\bтоп|\btop|ранжир|рейтинг|кого.*провер|приоритет.*перв|rank", q):
+    if re.search(r"\bтоп|\btop|ранжир|рейтинг|кого.*провер|приоритет.*перв|rank", q) or (
+        not mentioned and re.search(r"(?:покажи|найди|список|первые).*(?:консолид|транзит|распредел|конечн|координатор|перифер|приоритет)", q)
+    ):
         role = next((r for r in ROLES if r in q), None)
         stems = {"консолид": "consolidator", "транзит": "transit", "распредел": "distributor",
                  "конечн": "terminal", "координатор": "coordinator", "перифер": "peripheral"}
@@ -225,7 +228,7 @@ def answer(question, selection, analysis, *, api_key=None, model=None, transport
             return _base("Эта модель недоступна в настройках помощника. Выберите модель из списка.", intent="invalid")
         if not isinstance(chosen_effort, str) or chosen_effort not in MODEL_EFFORTS[chosen_model]:
             return _base("Этот уровень рассуждения не поддерживается выбранной моделью.", intent="invalid")
-        if key and (key in question or key == chosen_model):
+        if key and (key in question or key == chosen_model or any(key in turn["question"] for turn in previous)):
             return _base("В запросе обнаружено значение серверной конфигурации. Удалите его из текста.", intent="invalid")
         warnings = []
         parser = "rules"
@@ -246,13 +249,16 @@ def answer(question, selection, analysis, *, api_key=None, model=None, transport
             name, args = _rules(question, selected, mentioned, graph)
             result = graph.execute(name, args)
         message = render(result)
+        rich_message = render_rich(result)
         if parser == "rules":
             message = "Локальный разбор по правилам (без языковой модели).\n\n" + message
+            rich_message = "Локальный разбор по правилам (без языковой модели).\n\n" + rich_message
         warnings.extend(result["warnings"])
         response = {"answer_md": message, "nodes": result["nodes"], "intent": result["kind"], "args": args,
                     "parser": parser, "warnings": list(dict.fromkeys(warnings)), "citations": result["citations"],
                     "tool_trace": [{"name": name, "args": copy.deepcopy(args), "result": result}],
-                    "dataset_fingerprint": fingerprint, "history_turns_used": len(previous)}
+                    "dataset_fingerprint": fingerprint, "history_turns_used": len(previous),
+                    "answer_rich_md": rich_message}
         if model_used is not None:
             response["model"] = model_used
             response["effort"] = chosen_effort

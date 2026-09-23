@@ -80,6 +80,7 @@ export function parseAssistantResponse(value: unknown): AssistantResponse {
     || (value.model !== undefined && typeof value.model !== 'string')) return malformed();
   return {
     answer_md: value.answer_md,
+    ...(typeof value.answer_rich_md === 'string' ? { answer_rich_md: value.answer_rich_md } : {}),
     nodes: [...new Set(value.nodes.map(nodeGid))],
     intent: value.intent,
     args: json(value.args) as JsonObject,

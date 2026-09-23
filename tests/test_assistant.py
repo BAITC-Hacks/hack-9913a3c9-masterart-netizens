@@ -163,6 +163,13 @@ class AssistantTests(unittest.TestCase):
         self.assertEqual(selected["args"]["cluster_id"], 1)
         self.assertEqual(selected["nodes"], [I])
 
+    def test_F07_no_key_natural_ranking_phrase_preserves_role_filter(self):
+        result = self.ask("Покажи 3 консолидатора с наибольшим приоритетом", [A])
+        self.assertEqual(result["parser"], "rules")
+        self.assertEqual(result["intent"], "rank")
+        self.assertEqual(result["args"], {"limit": 3, "role": "consolidator"})
+        self.assertEqual(result["nodes"], [X])
+
     def test_F07_compare_uses_current_facts_and_explains_order(self):
         result = self.ask(f"Сравни счета {Y} и {X}")
         self.assertEqual(result["intent"], "comparison")
@@ -266,6 +273,33 @@ class AssistantTests(unittest.TestCase):
         result = self.ask("Покажи циклы")
         self.assertEqual(result["intent"], "invalid")
         self.assertIn("ещё не рассчитаны", result["answer_md"])
+
+    def test_F07_rich_tables_and_diagram_share_verified_facts(self):
+        result = self.ask("Сравни выбранные счета", [X, Y])
+        rich = result["answer_rich_md"]
+        self.assertIn("| Счёт | Приоритет | Получено | Отправлено |", rich)
+        self.assertIn("17\u202f000 ₸", rich)
+        self.assertIn(f"[{X}](?gid={X})", rich)
+        temporal = self.ask("путь по датам", [Z])
+        rich = temporal["answer_rich_md"]
+        self.assertIn("```mermaid\nflowchart TD", rich)
+        self.assertIn(f'n0["{A}"]', rich)
+        self.assertIn('2026-07-02 · 5\u202f000 ₸', rich)
+        self.assertIn("| Дата | Отправитель | Получатель | Сумма |", rich)
+        self.assertIn("не доказывает", rich)
+        self.assertNotIn("```mermaid", self.ask("путь по датам", [Y])["answer_rich_md"])
+        self.data["nodes"][2]["evidence"] = "<img src=x> | fake\\n```mermaid\\nflowchart LR"
+        escaped = self.ask("Объясни счёт", [X])["answer_rich_md"]
+        self.assertNotIn("<img", escaped)
+        self.assertIn("\\| fake", escaped)
+
+    def test_F07_history_does_not_forward_server_secret(self):
+        fake = FakeTransport()
+        result = self.ask("Почему второй?", [X], api_key="test-only", transport=fake,
+                          history=[{"question": "test-only", "selection": [], "result_gids": [X, Z]}],
+                          dataset_fingerprint=assistant_options(self.data)["dataset_fingerprint"])
+        self.assertEqual(result["intent"], "invalid")
+        self.assertEqual(fake.calls, [])
 
     def test_F07_k_of_n_is_partial_not_all_sources(self):
         result = self.ask("Достижимы хотя бы от 2 выбранных счетов", [A, B, I])
