@@ -10,7 +10,7 @@ import {RoleGlyph, RoleTag} from './RoleGlyph';
 import {Icon} from '../map/icons';
 import {AssistantSlot} from '../app/AssistantSlot';
 import {CopyGid} from './CopyGid';
-import {AccountReportButton, SaveAccountButton} from '../features/shortlist';
+import {SaveAccountButton, useReportSession} from '../features/shortlist';
 import {CompactKzt} from './Amount';
 
 /**
@@ -45,6 +45,7 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
   const cluster = index.clusters.get(node.cluster_id);
   const families = extraNumbers(node, 'priority_families');
   const [status, setStatus] = useState<string | null>(null);
+  const reportSession = useReportSession();
   // Панель больше не пересоздаётся при смене счёта, поэтому сообщение сбрасывается явно.
   useEffect(() => { setStatus(null); }, [node.gid]);
 
@@ -61,7 +62,9 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
 
   const counts: Record<Mode, number> = {structural: t.static_seed_count, strict: t.strict_seed_count, same_day: t.same_day_seed_count};
   const witness = mode === 'strict' ? t.strict_witness : mode === 'same_day' ? t.same_day_witness : null;
-  const limits = [...(node.observation.outgoing_censored ? ['Исходящие не наблюдаются из-за границы сбора. Это не доказывает, что деньги остались на счёте.'] : []), ...node.observation.warnings];
+  // Предупреждение о границе выгрузки уже приходит из конвейера; своё добавляется, только если его там нет.
+  const hasBoundary = node.observation.warnings.some(w => w.includes('не собирались'));
+  const limits = [...(node.observation.outgoing_censored && !hasBoundary ? ['Исходящие не наблюдаются из-за границы сбора. Это не доказывает, что деньги остались на счёте.'] : []), ...node.observation.warnings];
   const extra = m as unknown as Record<string, unknown>;
   const lastIn = typeof extra.last_in_date === 'string' ? extra.last_in_date : null;
 
@@ -74,8 +77,6 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
       <p className="wb-account__kind">{node.is_seed ? 'Исходный клиент' : 'Счёт'} · {countLabel(node.depth, 'шаг', 'шага', 'шагов')} от исходных</p>
       <h2 className="wb-account__gid"><Gid gid={node.gid} /></h2>
       <CopyGid gid={node.gid} />
-      <SaveAccountButton gid={node.gid} />
-      <AccountReportButton gid={node.gid} mode={mode} />
       <div className="wb-account__priority" title={policy.priority_description}>
         <span className="wb-account__label">Приоритет</span>
         <strong>{formatScore(node.priority_score)}</strong>
@@ -101,7 +102,12 @@ export function EvidencePanel({index, hood, mode, onMode, onSelect, onOpenCluste
         {alt && <CompareRow role={alt.role} score={alt.score} reason={alt.reason} />}
       </div>
       <p className="wb-compare__note">Опора правила: эвристика от 0 до 1, не вероятность. Приоритет считается отдельно.</p>
-      <button type="button" className="wb-button wb-button--primary wb-brief" onClick={download}><Icon name="download" size={15} />Справка для проверки</button>
+      <div className="wb-actions">
+        {/* Главное действие — PDF-справка в окне просмотра; сохранение счёта — отдельной кнопкой рядом. */}
+        <button type="button" className="wb-button wb-button--primary wb-brief" onClick={() => void reportSession.request([node.gid], mode)}><Icon name="download" size={15} />Справка для проверки</button>
+        <SaveAccountButton gid={node.gid} />
+        <button type="button" className="wb-button wb-button--quiet" onClick={download}>Текст .md</button>
+      </div>
       <p className="wb-live" role="status" aria-live="polite">{status}</p>
       <details className="wb-disclosure">
         <summary>Основание и правило</summary>

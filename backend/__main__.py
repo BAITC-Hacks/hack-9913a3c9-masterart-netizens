@@ -69,8 +69,10 @@ def main(argv=None) -> int:
         (summary["n_transactions"], "транзакция", "транзакции", "транзакций"),
         (summary["n_clusters"], "кластер", "кластера", "кластеров"),
     )
-    listed = ", ".join(f"{n} {plural_ru(n, one, few, many)}" for n, one, few, many in counts)
-    print(f"Готово за {duration} с: {listed}.")
+    # Русская запись чисел: запятая в дробной части, пробел между разрядами.
+    listed = ", ".join(f"{n:,} {plural_ru(n, one, few, many)}".replace(",", "\u00a0") for n, one, few, many in counts)
+    seconds = f"{duration:.3f}".replace(".", ",")
+    print(f"Готово за {seconds} с: {listed}.")
     for name in sorted(paths):
         print(f"  {paths[name]}")
     return 0
