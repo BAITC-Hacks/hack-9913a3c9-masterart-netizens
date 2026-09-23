@@ -155,6 +155,7 @@ class GraphQueries:
             "gid", "depth", "is_seed", "role", "role_score", "cluster_id", "priority_score",
             "evidence", "metrics", "observation", "role_alternatives", "next_request")}
         facts["priority_description"] = self.analysis["policy"]["priority_description"]
+        facts["priority_weights"] = copy.deepcopy(self.analysis["policy"].get("priority_weights", {}))
         return self._result("node", facts, [gid], [self.node_citation(gid), citation("/policy", "Правила и ограничения")])
 
     def navigate(self, view: str, gid: str | None, cluster_id: int | None) -> dict:
@@ -199,6 +200,7 @@ class GraphQueries:
         gids = [n["gid"] for n in ordered[:limit]]
         return self._result("rank", {"rows": [self.brief(gid) for gid in gids], "total": len(ordered), "role": role,
                                      "top_excludes_seeds": exclude_seeds,
+                                     "priority_weights": copy.deepcopy(self.analysis["policy"].get("priority_weights", {})),
                                      "priority_description": self.analysis["policy"]["priority_description"]}, gids,
                             [citation("/policy/priority_description", "Правило приоритета")] + [self.node_citation(g) for g in gids])
 
@@ -209,6 +211,7 @@ class GraphQueries:
         return self._result("comparison", {
             "rows": rows, "leaders": leaders,
             "priority_description": self.analysis["policy"]["priority_description"],
+            "priority_weights": copy.deepcopy(self.analysis["policy"].get("priority_weights", {})),
         }, [node["gid"] for node in rows],
             [self.node_citation(gid) for gid in gids] + [citation("/policy/priority_description", "Правило приоритета")])
 

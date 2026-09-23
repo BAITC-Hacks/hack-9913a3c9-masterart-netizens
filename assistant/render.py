@@ -27,6 +27,27 @@ def sentence(value: object) -> str:
     return text(value[:1].upper() + value[1:])
 
 
+def priority_rows(facts: dict) -> list[tuple[str, str]]:
+    labels = {"role_signal": "Признаки роли", "flow": "Наблюдаемый оборот",
+              "seed_links": "Связи с исходными клиентами", "chronology": "Цепочки по датам",
+              "breadth": "Разные контрагенты"}
+    weights = facts.get("priority_weights", {})
+    if not isinstance(weights, dict) or set(weights) != set(labels):
+        return []
+    if any(type(v) not in (int, float) or not 0 <= v <= 1 for v in weights.values()):
+        return []
+    if abs(sum(Decimal(str(v)) for v in weights.values()) - 1) > Decimal("0.000001"):
+        return []
+    return [(label, number(Decimal(str(weights[key])) * 100) + "%") for key, label in labels.items()]
+
+
+def priority_explanation(facts: dict) -> str:
+    rows = priority_rows(facts)
+    if rows:
+        return "Вес признаков в приоритете:\n\n" + "\n".join(f"- {label} — {weight}" for label, weight in rows)
+    return "Основание очереди: " + text(str(facts["priority_description"]).removeprefix("priority_score — "))
+
+
 def link(gid: str) -> str:
     return f"[{gid}](?gid={gid})"
 
@@ -68,7 +89,7 @@ def render(result: dict) -> str:
     if kind == "node":
         lines.append(row(facts))
         lines.append(f"Поддержка роли по эвристике: {number(facts['role_score'])}; это не вероятность. Кластер: {facts['cluster_id']}.")
-        lines.append("Основание приоритета: " + text(facts["priority_description"]))
+        lines.append(priority_explanation(facts))
         metrics = facts["metrics"]
         lines.append(f"Плательщиков: {number(metrics['in_degree'])}; получателей: {number(metrics['out_degree'])}. "
                      f"Наблюдаемые входящие: {number(metrics['in_kzt'])} ₸ ({number(metrics['in_tx'])} операций); "
@@ -94,7 +115,7 @@ def render(result: dict) -> str:
                          f"исходящие: {number(metrics['out_kzt'])} ₸ к {metrics['out_degree']} получателям.")
             lines.extend(observation(node["observation"]))
             lines.append("- Следующий запрос: " + text(node["next_request"]))
-        lines.append("Основание очереди: " + text(facts["priority_description"]))
+        lines.append(priority_explanation(facts))
         lines.append("Более высокий приоритет означает порядок проверки, а не большую вероятность виновности.")
     elif kind == "insights":
         lines.append(facts["title"] + ".")
@@ -132,7 +153,7 @@ def render(result: dict) -> str:
         lines.append(f"Приоритет проверки: показано {len(facts['rows'])} из {facts['total']} счетов, соответствующих фильтру.")
         if facts.get("top_excludes_seeds"):
             lines.append("В очереди только счета вне списка известных исходных клиентов; сами исходные клиенты доступны через поиск.")
-        lines.append("Основание приоритета: " + text(facts["priority_description"]))
+        lines.append(priority_explanation(facts))
         lines.extend(f"{i}. {row(n)}" for i, n in enumerate(facts["rows"], 1))
         if not facts["rows"]:
             lines.append("Счетов с таким наблюдаемым сочетанием признаков не найдено.")
